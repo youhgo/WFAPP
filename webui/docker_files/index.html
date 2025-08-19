@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Uploader</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font import from Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <!-- Main container for the form -->
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Upload DFIR Archive</h1>
+        <p class="text-center text-gray-500 mb-8">
+            Select a file and provide case details and parsing options to submit.
+        </p>
+
+        <!-- Form for file upload and data entry -->
+        <form id="uploadForm" class="space-y-6">
+
+            <!-- File Input Field -->
+            <div>
+                <label for="fileInput" class="block text-sm font-medium text-gray-700 mb-1">Select Archive File</label>
+                <input type="file" id="fileInput" name="file" required class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- Case Name Input Field -->
+            <div>
+                <label for="caseName" class="block text-sm font-medium text-gray-700 mb-1">Case Name</label>
+                <input type="text" id="caseName" name="caseName" required placeholder="e.g., POP_I" class="shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- Machine Name Input Field -->
+            <div>
+                <label for="machineName" class="block text-sm font-medium text-gray-700 mb-1">Machine Name</label>
+                <input type="text" id="machineName" name="machineName" required placeholder="e.g., IRSN-2" class="shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- Configuration Checkboxes -->
+            <fieldset>
+                <legend class="text-sm font-medium text-gray-700 mb-2">Parsing Configuration</legend>
+                <div class="space-y-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div class="flex items-center">
+                        <input id="EvtxToJson" type="checkbox" name="config" value="EvtxToJson" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="EvtxToJson" class="ml-2 block text-sm text-gray-900">EvtxToJson</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input id="ParseEvtx" type="checkbox" name="config" value="ParseEvtx" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="ParseEvtx" class="ml-2 block text-sm text-gray-900">ParseEvtx</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input id="ParseProcess" type="checkbox" name="config" value="ParseProcess" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="ParseProcess" class="ml-2 block text-sm text-gray-900">ParseProcess</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input id="ParseNetwork" type="checkbox" name="config" value="ParseNetwork" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="ParseNetwork" class="ml-2 block text-sm text-gray-900">ParseNetwork</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input id="ParsePrefetch" type="checkbox" name="config" value="ParsePrefetch" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="ParsePrefetch" class="ml-2 block text-sm text-gray-900">ParsePrefetch</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input id="ParseSrum" type="checkbox" name="config" value="ParseSrum" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="ParseSrum" class="ml-2 block text-sm text-gray-900">ParseSrum</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input id="ParseSystemHivesRr" type="checkbox" name="config" value="ParseSystemHivesRr" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="ParseSystemHivesRr" class="ml-2 block text-sm text-gray-900">ParseSystemHivesRr</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input id="parseUserHivesRr" type="checkbox" name="config" value="parseUserHivesRr" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="parseUserHivesRr" class="ml-2 block text-sm text-gray-900">parseUserHivesRr</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input id="parseSystemHivesRegipy" type="checkbox" name="config" value="parseSystemHivesRegipy" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="parseSystemHivesRegipy" class="ml-2 block text-sm text-gray-900">parseSystemHivesRegipy</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input id="parseLnk" type="checkbox" name="config" value="parseLnk" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="parseLnk" class="ml-2 block text-sm text-gray-900">parseLnk</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input id="parseMft" type="checkbox" name="config" value="parseMft" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="parseMft" class="ml-2 block text-sm text-gray-900">parseMft</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input id="hayabusa" type="checkbox" name="config" value="hayabusa" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="hayabusa" class="ml-2 block text-sm text-gray-900">hayabusa</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input id="orc2timeline" type="checkbox" name="config" value="orc2timeline" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="orc2timeline" class="ml-2 block text-sm text-gray-900">orc2timeline</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input id="plaso" type="checkbox" name="config" value="plaso" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="plaso" class="ml-2 block text-sm text-gray-900">plaso</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input id="mpp" type="checkbox" name="config" value="mpp" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="mpp" class="ml-2 block text-sm text-gray-900">mpp</label>
+                    </div>
+                </div>
+            </fieldset>
+
+            <!-- Button to initiate the upload -->
+            <button type="submit" id="submitButton" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                Upload File
+            </button>
+        </form>
+
+        <!-- Container for status messages (e.g., success, error) -->
+        <div id="statusMessage" class="mt-6 p-4 rounded-lg text-center" style="display: none;"></div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const uploadForm = document.getElementById('uploadForm');
+            const fileInput = document.getElementById('fileInput');
+            const caseNameInput = document.getElementById('caseName');
+            const machineNameInput = document.getElementById('machineName');
+            const submitButton = document.getElementById('submitButton');
+            const statusMessage = document.getElementById('statusMessage');
+
+            // Get all checkbox elements for the config
+            const configCheckboxes = document.querySelectorAll('input[name="config"]');
+
+            // The URL for the API endpoint
+            const apiEndpoint = "https://WFAPP.localhost/api/parse/parse_archive";
+
+            uploadForm.addEventListener('submit', async (e) => {
+                e.preventDefault(); // Prevent the default form submission behavior
+
+                // Hide any previous status messages
+                statusMessage.style.display = 'none';
+
+                // Get the selected file
+                const file = fileInput.files[0];
+                const caseName = caseNameInput.value;
+                const machineName = machineNameInput.value;
+
+                // Check if a file is selected
+                if (!file) {
+                    showStatus("Please select a file to upload.", "bg-red-100 text-red-700");
+                    return;
+                }
+
+                // Disable the button to prevent multiple submissions
+                submitButton.disabled = true;
+                submitButton.textContent = 'Uploading...';
+                submitButton.classList.add('bg-gray-400');
+
+                // Create a FormData object to handle multipart/form-data
+                const formData = new FormData();
+
+                // Append the file to the FormData object
+                formData.append('file', file);
+
+                // Dynamically build the config object from checkbox states
+                const configPayload = {};
+                configCheckboxes.forEach(checkbox => {
+                    configPayload[checkbox.value] = checkbox.checked ? 1 : 0;
+                });
+
+                // Create the combined JSON object and append it as a string
+                const jsonPayload = {
+                    caseName: caseName,
+                    machineName: machineName,
+                    config: configPayload // Add the new config object
+                };
+                formData.append('json', JSON.stringify(jsonPayload));
+
+                try {
+                    // Use the Fetch API to send the POST request
+                    const response = await fetch(apiEndpoint, {
+                        method: 'POST',
+                        body: formData // The FormData object sets the correct headers automatically
+                    });
+
+                    // Check if the response was successful (status code 200-299)
+                    if (response.ok) {
+                        const result = await response.json();
+                        showStatus("File uploaded successfully! Response: " + JSON.stringify(result), "bg-green-100 text-green-700");
+                    } else {
+                        const errorText = await response.text();
+                        showStatus("Upload failed. Status: " + response.status + " " + response.statusText + ". " + errorText, "bg-red-100 text-red-700");
+                    }
+
+                } catch (error) {
+                    console.error('Error during upload:', error);
+                    showStatus("An error occurred during the upload. Please check your network and try again.", "bg-red-100 text-red-700");
+                } finally {
+                    // Re-enable the button and reset its text
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Upload File';
+                    submitButton.classList.remove('bg-gray-400');
+                }
+            });
+
+            // Helper function to display status messages
+            function showStatus(message, classes) {
+                statusMessage.textContent = message;
+                statusMessage.className = `mt-6 p-4 rounded-lg text-center ${classes}`;
+                statusMessage.style.display = 'block';
+            }
+        });
+    </script>
+
+</body>
+</html>

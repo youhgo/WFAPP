@@ -1,0 +1,9 @@
+shutils
+Flask
+celery
+redis
+py7zr
+regipy
+LnkParse3
+xmltodict
+
