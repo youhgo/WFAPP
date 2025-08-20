@@ -40,7 +40,7 @@ services:
       - WFAPPNet
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.wfapp.rule=Host(`WFAPP.localhost`)"
+      - "traefik.http.routers.wfapp.rule=Host(`WFAPP.localhost`) && PathPrefix(`/api`)"
       - "traefik.http.routers.wfapp.tls=true"
       - "traefik.http.services.wfapp.loadbalancer.server.port=8880"
     volumes:
@@ -69,18 +69,19 @@ services:
     build:
       context: webui/
       dockerfile: docker_files/Dockerfile
-    container_name: "file-uploader"
-    ports:
-      - "8081:80"
+    container_name: "wfapp_web"
+    image: wfapp-web
     networks:
       - WFAPPNet
-    depends_on:
-      - wfapp_api
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.uploader.rule=Host(`UPLOADER.localhost`)"
-      - "traefik.http.routers.uploader.tls=true"
-      - "traefik.http.services.uploader.loadbalancer.server.port=80"
+      - "traefik.http.routers.wfapp-web.rule=Host(`WFAPP.localhost`) && PathPrefix(`/`)"
+      - "traefik.http.routers.wfapp-web.tls=true"
+      - "traefik.http.services.wfapp-web.loadbalancer.server.port=80"
+    depends_on:
+      - wfapp_api
+      - reverse_proxy
+
 networks:
     WFAPPNet:
 

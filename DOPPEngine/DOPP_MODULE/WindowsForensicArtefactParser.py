@@ -35,12 +35,23 @@ except ImportError:
 # TODO : Config to choose what parser to use
 
 
+import sys
+import logging
+import traceback
+import pathlib  # We will use this to manage file paths
+
+import sys
+import logging
+import traceback
+import pathlib  # We will use this to manage file paths
+
+
 class LoggerManager:
     """
-    Classe pour gérer la journalisation, basée sur le module `logging` de Python.
+    Class to manage logging, based on Python's `logging` module.
     """
 
-    # Utilisation d'une classe interne pour regrouper les en-têtes
+    # Using an internal class to group headers
     class Headers:
         START = "[START]"
         STOP = "[STOP]"
@@ -58,47 +69,52 @@ class LoggerManager:
 
     def __init__(self, logger_name: str, log_file_path: str, level: str = "INFO"):
         """
-        Constructeur de la classe LoggerManager.
+        Constructor for the LoggerManager class.
 
         Args:
-            logger_name (str): Nom du logger.
-            log_file_path (str): Chemin du fichier de log.
-            level (str, optional): Niveau de journalisation. Defaults to "INFO".
+            logger_name (str): Name of the logger.
+            log_file_path (str): Path to the log file.
+            level (str, optional): Logging level. Defaults to "INFO".
         """
         self.logLevel = getattr(logging, level.upper(), logging.INFO)
         self.logger_name = logger_name
-        self.log_file_path = log_file_path
+        self.log_file_path = pathlib.Path(log_file_path)  # Convert to a Path object
         self.my_logger = self._initialise_logging()
 
-        # Ajout d'une méthode pour gérer tous les types de messages
+        # Add a method to handle all message types
         self.log = self._generic_log
 
     def _initialise_logging(self) -> logging.Logger:
         """
-        Fonction pour initialiser l'objet logger.
-        C'est une méthode interne (convention _), car elle ne doit pas être appelée directement.
+        Function to initialize the logger object.
+        This is an internal method (convention _), as it should not be called directly.
         """
         logger = logging.getLogger(self.logger_name)
-
-        # Vérifie si le logger a déjà des handlers pour éviter les doublons
-        if logger.hasHandlers():
-            return logger
 
         try:
             logger.setLevel(self.logLevel)
             formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
 
-            # Handler pour la console
+            # Handler for the console
             stdout_handler = logging.StreamHandler(sys.stderr)
             stdout_handler.setFormatter(formatter)
             stdout_handler.setLevel(self.logLevel)
             logger.addHandler(stdout_handler)
 
-            # Handler pour le fichier
-            file_handler = logging.FileHandler(self.log_file_path)
-            file_handler.setFormatter(formatter)
-            file_handler.setLevel(self.logLevel)
-            logger.addHandler(file_handler)
+            # --- FIX: Create a stream handler using an explicitly opened file ---
+            try:
+                # Ensure the parent directory exists
+                self.log_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+                file_handler = logging.FileHandler(self.log_file_path)
+                file_handler.setFormatter(formatter)
+                file_handler.setLevel(self.logLevel)
+                logger.addHandler(file_handler)
+
+            except Exception as e:
+                # If there's an issue with the file, log a clear error to the console
+                # but don't stop the application
+                sys.stderr.write(f"\n[ERROR] Failed to set up file logging: {e}\n")
 
             return logger
         except Exception:
@@ -107,17 +123,17 @@ class LoggerManager:
 
     def get_logger(self) -> logging.Logger:
         """
-        Retourne l'objet logger.
+        Returns the logger object.
         """
         return self.my_logger
 
     def _generic_log(self, msg: str, level: str = "info", header_type: str = "INFO", indentation: int = 0):
         """
-        Méthode générique pour logguer des messages de manière uniforme.
+        Generic method to log messages uniformly.
         """
         header = self.Headers.get(header_type)
         indent = "-" * (indentation * 2) if indentation > 0 else ""
-        formatted_message = "{}>{} {}".format(indent,header,msg)
+        formatted_message = "{}>{} {}".format(indent, header, msg)
 
         log_method = getattr(self.my_logger, level.lower(), self.my_logger.info)
         log_method(formatted_message)
@@ -133,6 +149,7 @@ class LoggerManager:
 
     def debug(self, msg: str, header: str = "DEBUG", indentation: int = 0):
         self._generic_log(msg, level="debug", header_type=header, indentation=indentation)
+
 
 class OrcExtractor:
     """
@@ -1176,11 +1193,9 @@ class DiskParser:
         Args:
             separator: The separator to use for the output CSV file.
             logger_run: The logger for normal runtime information.
-            logger_debug: The logger for debug information and tracebacks.
         """
         self.separator = separator
         self.logger_run = logger_run
-        self.logger_debug = ""
 
     def parse_usnjrnl(self, input_file_path: str, output_path: str):
         """
@@ -5645,10 +5660,11 @@ class WindowsForensicArtefactParser:
         self.machine_working_folder_name = self.machine_name + "_" + self.current_date
         self.system_info = {}
         self.case_work_dir = os.path.join(self.dir_out, self.case_name)
+        self.log_dir = os.path.join(self.dir_out, "execution_logs")
+
         self.machine_working_folder_path = os.path.join(self.case_work_dir, self.machine_working_folder_name)
         self.extracted_dir = os.path.join(self.machine_working_folder_path, "extracted_raw")
         self.parsed_dir = os.path.join(self.machine_working_folder_path, "parsed")
-        self.log_dir = os.path.join(self.dir_out, "execution_logs")
         self.orc_log_dir = os.path.join(self.parsed_dir, "orc_log")
         self.process_dir = os.path.join(self.parsed_dir, "process")
         self.network_dir = os.path.join(self.parsed_dir, "network")
@@ -5660,11 +5676,13 @@ class WindowsForensicArtefactParser:
         self.txt_log_dir = os.path.join(self.parsed_dir, "textLogs")
         self.disk_dir = os.path.join(self.parsed_dir, "disks_info")
         self.result_parsed_dir = os.path.join(self.parsed_dir, "parsed_for_human")
+
         self.initialise_working_directories()
 
         self.running_log_file_path = os.path.join(self.log_dir, "{}_running.log".format(self.main_id))
-        self.logger_run = LoggerManager("running".format(self.main_id), self.running_log_file_path, "INFO")
 
+        self.logger_run = LoggerManager("running", self.running_log_file_path, "INFO")
+        print("LOGGER RUN IS {}".format(self.running_log_file_path))
         if not artefact_config:
             self.artefact_config = {
             "orc": {

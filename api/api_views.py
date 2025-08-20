@@ -1,12 +1,12 @@
 import sys
 import traceback
-
-from flask import Blueprint, Response, jsonify, render_template
+from flask import Blueprint, Response, jsonify, render_template, request
 from worker import celery
 import celery.states as states
 from datetime import datetime
 import os
 import json
+
 
 wfapp_api = Blueprint('wfapp_api', __name__)
 SHARED_FOLDER_PATH = "/python-docker/shared_files/"
@@ -113,6 +113,41 @@ def get_running_tasks():
     return celery.control.inspect().active()
 
 
+# NEW FUNCTIONALITY: Kills a single task based on a POST request
+@wfapp_api.route('/api/stop_single_task', methods=['POST'])
+def stop_single_task() -> Response:
+    """
+    API function to stop a single task by its ID.
+    This function expects a JSON payload with a 'task_id' field.
+
+    :return: JSON response indicating the status of the kill command.
+    :rtype: json dict
+    """
+    # Check if the request body is valid JSON
+    if not request.json or 'task_id' not in request.json:
+        return jsonify({"ERROR": "Invalid request payload. 'task_id' is missing."}), 400
+
+    task_id = request.json['task_id']
+
+    try:
+        # Use Celery's revoke command to terminate the task
+        # terminate=True sends SIGKILL to the worker process
+        celery.control.revoke(task_id, terminate=True, signal='SIGKILL')
+
+        return jsonify({
+            "status": "OK",
+            "message": f"Stop command sent for task {task_id}.",
+            "killedTask": task_id
+        }), 200
+
+    except Exception as e:
+        # Catch any errors during the revoke call
+        return jsonify({
+            "status": "ERROR",
+            "message": f"An error occurred while trying to stop task {task_id}: {str(e)}",
+            "task_id": task_id
+        }), 500
+
 @wfapp_api.route('/api/stop_analyze_tasks')
 def stop_parsing_tasks() -> Response:
     """
@@ -132,20 +167,6 @@ def stop_parsing_tasks() -> Response:
     }
     return response
 
-
-@wfapp_api.route('/api/get_running_tasks_parse')
-def get_parser_tasks():
-    """
-    api function to get tasks related to parser module
-    :return: list of tasks id
-    :rtype: list
-    """
-    all_nodes = celery.control.inspect()
-    worker_parser_name = get_parser_worker_name(all_nodes)
-    worker_parser_tasks = all_nodes.active().get(worker_parser_name, [])
-    return worker_parser_tasks
-
-
 def stop_task(task_list):
     """
     function to kill tasks by it's id
@@ -163,6 +184,17 @@ def stop_task(task_list):
             l_killed_tasks.append(task_id)
     return l_killed_tasks
 
+@wfapp_api.route('/api/get_running_tasks_parse')
+def get_parser_tasks():
+    """
+    api function to get tasks related to parser module
+    :return: list of tasks id
+    :rtype: list
+    """
+    all_nodes = celery.control.inspect()
+    worker_parser_name = get_parser_worker_name(all_nodes)
+    worker_parser_tasks = all_nodes.active().get(worker_parser_name, [])
+    return worker_parser_tasks
 
 def get_parser_worker_name(all_nodes):
     """

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Uploader</title>
+    <title>DFIR Web Portal</title>
     <!-- Tailwind CSS CDN for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -13,208 +13,454 @@
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
         }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
 
-    <!-- Main container for the form -->
-    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Upload DFIR Archive</h1>
-        <p class="text-center text-gray-500 mb-8">
-            Select a file and provide case details and parsing options to submit.
-        </p>
+    <!-- Main container for the application -->
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-4xl">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">DFIR Web Portal</h1>
 
-        <!-- Form for file upload and data entry -->
-        <form id="uploadForm" class="space-y-6">
-
-            <!-- File Input Field -->
-            <div>
-                <label for="fileInput" class="block text-sm font-medium text-gray-700 mb-1">Select Archive File</label>
-                <input type="file" id="fileInput" name="file" required class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-
-            <!-- Case Name Input Field -->
-            <div>
-                <label for="caseName" class="block text-sm font-medium text-gray-700 mb-1">Case Name</label>
-                <input type="text" id="caseName" name="caseName" required placeholder="e.g., POP_I" class="shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-
-            <!-- Machine Name Input Field -->
-            <div>
-                <label for="machineName" class="block text-sm font-medium text-gray-700 mb-1">Machine Name</label>
-                <input type="text" id="machineName" name="machineName" required placeholder="e.g., IRSN-2" class="shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-
-            <!-- Configuration Checkboxes -->
-            <fieldset>
-                <legend class="text-sm font-medium text-gray-700 mb-2">Parsing Configuration</legend>
-                <div class="space-y-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div class="flex items-center">
-                        <input id="EvtxToJson" type="checkbox" name="config" value="EvtxToJson" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="EvtxToJson" class="ml-2 block text-sm text-gray-900">EvtxToJson</label>
-                    </div>
-                    <div class="flex items-center">
-                        <input id="ParseEvtx" type="checkbox" name="config" value="ParseEvtx" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="ParseEvtx" class="ml-2 block text-sm text-gray-900">ParseEvtx</label>
-                    </div>
-                    <div class="flex items-center">
-                        <input id="ParseProcess" type="checkbox" name="config" value="ParseProcess" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="ParseProcess" class="ml-2 block text-sm text-gray-900">ParseProcess</label>
-                    </div>
-                    <div class="flex items-center">
-                        <input id="ParseNetwork" type="checkbox" name="config" value="ParseNetwork" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="ParseNetwork" class="ml-2 block text-sm text-gray-900">ParseNetwork</label>
-                    </div>
-                    <div class="flex items-center">
-                        <input id="ParsePrefetch" type="checkbox" name="config" value="ParsePrefetch" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="ParsePrefetch" class="ml-2 block text-sm text-gray-900">ParsePrefetch</label>
-                    </div>
-                    <div class="flex items-center">
-                        <input id="ParseSrum" type="checkbox" name="config" value="ParseSrum" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="ParseSrum" class="ml-2 block text-sm text-gray-900">ParseSrum</label>
-                    </div>
-                    <div class="flex items-center">
-                        <input id="ParseSystemHivesRr" type="checkbox" name="config" value="ParseSystemHivesRr" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="ParseSystemHivesRr" class="ml-2 block text-sm text-gray-900">ParseSystemHivesRr</label>
-                    </div>
-                    <div class="flex items-center">
-                        <input id="parseUserHivesRr" type="checkbox" name="config" value="parseUserHivesRr" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="parseUserHivesRr" class="ml-2 block text-sm text-gray-900">parseUserHivesRr</label>
-                    </div>
-                    <div class="flex items-center">
-                        <input id="parseSystemHivesRegipy" type="checkbox" name="config" value="parseSystemHivesRegipy" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="parseSystemHivesRegipy" class="ml-2 block text-sm text-gray-900">parseSystemHivesRegipy</label>
-                    </div>
-                    <div class="flex items-center">
-                        <input id="parseLnk" type="checkbox" name="config" value="parseLnk" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="parseLnk" class="ml-2 block text-sm text-gray-900">parseLnk</label>
-                    </div>
-                    <div class="flex items-center">
-                        <input id="parseMft" type="checkbox" name="config" value="parseMft" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="parseMft" class="ml-2 block text-sm text-gray-900">parseMft</label>
-                    </div>
-                    <div class="flex items-center">
-                        <input id="hayabusa" type="checkbox" name="config" value="hayabusa" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="hayabusa" class="ml-2 block text-sm text-gray-900">hayabusa</label>
-                    </div>
-                    <div class="flex items-center">
-                        <input id="orc2timeline" type="checkbox" name="config" value="orc2timeline" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="orc2timeline" class="ml-2 block text-sm text-gray-900">orc2timeline</label>
-                    </div>
-                    <div class="flex items-center">
-                        <input id="plaso" type="checkbox" name="config" value="plaso" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="plaso" class="ml-2 block text-sm text-gray-900">plaso</label>
-                    </div>
-                    <div class="flex items-center">
-                        <input id="mpp" type="checkbox" name="config" value="mpp" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="mpp" class="ml-2 block text-sm text-gray-900">mpp</label>
-                    </div>
-                </div>
-            </fieldset>
-
-            <!-- Button to initiate the upload -->
-            <button type="submit" id="submitButton" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
-                Upload File
+        <!-- Tab navigation for switching views -->
+        <div class="flex border-b border-gray-200 mb-6 overflow-x-auto">
+            <button id="upload-tab" class="py-2 px-4 text-center text-sm font-medium focus:outline-none transition-colors duration-200 text-blue-600 border-b-2 border-blue-600 whitespace-nowrap">
+                File Uploader
             </button>
-        </form>
+            <button id="logs-tab" class="py-2 px-4 text-center text-sm font-medium focus:outline-none transition-colors duration-200 text-gray-500 hover:text-blue-600 border-b-2 border-transparent hover:border-blue-600 whitespace-nowrap">
+                Log Viewer
+            </button>
+            <button id="status-tab" class="py-2 px-4 text-center text-sm font-medium focus:outline-none transition-colors duration-200 text-gray-500 hover:text-blue-600 border-b-2 border-transparent hover:border-blue-600 whitespace-nowrap">
+                Task Status
+            </button>
+            <button id="running-tasks-tab" class="py-2 px-4 text-center text-sm font-medium focus:outline-none transition-colors duration-200 text-gray-500 hover:text-blue-600 border-b-2 border-transparent hover:border-blue-600 whitespace-nowrap">
+                Running Tasks
+            </button>
+        </div>
 
-        <!-- Container for status messages (e.g., success, error) -->
+        <!-- File Uploader Section -->
+        <div id="upload-content" class="tab-content active">
+            <p class="text-center text-gray-500 mb-8">
+                Select a file and provide case details and parsing options to submit.
+            </p>
+            <form id="uploadForm" class="space-y-6">
+                <div>
+                    <label for="fileInput" class="block text-sm font-medium text-gray-700 mb-1">Select Archive File</label>
+                    <input type="file" id="fileInput" name="file" required class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="caseName" class="block text-sm font-medium text-gray-700 mb-1">Case Name</label>
+                    <input type="text" id="caseName" name="caseName" required placeholder="e.g., POP_I" class="shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="machineName" class="block text-sm font-medium text-gray-700 mb-1">Machine Name</label>
+                    <input type="text" id="machineName" name="machineName" required placeholder="e.g., IRSN-2" class="shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <button type="submit" id="submitButton" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                    Upload File
+                </button>
+            </form>
+        </div>
+
+        <!-- Log Viewer Section -->
+        <div id="logs-content" class="tab-content">
+            <p class="text-center text-gray-500 mb-8">
+                Enter a task ID below to fetch and display its running logs.
+            </p>
+            <form id="logForm" class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 mb-6">
+                <input
+                    type="text"
+                    id="logTaskIdInput"
+                    placeholder="Enter Task ID (e.g., b539...)"
+                    required
+                    class="flex-1 shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <button
+                    type="submit"
+                    id="fetchButton"
+                    class="py-2.5 px-6 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                >
+                    Fetch Logs
+                </button>
+            </form>
+            <div class="bg-gray-800 text-gray-50 p-6 rounded-lg font-mono text-sm max-h-96 overflow-y-auto shadow-inner">
+                <pre id="logOutput" class="whitespace-pre-wrap"></pre>
+            </div>
+        </div>
+
+        <!-- Task Status Section -->
+        <div id="status-content" class="tab-content">
+            <p class="text-center text-gray-500 mb-8">
+                Enter a task ID to check its current status.
+            </p>
+            <form id="statusForm" class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 mb-6">
+                <input
+                    type="text"
+                    id="statusTaskIdInput"
+                    placeholder="Enter Task ID"
+                    required
+                    class="flex-1 shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <button
+                    type="submit"
+                    id="statusButton"
+                    class="py-2.5 px-6 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                >
+                    Check Status
+                </button>
+            </form>
+            <div class="p-6 rounded-lg font-mono text-sm shadow-inner bg-gray-50 text-gray-700">
+                <pre id="statusOutput" class="whitespace-pre-wrap"></pre>
+            </div>
+        </div>
+
+        <!-- Running Tasks Section -->
+        <div id="running-tasks-content" class="tab-content">
+            <p class="text-center text-gray-500 mb-8">
+                Click the button below to fetch a list of all currently running tasks.
+            </p>
+            <div class="flex justify-center mb-6">
+                <button id="getRunningTasksButton" class="w-full sm:w-auto py-2.5 px-6 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                    Fetch Running Tasks
+                </button>
+            </div>
+
+            <div id="runningTasksList" class="space-y-4">
+                <!-- Running tasks will be dynamically added here -->
+            </div>
+            <div id="noTasksMessage" class="hidden text-center text-gray-500 p-4 rounded-lg border border-gray-300 mt-4">
+                No running tasks found.
+            </div>
+        </div>
+
+        <!-- Global status message container -->
         <div id="statusMessage" class="mt-6 p-4 rounded-lg text-center" style="display: none;"></div>
-
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const tabs = {
+                upload: document.getElementById('upload-tab'),
+                logs: document.getElementById('logs-tab'),
+                status: document.getElementById('status-tab'),
+                runningTasks: document.getElementById('running-tasks-tab')
+            };
+            const contents = {
+                upload: document.getElementById('upload-content'),
+                logs: document.getElementById('logs-content'),
+                status: document.getElementById('status-content'),
+                runningTasks: document.getElementById('running-tasks-content')
+            };
+            const statusMessage = document.getElementById('statusMessage');
+
+            // Uploader elements
             const uploadForm = document.getElementById('uploadForm');
             const fileInput = document.getElementById('fileInput');
             const caseNameInput = document.getElementById('caseName');
             const machineNameInput = document.getElementById('machineName');
             const submitButton = document.getElementById('submitButton');
-            const statusMessage = document.getElementById('statusMessage');
 
-            // Get all checkbox elements for the config
-            const configCheckboxes = document.querySelectorAll('input[name="config"]');
+            // Log viewer elements
+            const logForm = document.getElementById('logForm');
+            const logTaskIdInput = document.getElementById('logTaskIdInput');
+            const logOutput = document.getElementById('logOutput');
+            const fetchButton = document.getElementById('fetchButton');
 
-            // The URL for the API endpoint
-            const apiEndpoint = "https://WFAPP.localhost/api/parse/parse_archive";
+            // Task Status elements
+            const statusForm = document.getElementById('statusForm');
+            const statusTaskIdInput = document.getElementById('statusTaskIdInput');
+            const statusOutput = document.getElementById('statusOutput');
+            const statusButton = document.getElementById('statusButton');
 
+            // Running Tasks elements
+            const getRunningTasksButton = document.getElementById('getRunningTasksButton');
+            const runningTasksList = document.getElementById('runningTasksList');
+            const noTasksMessage = document.getElementById('noTasksMessage');
+
+            // --- Constants ---
+            const UPLOADER_API_URL = "https://WFAPP.localhost/api/parse/parse_archive";
+            const LOG_VIEWER_API_URL = "https://WFAPP.localhost/api/running_log/";
+            const STATUS_API_URL = "https://WFAPP.localhost/api/check/";
+            const RUNNING_TASKS_API_URL = "https://WFAPP.localhost/api/get_running_tasks";
+            // The new API URL for stopping a single task
+            const STOP_TASK_API_URL = "https://WFAPP.localhost/api/stop_single_task";
+
+            // --- Functions ---
+            function showStatus(message, classes, isHtml = false) {
+                if (isHtml) {
+                    statusMessage.innerHTML = message;
+                } else {
+                    statusMessage.textContent = message;
+                }
+                statusMessage.className = `mt-6 p-4 rounded-lg text-center ${classes}`;
+                statusMessage.style.display = 'block';
+            }
+
+            function switchTab(activeTabId) {
+                for (const key in tabs) {
+                    if (key === activeTabId) {
+                        tabs[key].classList.add('text-blue-600', 'border-blue-600');
+                        tabs[key].classList.remove('text-gray-500', 'hover:text-blue-600', 'border-transparent', 'hover:border-blue-600');
+                        contents[key].classList.add('active');
+                    } else {
+                        tabs[key].classList.add('text-gray-500', 'hover:text-blue-600', 'border-transparent', 'hover:border-blue-600');
+                        tabs[key].classList.remove('text-blue-600', 'border-blue-600');
+                        contents[key].classList.remove('active');
+                    }
+                }
+                statusMessage.style.display = 'none';
+                logOutput.innerHTML = '';
+                statusOutput.innerHTML = '';
+                runningTasksList.innerHTML = '';
+                noTasksMessage.classList.add('hidden');
+            }
+
+            // --- Event Listeners ---
+            tabs.upload.addEventListener('click', () => switchTab('upload'));
+            tabs.logs.addEventListener('click', () => switchTab('logs'));
+            tabs.status.addEventListener('click', () => switchTab('status'));
+            tabs.runningTasks.addEventListener('click', () => switchTab('runningTasks'));
+
+            // Uploader Form Submission Logic (retained from previous version)
             uploadForm.addEventListener('submit', async (e) => {
-                e.preventDefault(); // Prevent the default form submission behavior
-
-                // Hide any previous status messages
+                e.preventDefault();
                 statusMessage.style.display = 'none';
 
-                // Get the selected file
                 const file = fileInput.files[0];
                 const caseName = caseNameInput.value;
                 const machineName = machineNameInput.value;
 
-                // Check if a file is selected
                 if (!file) {
                     showStatus("Please select a file to upload.", "bg-red-100 text-red-700");
                     return;
                 }
 
-                // Disable the button to prevent multiple submissions
                 submitButton.disabled = true;
                 submitButton.textContent = 'Uploading...';
                 submitButton.classList.add('bg-gray-400');
 
-                // Create a FormData object to handle multipart/form-data
                 const formData = new FormData();
-
-                // Append the file to the FormData object
                 formData.append('file', file);
-
-                // Dynamically build the config object from checkbox states
-                const configPayload = {};
-                configCheckboxes.forEach(checkbox => {
-                    configPayload[checkbox.value] = checkbox.checked ? 1 : 0;
-                });
-
-                // Create the combined JSON object and append it as a string
                 const jsonPayload = {
                     caseName: caseName,
                     machineName: machineName,
-                    config: configPayload // Add the new config object
                 };
                 formData.append('json', JSON.stringify(jsonPayload));
 
                 try {
-                    // Use the Fetch API to send the POST request
-                    const response = await fetch(apiEndpoint, {
+                    const response = await fetch(UPLOADER_API_URL, {
                         method: 'POST',
-                        body: formData // The FormData object sets the correct headers automatically
+                        body: formData
                     });
 
-                    // Check if the response was successful (status code 200-299)
                     if (response.ok) {
                         const result = await response.json();
-                        showStatus("File uploaded successfully! Response: " + JSON.stringify(result), "bg-green-100 text-green-700");
+                        const taskId = result.taskId;
+
+                        const successMessage = `
+                            <p class="font-bold text-green-800">File uploaded successfully! Task created.</p>
+                            <div class="mt-4 flex flex-col items-center space-y-2">
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-bold text-gray-700">Task ID:</span>
+                                    <span id="taskIdDisplay" class="font-mono text-gray-900">${taskId}</span>
+                                    <button id="copyButton" class="py-1 px-3 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 transition-colors duration-200">
+                                        Copy
+                                    </button>
+                                </div>
+                                <a href="${result.statusUrl}" target="_blank" class="text-blue-600 hover:text-blue-800 underline font-medium">View Task Status</a>
+                                <a href="${result.runLogUrl}" target="_blank" class="text-blue-600 hover:text-blue-800 underline font-medium">View Run Log</a>
+                            </div>
+                        `;
+                        showStatus(successMessage, "bg-green-100 text-green-700", true);
+
+                        const copyButton = document.getElementById('copyButton');
+                        copyButton.addEventListener('click', () => {
+                            const el = document.createElement('textarea');
+                            el.value = taskId;
+                            document.body.appendChild(el);
+                            el.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(el);
+                            copyButton.textContent = 'Copied!';
+                            setTimeout(() => { copyButton.textContent = 'Copy'; }, 2000);
+                        });
+
                     } else {
                         const errorText = await response.text();
                         showStatus("Upload failed. Status: " + response.status + " " + response.statusText + ". " + errorText, "bg-red-100 text-red-700");
                     }
-
                 } catch (error) {
                     console.error('Error during upload:', error);
                     showStatus("An error occurred during the upload. Please check your network and try again.", "bg-red-100 text-red-700");
                 } finally {
-                    // Re-enable the button and reset its text
                     submitButton.disabled = false;
                     submitButton.textContent = 'Upload File';
                     submitButton.classList.remove('bg-gray-400');
                 }
             });
 
-            // Helper function to display status messages
-            function showStatus(message, classes) {
-                statusMessage.textContent = message;
-                statusMessage.className = `mt-6 p-4 rounded-lg text-center ${classes}`;
-                statusMessage.style.display = 'block';
-            }
+            // Log Viewer Form Submission Logic (retained from previous version)
+            logForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                logOutput.innerHTML = '';
+                statusMessage.style.display = 'none';
+
+                const taskId = logTaskIdInput.value.trim();
+                if (!taskId) {
+                    showStatus("Please enter a valid Task ID.", "bg-red-100 text-red-700");
+                    return;
+                }
+
+                fetchButton.disabled = true;
+                fetchButton.textContent = 'Fetching...';
+                fetchButton.classList.add('bg-gray-400');
+                showStatus("Fetching logs...", "bg-blue-100 text-blue-700");
+
+                const apiUrl = `${LOG_VIEWER_API_URL}${taskId}`;
+
+                try {
+                    const response = await fetch(apiUrl);
+                    if (response.ok) {
+                        const logContent = await response.text();
+                        logOutput.innerHTML = `<h3 class="text-white text-lg font-bold mb-4">Logs for Task ID: <span class="text-blue-400">${taskId}</span></h3>` + logContent;
+                        statusMessage.style.display = 'none';
+                    } else {
+                        const errorData = await response.json();
+                        showStatus(`Error: ${errorData.ERROR} - Task ID: ${errorData.TASKID}`, "bg-red-100 text-red-700");
+                        logOutput.textContent = '';
+                    }
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    showStatus("A network error occurred. Please check your connection and the server.", "bg-red-100 text-red-700");
+                } finally {
+                    fetchButton.disabled = false;
+                    fetchButton.textContent = 'Fetch Logs';
+                    fetchButton.classList.remove('bg-gray-400');
+                }
+            });
+
+            // Task Status Form Submission Logic
+            statusForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                statusOutput.innerHTML = '';
+                showStatus("Checking task status...", "bg-blue-100 text-blue-700");
+
+                const taskId = statusTaskIdInput.value.trim();
+                if (!taskId) {
+                    showStatus("Please enter a valid Task ID.", "bg-red-100 text-red-700");
+                    return;
+                }
+
+                statusButton.disabled = true;
+                statusButton.textContent = 'Checking...';
+                statusButton.classList.add('bg-gray-400');
+
+                const apiUrl = `${STATUS_API_URL}${taskId}`;
+
+                try {
+                    const response = await fetch(apiUrl);
+                    const result = await response.json();
+                    statusOutput.textContent = JSON.stringify(result, null, 2);
+                    showStatus("Task status fetched successfully.", "bg-green-100 text-green-700");
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    statusOutput.textContent = 'Error fetching status.';
+                    showStatus("An error occurred fetching the status.", "bg-red-100 text-red-700");
+                } finally {
+                    statusButton.disabled = false;
+                    statusButton.textContent = 'Check Status';
+                    statusButton.classList.remove('bg-gray-400');
+                }
+            });
+
+            // Running Tasks button logic with individual stop buttons
+            getRunningTasksButton.addEventListener('click', async () => {
+                runningTasksList.innerHTML = '';
+                noTasksMessage.classList.add('hidden');
+                showStatus("Fetching running tasks...", "bg-blue-100 text-blue-700");
+                getRunningTasksButton.disabled = true;
+                getRunningTasksButton.textContent = 'Fetching...';
+
+                try {
+                    const response = await fetch(RUNNING_TASKS_API_URL);
+                    const result = await response.json();
+
+                    let hasTasks = false;
+                    for (const worker in result) {
+                        if (result[worker].length > 0) {
+                            hasTasks = true;
+                            result[worker].forEach(task => {
+                                const taskDiv = document.createElement('div');
+                                taskDiv.className = 'bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between space-y-2 md:space-y-0';
+
+                                const taskDetails = `
+                                    <div class="flex-1">
+                                        <div class="text-sm font-semibold text-gray-900 break-all">Task ID: <span class="font-normal text-blue-600">${task.id}</span></div>
+                                        <div class="text-sm font-semibold text-gray-700">Name: <span class="font-normal">${task.name}</span></div>
+                                        <div class="text-sm font-semibold text-gray-700">Started: <span class="font-normal">${new Date(task.time_start * 1000).toLocaleString()}</span></div>
+                                        <div class="text-sm font-semibold text-gray-700">Worker: <span class="font-normal">${worker}</span></div>
+                                    </div>
+                                `;
+                                taskDiv.innerHTML = taskDetails;
+
+                                const stopButton = document.createElement('button');
+                                stopButton.className = 'py-1 px-4 text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500';
+                                stopButton.textContent = 'Stop Task';
+                                stopButton.onclick = async () => {
+                                    showStatus(`Sending stop command for task ${task.id}...`, "bg-yellow-100 text-yellow-700");
+                                    try {
+                                        const stopResponse = await fetch(STOP_TASK_API_URL, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                task_id: task.id  // Changed to match the new backend key
+                                            })
+                                        });
+                                        const stopResult = await stopResponse.json();
+                                        if (stopResponse.ok) {
+                                            showStatus(`Stop command sent for task ${task.id}.`, "bg-green-100 text-green-700");
+                                            // You might want to refresh the list after a successful stop
+                                            getRunningTasksButton.click();
+                                        } else {
+                                            // Use the error message from the new backend
+                                            showStatus(`Failed to stop task ${task.id}. Error: ${stopResult.message || JSON.stringify(stopResult)}`, "bg-red-100 text-red-700");
+                                        }
+                                    } catch (err) {
+                                        showStatus("An error occurred while trying to stop the task.", "bg-red-100 text-red-700");
+                                    }
+                                };
+
+                                taskDiv.appendChild(stopButton);
+                                runningTasksList.appendChild(taskDiv);
+                            });
+                        }
+                    }
+
+                    if (!hasTasks) {
+                        noTasksMessage.classList.remove('hidden');
+                        showStatus("No running tasks found.", "bg-green-100 text-green-700");
+                    } else {
+                        showStatus("Running tasks fetched successfully.", "bg-green-100 text-green-700");
+                    }
+
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    showStatus("An error occurred fetching running tasks.", "bg-red-100 text-red-700");
+                } finally {
+                    getRunningTasksButton.disabled = false;
+                    getRunningTasksButton.textContent = 'Fetch Running Tasks';
+                }
+            });
+
+            // Set initial active tab
+            switchTab('upload');
         });
     </script>
-
 </body>
 </html>
