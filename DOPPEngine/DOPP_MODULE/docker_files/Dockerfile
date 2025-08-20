@@ -24,6 +24,10 @@ RUN apt-get install -y \
 RUN apt-get upgrade -y
 RUN pip3 install --upgrade pip
 
+#RUN pip3 install "git+https://github.com/rowingdude/analyzeMFT"
+COPY DOPP_MODULE/docker_files/install_analyzemft.sh install_analyzemft.sh
+RUN ./install_analyzemft.sh
+
 COPY DOPP_MODULE/docker_files/requirements.txt requirements.txt
 RUN pip3 install -U setuptools pip
 RUN pip3 install -r requirements.txt --ignore-installed

@@ -5646,6 +5646,7 @@ class WindowsForensicArtefactParser:
         self.case_name = case_name
         self.separator = separator
 
+
         if machine_name:
             self.machine_name = machine_name
         else:
@@ -5655,6 +5656,11 @@ class WindowsForensicArtefactParser:
             self.main_id = main_id
         else:
             self.main_id = self.machine_name
+
+
+        self.tool_path = os.environ.get("TOOL_PATH", "python-docker/DOPP_MODULE/outils")
+        self.evtx_dump_path = os.path.join(self.tool_path, "evtx_dump")
+        self.analyze_mft_tool_path = "/python-docker/analyzeMFT/analyzeMFT.py"
 
         self.current_date = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
         self.machine_working_folder_name = self.machine_name + "_" + self.current_date
@@ -5676,13 +5682,13 @@ class WindowsForensicArtefactParser:
         self.txt_log_dir = os.path.join(self.parsed_dir, "textLogs")
         self.disk_dir = os.path.join(self.parsed_dir, "disks_info")
         self.result_parsed_dir = os.path.join(self.parsed_dir, "parsed_for_human")
-
+        self.evt_dir = os.path.join(self.parsed_dir, "event")
+        self.mft_dir = os.path.join(self.parsed_dir, "mft")
         self.initialise_working_directories()
 
         self.running_log_file_path = os.path.join(self.log_dir, "{}_running.log".format(self.main_id))
 
         self.logger_run = LoggerManager("running", self.running_log_file_path, "INFO")
-        print("LOGGER RUN IS {}".format(self.running_log_file_path))
         if not artefact_config:
             self.artefact_config = {
             "orc": {
@@ -5783,6 +5789,8 @@ class WindowsForensicArtefactParser:
             print("[CREATING FOLDER] {}".format(self.log_dir))
             os.makedirs(self.log_dir, exist_ok=True)
 
+            os.makedirs(self.mft_dir, exist_ok=True)
+            os.makedirs(self.evt_dir, exist_ok=True)
             os.makedirs(self.process_dir, exist_ok=True)
             os.makedirs(self.network_dir, exist_ok=True)
             os.makedirs(self.powershell_dir, exist_ok=True)
@@ -5907,6 +5915,74 @@ class WindowsForensicArtefactParser:
         except:
             self.logger_run.error("[PARSING][PSORT] {}".format(traceback.format_exc()), header="ERROR",
                                   indentation=2)
+
+    def convert_evtx_to_json(self):
+        """
+        to Launch evtdump for converting evtx file to json files
+        :return:
+        """
+        try:
+            self.logger_run.info("[TOOLING][EVTXDUMP]", header="START", indentation=2)
+            evtx_f_pattern = self.artefact_config.get("artefacts", {}).get("event_logs", {}).get("evtx", [])
+            if evtx_f_pattern and isinstance(evtx_f_pattern, list):
+                mngr = FileManager()
+                for pattern in evtx_f_pattern:
+                    all_evt = mngr.recursive_file_search(self.extracted_dir, pattern)
+                    if all_evt:
+                        for evt in all_evt:
+                            try:
+                                evt_name = os.path.basename(evt)
+                                evt_name_wo_ext = os.path.splitext(evt_name)[0]
+                                evt_json_name = evt_name_wo_ext + ".json"
+                                self.logger_run.info("[TOOLING][EVTXDUMP] Converting {} to json".format(evt_name_wo_ext),
+                                                     header="START", indentation=3)
+
+                                out_file = os.path.join(self.evt_dir, evt_json_name)
+                                my_cmd = ["{}".format(self.evtx_dump_path), "{}".format(evt)]
+                                with open(out_file, "w") as outfile:
+                                    subprocess.run(my_cmd, stdout=outfile)
+
+                                self.logger_run.info("[TOOLING][EVTXDUMP] Converting {} to json".format(evt_name_wo_ext),
+                                                     header="FINISHED", indentation=3)
+
+                            except:
+                                self.logger_run.error("[TOOLING][EVTXDUMP] Converting {} to json: {}"
+                                                      .format(evt_name_wo_ext, traceback.format_exc()),
+                                                     header="FAILED", indentation=3)
+
+            self.logger_run.info("[TOOLING][EVTXDUMP]", header="FINISHED", indentation=2)
+        except:
+            self.logger_run.error(
+                "[TOOLING][EVTXDUMP] {}".format( traceback.format_exc()), header="ERROR", indentation=2)
+
+    def convert_mft_to_csv(self):
+        """
+        To parse mft file with analyse mft and parse it to human readble format (|DATE|TIME|ETC|ETC)
+        :return:
+        """
+        try:
+            self.logger_run.info("[TOOLING][ANALYZEMFT]", header="START", indentation=2)
+            mft_result_file = os.path.join(self.mft_dir, "mft.json")
+            mngr = FileManager()
+
+            mft_patterns = self.artefact_config.get("artefacts", {}).get("master_file_table", {}).get("MFT", [])
+            if mft_patterns and isinstance(mft_patterns, list):
+                for mft_pattern in mft_patterns:
+                    mft_files = mngr.recursive_file_search(self.extracted_dir,mft_pattern)
+                    if mft_files:
+                        for mft_file in mft_files:
+                            my_cmd = ["python3", "{}".format(self.analyze_mft_tool_path),
+                                      "-f", "{}".format(mft_file),
+                                      "-o", "{}".format(mft_result_file),
+                                      "--json"]
+                            subprocess.run(my_cmd)
+
+                    self.logger_run.info("[TOOLING][ANALYZEMFT]", header="FINISHED", indentation=2)
+            else:
+                self.logger_run.info("[TOOLING][ANALYZEMFT] No MFT File found", header="FAILED", indentation=2)
+        except:
+            self.logger_run.error(
+                "[TOOLING][ANALYZEMFT] {}".format( traceback.format_exc()), header="ERROR", indentation=3)
 
     def do_system_info(self):
         try:
@@ -6061,21 +6137,49 @@ class WindowsForensicArtefactParser:
         except:
             self.logger_run.error("[MAXIMUMPLASOPARSER] {}".format(traceback.format_exc()), header="ERROR", indentation=1)
 
+    def do_mft(self):
+        """
+        Launch the converting and parsing of mft
+        :return:
+        """
+        try:
+            self.logger_run.info("[PARSING][MFT]", header="START", indentation=1)
+            self.convert_mft_to_csv()
+            self.logger_run.info("[PARSING][MFT]", header="FINISHED", indentation=1)
+        except:
+            self.logger_run.error("[PARSING][MFT] {}".format(traceback.format_exc()), header="ERROR",
+                                  indentation=1)
+
+    def do_evtx(self):
+        """
+        Launch the converting and parsing of evtx
+        :return:
+        """
+        try:
+            self.logger_run.info("[PARSING][EVTX]", header="START", indentation=1)
+            self.convert_evtx_to_json()
+            self.logger_run.info("[PARSING][EVTX]", header="FINISHED", indentation=1)
+        except:
+            self.logger_run.error("[PARSING][EVTX] {}".format(traceback.format_exc()), header="ERROR",
+                                  indentation=1)
+
     def do(self):
         self.extract()
         f_manager = FileManager()
         f_manager.rename_nested_folder(self.extracted_dir)
-        self.move_artefact_no_parsing()
+        #self.move_artefact_no_parsing()
         self.logger_run.info("[PARSING][ARTEFACTS]", header="START", indentation=0)
-        self.do_system_info()
-        self.do_network()
-        self.do_process()
-        self.do_disk()
-        self.do_hive()
-        self.do_lnk()
-        self.do_prefetch()
-        self.do_plaso()
-        self.do_maximum_plaso_parser()
+        #self.do_system_info()
+        #self.do_network()
+        #self.do_process()
+        #self.do_disk()
+        #self.do_hive()
+        #self.do_lnk()
+        #self.do_prefetch()
+        self.do_mft()
+        #self.do_evtx()
+        #self.do_plaso()
+        #self.do_maximum_plaso_parser()
         self.logger_run.info("[PARSING][ARTEFACTS]", header="FINISHED", indentation=0)
 
 def parse_args():
