@@ -57,6 +57,8 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
       TOOL_PATH: "/python-docker/DOPP_MODULE/outils"
+      ELK_HOST: ${ELK_HOST}
+      ELK_PORT: ${ELK_PORT}
 
     volumes:
       - /home/hro/Documents/shared:/python-docker/shared_files/

@@ -6,4 +6,4 @@ py7zr
 regipy
 LnkParse3
 xmltodict
-
+elasticsearch~=8.0 #set your elk compatible version here

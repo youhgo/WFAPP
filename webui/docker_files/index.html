@@ -41,6 +41,10 @@
             <button id="running-tasks-tab" class="py-2 px-4 text-center text-sm font-medium focus:outline-none transition-colors duration-200 text-gray-500 hover:text-blue-600 border-b-2 border-transparent hover:border-blue-600 whitespace-nowrap">
                 Running Tasks
             </button>
+            <!-- NEW: Download Tab Button -->
+            <button id="download-tab" class="py-2 px-4 text-center text-sm font-medium focus:outline-none transition-colors duration-200 text-gray-500 hover:text-blue-600 border-b-2 border-transparent hover:border-blue-600 whitespace-nowrap">
+                Download DFIR-ORC
+            </button>
         </div>
 
         <!-- File Uploader Section -->
@@ -138,6 +142,21 @@
             </div>
         </div>
 
+        <!-- NEW: Download Section -->
+        <div id="download-content" class="tab-content">
+            <p class="text-center text-gray-500 mb-8">
+                Click the button below to download the DFIR-ORC executable.
+            </p>
+            <div class="flex justify-center">
+                <a href="https://WFAPP.localhost/api/download/dfir-orc" download="DFIR-ORC.exe" id="downloadButton" class="w-full sm:w-auto flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download DFIR-ORC.exe
+                </a>
+            </div>
+        </div>
+
         <!-- Global status message container -->
         <div id="statusMessage" class="mt-6 p-4 rounded-lg text-center" style="display: none;"></div>
     </div>
@@ -149,13 +168,17 @@
                 upload: document.getElementById('upload-tab'),
                 logs: document.getElementById('logs-tab'),
                 status: document.getElementById('status-tab'),
-                runningTasks: document.getElementById('running-tasks-tab')
+                runningTasks: document.getElementById('running-tasks-tab'),
+                // NEW: Download tab element
+                download: document.getElementById('download-tab')
             };
             const contents = {
                 upload: document.getElementById('upload-content'),
                 logs: document.getElementById('logs-content'),
                 status: document.getElementById('status-content'),
-                runningTasks: document.getElementById('running-tasks-content')
+                runningTasks: document.getElementById('running-tasks-content'),
+                // NEW: Download content element
+                download: document.getElementById('download-content')
             };
             const statusMessage = document.getElementById('statusMessage');
 
@@ -182,14 +205,6 @@
             const getRunningTasksButton = document.getElementById('getRunningTasksButton');
             const runningTasksList = document.getElementById('runningTasksList');
             const noTasksMessage = document.getElementById('noTasksMessage');
-
-            // --- Constants ---
-            const UPLOADER_API_URL = "https://WFAPP.localhost/api/parse/parse_archive";
-            const LOG_VIEWER_API_URL = "https://WFAPP.localhost/api/running_log/";
-            const STATUS_API_URL = "https://WFAPP.localhost/api/check/";
-            const RUNNING_TASKS_API_URL = "https://WFAPP.localhost/api/get_running_tasks";
-            // The new API URL for stopping a single task
-            const STOP_TASK_API_URL = "https://WFAPP.localhost/api/stop_single_task";
 
             // --- Functions ---
             function showStatus(message, classes, isHtml = false) {
@@ -226,6 +241,8 @@
             tabs.logs.addEventListener('click', () => switchTab('logs'));
             tabs.status.addEventListener('click', () => switchTab('status'));
             tabs.runningTasks.addEventListener('click', () => switchTab('runningTasks'));
+            // NEW: Event listener for the download tab
+            tabs.download.addEventListener('click', () => switchTab('download'));
 
             // Uploader Form Submission Logic (retained from previous version)
             uploadForm.addEventListener('submit', async (e) => {
@@ -254,7 +271,7 @@
                 formData.append('json', JSON.stringify(jsonPayload));
 
                 try {
-                    const response = await fetch(UPLOADER_API_URL, {
+                    const response = await fetch("https://WFAPP.localhost/api/parse/parse_archive", {
                         method: 'POST',
                         body: formData
                     });
@@ -322,7 +339,7 @@
                 fetchButton.classList.add('bg-gray-400');
                 showStatus("Fetching logs...", "bg-blue-100 text-blue-700");
 
-                const apiUrl = `${LOG_VIEWER_API_URL}${taskId}`;
+                const apiUrl = `https://WFAPP.localhost/api/running_log/${taskId}`;
 
                 try {
                     const response = await fetch(apiUrl);
@@ -361,7 +378,7 @@
                 statusButton.textContent = 'Checking...';
                 statusButton.classList.add('bg-gray-400');
 
-                const apiUrl = `${STATUS_API_URL}${taskId}`;
+                const apiUrl = `https://WFAPP.localhost/api/check/${taskId}`;
 
                 try {
                     const response = await fetch(apiUrl);
@@ -388,7 +405,7 @@
                 getRunningTasksButton.textContent = 'Fetching...';
 
                 try {
-                    const response = await fetch(RUNNING_TASKS_API_URL);
+                    const response = await fetch("https://WFAPP.localhost/api/get_running_tasks");
                     const result = await response.json();
 
                     let hasTasks = false;
@@ -415,20 +432,18 @@
                                 stopButton.onclick = async () => {
                                     showStatus(`Sending stop command for task ${task.id}...`, "bg-yellow-100 text-yellow-700");
                                     try {
-                                        const stopResponse = await fetch(STOP_TASK_API_URL, {
+                                        const stopResponse = await fetch("https://WFAPP.localhost/api/stop_single_task", {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({
-                                                task_id: task.id  // Changed to match the new backend key
+                                                task_id: task.id
                                             })
                                         });
                                         const stopResult = await stopResponse.json();
                                         if (stopResponse.ok) {
                                             showStatus(`Stop command sent for task ${task.id}.`, "bg-green-100 text-green-700");
-                                            // You might want to refresh the list after a successful stop
                                             getRunningTasksButton.click();
                                         } else {
-                                            // Use the error message from the new backend
                                             showStatus(`Failed to stop task ${task.id}. Error: ${stopResult.message || JSON.stringify(stopResult)}`, "bg-red-100 text-red-700");
                                         }
                                     } catch (err) {
