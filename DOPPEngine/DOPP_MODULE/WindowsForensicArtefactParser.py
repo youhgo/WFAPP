@@ -6794,15 +6794,15 @@ class WindowsForensicArtefactParser:
     """
 
     def __init__(self, path_to_archive, output_directory, case_name, machine_name="", separator='|', main_id="",
-                 artefact_config=None, main_config_file=None) -> None:
+                 artefact_config=None, main_config=None) -> None:
         """
         Constructor for the WindowsForensicArtefactParser Class
 
         :param output_directory: (str) directory where the results file will be written
         :param separator: (str) separator for csv output file
         :param case_name:  (str) name that will be set into json result files (for practical purpose with elk)
-        :param main_config_file: (str) full path to a json file containing the main configuration configuration
-        :param artefact_config_file: (str) full path to a json file containing the configuration for the atefacts names
+        :param main_config_file: (dict) json str containing the main configuration 
+        :param artefact_config: (dict) json str containing the configuration for the artefacts names
         """
 
         self.ascii_art_wfap = r"""
@@ -6945,6 +6945,25 @@ class WindowsForensicArtefactParser:
         else:
             self.artefact_config = artefact_config
 
+        if not main_config:
+            self.main_config = {
+                "disk": 1,
+                "elk": 0,
+                "evtx": 1,
+                "hive": 1,
+                "mft": 1,
+                "mpp": 1,
+                "network": 1,
+                "lnk": 1,
+                "plaso": 1,
+                "prefetch": 1,
+                "process": 1,
+                "system_info": 1
+            }
+        else:
+            self.main_config = main_config
+            
+
         self.plaso_storage_file = os.path.join(self.timeline_dir, "timeline.plaso")
         self.l2t_log_file = os.path.join(self.timeline_dir, "l2t.log.gz")
         self.psort_log_file = os.path.join(self.timeline_dir, "l2t.log.gz")
@@ -7052,6 +7071,7 @@ class WindowsForensicArtefactParser:
             self.logger_run.info("[CREATING][LOG2TIMELINE]", header="START", indentation=2)
             tool_path = "log2timeline.py"
             my_cmd = ["{}".format(tool_path),
+                      "--parsers", "{}".format("all"),
                       "--logfile", "{}".format(self.l2t_log_file),
                       "--storage-file", "{}".format(self.plaso_storage_file),
                       "{}".format(self.extracted_dir)]
@@ -7396,19 +7416,35 @@ class WindowsForensicArtefactParser:
         f_manager.rename_nested_folder(self.extracted_dir)
         self.move_artefact_no_parsing()
         self.logger_run.info("[PARSING][ARTEFACTS]", header="START", indentation=0)
-        self.do_system_info()
-        self.do_network()
-        self.do_process()
-        self.do_disk()
-        self.do_hive()
-        self.do_lnk()
-        self.do_prefetch()
-        self.do_mft()
-        self.do_evtx()
+
+        if self.main_config.get("system_info", False):
+            self.do_system_info()
+        if self.main_config.get("network", False):
+            self.do_network()
+        if self.main_config.get("process", False):
+            self.do_process()
+        if self.main_config.get("disk", False):
+            self.do_disk()
+        if self.main_config.get("hive", False):
+            self.do_hive()
+        if self.main_config.get("lnk", False):
+            self.do_lnk()
+        if self.main_config.get("prefetch", False):
+            self.do_prefetch()
+        if self.main_config.get("mft", False):
+            self.do_mft()
+        if self.main_config.get("evtx", False):
+            self.do_evtx()
+
         self.clean_duplicates(self.result_parsed_dir)  # Need to be fixed
-        self.do_plaso()
-        self.do_maximum_plaso_parser()
-        self.do_elk()
+
+        if self.main_config.get("plaso", False):
+            self.do_plaso()
+            if self.main_config.get("mpp", False):
+                self.do_maximum_plaso_parser()
+        if self.main_config.get("elk", False):
+            self.do_elk()
+
         self.logger_run.info("[PARSING][ARTEFACTS]", header="FINISHED", indentation=0)
 
 def parse_args():

@@ -1,57 +1,52 @@
-# Dfir ORC Parser Project
+# Windows Forensic Artefact Parser Project (WFAPP) 💻
 
-To have more info about DOPP:
+> A fast and simple Docker-based solution for parsing Windows forensic artifacts and generating human-readable results.
 
-* How to install DOPP, tutorial [here](https://youhgo.github.io/DOPP-how-to-install-EN/)
-* How to use DOPP, tutorial [here](https://youhgo.github.io/DOPP-how-to-use-EN/)
-* DOPP result architecture, explained [here](https://youhgo.github.io/DOPP-Results/)
-* How to configure DFIR-ORC tutorial [here](https://youhgo.github.io/DOPP-Config-ORC-EN/)
+---
 
+### Key Links
 
-## What is DOPP ?
+* **Documentation:** [Installation Guide](https://youhgo.github.io/DOPP-how-to-install-EN/) | [Usage Guide](https://youhgo.github.io/DOPP-how-to-use-EN/) | [Results Architecture](https://youhgo.github.io/DOPP-Results/)
 
-The purpose of DOPP is to provide the necessary tools for parsing Windows artifacts (event logs, MFT, registry hives, amcache, etc.) as part of a digital forensics investigation.
-Dopp produces extremely simple and readable results, allowing analysts to find the information they need directly.
+* **DFIR-ORC Configuration:** [Tutorial](https://youhgo.github.io/DOPP-Config-ORC-EN/)
 
-Dopp is designed to process archives provided by the [DFIR-ORC](https://github.com/dfir-orc) collection tool from ANSSI.
-It is also compatible with all archive containing raw artefact(eg evtx files, mft, registry.hve etc).
+---
 
-DOPP is:
+## 🧐 What is WFAPP?
 
-* Fast: ~5 minutes to process a 500MB archive (excluding PLASO);
-* Easily installable with Docker;
-* Simple to use.
+WFAPP is an all-in-one solution designed to provide a fast, simple, and reliable way to parse Windows artifacts (event logs, MFT, registry hives, and more).
 
-The tool contain a web server with an API for sending archive and consulting the status of processing.
+The tool is designed to process archives from the [DFIR-ORC](https://github.com/dfir-orc) collection tool but is compatible with any archive containing raw artifacts, like the one from [Kape](https://www.kroll.com/en/services/cyber/incident-response-recovery/kroll-artifact-parser-and-extractor-kape).
 
-There is NO Web or GUI interface to see the results.
-All the results are CSV files formated to be easy to read and to GREP.
+### Key Advantages:
 
-Soon, Json output is will be available for SIEM ingestion.
+* **Fast:** Processes a 500MB archive in \~5 minutes (excluding Plaso).
+* **Simple:** Easily installable with a single `docker compose up` command.
+* **Effective:** Produces highly readable CSV files, allowing analysts to start investigations immediately.
 
-This architecture is perfect for teamwork because it regroups all the tools and evidences.
-Any analyst can send evidence for processing or access their results as long as they have access to the api for sending
-and to the share result folder for consulting.
+---
 
-![](./ressources/images/DOPP_SIMPLE.png)
+## 🚀 How It Works
 
-## What does DOPP do ?
+WFAPP automates the forensic parsing workflow in a seamless pipeline:
 
-DOPP Will : 
-* Process a DFIR ORC Archive;
-* Parse the evidences;
-* Create a Timeline.
+1. **Ingestion:** Processes a DFIR-ORC archive or any archive containing raw artifacts.
+2. **Parsing:** Parses all the collected evidence using a suite of powerful internal and external tools.
+3. **Output:** Creates ultra-readable CSV files for quick analysis.
+4. **Timeline Creation:** Ingests all evidence with Plaso to create a comprehensive timeline.
+5. **Integration:** The timeline can be sent to Elastic using the integrated pipeline and a pipeline for TimeSketch is in development.
 
-All the results are formated in a "human-readable way".
-Here is an example of the results. We can directly see:
+---
 
-* The use of Mimikatz;
-* The Cobalt Strike beacon;
-* The backdoor;
-* The ransomware;
-* The disabling of the antivirus;
-* The compromised user's connections.
+## 📈 Example Results
 
+WFAPP produces clear, actionable results by focusing on the most relevant information.
+
+In this example, we can quickly identify key events like:
+* Mimikatz and Cobalt Strike beacon usage.
+* Backdoor and ransomware activity.
+* Antivirus disabling.
+* Compromised user connections.
 
 ```bash
  rg -i "2021-01-07\|03.(3|4|5)" user_logon_id4624.csv new_service_id7045.csv amcache.csv app_compat_cache.csv powershell.csv windefender.csv 
@@ -73,51 +68,42 @@ new_service_id7045.csv
 2021-01-07|03:32:30|7045|LocalSystem|%COMSPEC% /Q /c echo cd  ^> \\127.0.0.1\C$\__output 2^>^&1 > %TEMP%\execute.bat & %COMSPEC% /Q /c %TEMP%\execute.bat & del %TEMP%\execute.bat|BTOBTO
 
 user_logon_id4624.csv
-2021-01-07|03:30:12|4624|-|GRAAL$|::1|65229|3
 2021-01-07|03:31:26|4624|-|MSOL_0537fce40030|192.168.88.136|54180|3
 2021-01-07|03:31:38|4624|-|arthur|192.168.88.137|54028|3
-2021-01-07|03:32:12|4624|-|GRAAL$|::1|65235|3
-2021-01-07|03:32:30|4624|-|arthur|192.168.88.137|54100|3
-2021-01-07|03:32:45|4624|-|GRAAL$|-|-|3
-2021-01-07|03:32:57|4624|-|arthur|192.168.88.137|54140|3
 ```
 
+---
 
-Dopp uses externals tools listed here :
+## 🛠️ Tool Architecture & Design
 
-* [SRUM PARSER](https://github.com/MarkBaggett/srum-dump)
-* [PREFETCH PARSER](http://www.505forensics.com)
-* [PLASO](https://github.com/log2timeline/plaso)
-* [EVTX DUMP](https://github.com/0xrawsec/golang-evtx)
-* [ESE-analyst](https://github.com/MarkBaggett/ese-analyst)
-* [analyzeMFT](https://github.com/rowingdude/analyzeMFT)
-* [RegRipper](https://github.com/keydet89/RegRipper3.0)
-* [regpy](https://pypi.org/project/regipy/)
-* [MaximumPlasoParser](https://github.com/Xbloro/maximumPlasoTimelineParser)
-*  [HAYABUSA](https://github.com/Yamato-Security/hayabusa)
-* [orc2Timeline](https://github.com/ANSSI-FR/orc2timeline/blob/main/LICENSE)
+WFAPP's architecture is built for simplicity and teamwork:
 
-## How does it work ?
-![](./ressources/images/DOPP.png)
+* **Dockerized:** The entire toolchain is containerized, making it incredibly easy to set up and run with a single command.
+* **API-Driven:** The built-in web server provides an API for sending archives and checking the status of processing tasks.
+* **Shared Results:** All results are stored in a shared folder, allowing any analyst with access to the share to review and analyze the data independently.
+* **No bullSh*t:** No shitty GUI to interact with the results, only CSV/Json, so you can investigate the way you want.
 
-Everything is dockerized.
-
-Container used are :
-
-- Traefik as a reverse proxy;
-- redis as a broker;
-- Flask + Celery as the API server / broker workers;
-- Dopp engine as the main working code.
-
-Everything is enclosed to the docker-compose.yml and Dockerfile
+<img src="./ressources/images/wfapp.png" width="800" alt="WFAPP System Architecture">
 
 
+The tool also includes a simple Web GUI for common tasks:
+* Upload archives.
+* Check logs and parsing status.
+* Download the DFIR-Orc.exe binary.
+* Stop running tasks.
 
+<img src="./ressources/images/Gui_main.png" width="800" alt="WFAPP System Architecture">
 
+---
 
+## 🔗 External Tools & Resources
 
+WFAPP leverages the power of these fantastic open-source tools:
 
-
-
-
-
+* [**PREFETCH PARSER**](http://www.505forensics.com)
+* [**PLASO**](https://github.com/log2timeline/plaso)
+* [**EVTX DUMP**](https://github.com/0xrawsec/golang-evtx)
+* [**analyzeMFT**](https://github.com/rowingdude/analyzeMFT)
+* [**regpy**](https://pypi.org/project/regipy/)
+* [**YARP**](https://github.com/msuhanov/yarp)
+* [**MaximumPlasoParser**](https://github.com/Xbloro/maximumPlasoTimelineParser)

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DFIR Web Portal</title>
+    <title>WFAP WEB Portal</title>
     <!-- Tailwind CSS CDN for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -25,7 +25,7 @@
 
     <!-- Main container for the application -->
     <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-4xl">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">DFIR Web Portal</h1>
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">WFAP Web Portal</h1>
 
         <!-- Tab navigation for switching views -->
         <div class="flex border-b border-gray-200 mb-6 overflow-x-auto">
@@ -50,7 +50,11 @@
         <!-- File Uploader Section -->
         <div id="upload-content" class="tab-content active">
             <p class="text-center text-gray-500 mb-8">
-                Select a file and provide case details and parsing options to submit.
+                Select the Forensic Archive you want to parse and provide case details.
+                </br>
+                WFAPP only parse archive (Zip or 7z) that contain raw artefacts (like evtx, MFT$, .pf, etc).
+                </br>
+                Please note that the index for Elastic ingestion will be caseName_machineName.
             </p>
             <form id="uploadForm" class="space-y-6">
                 <div>
@@ -59,11 +63,11 @@
                 </div>
                 <div>
                     <label for="caseName" class="block text-sm font-medium text-gray-700 mb-1">Case Name</label>
-                    <input type="text" id="caseName" name="caseName" required placeholder="e.g., POP_I" class="shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <input type="text" id="caseName" name="caseName" required placeholder="e.g., MyAwsomeCaseName" class="shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
                 <div>
                     <label for="machineName" class="block text-sm font-medium text-gray-700 mb-1">Machine Name</label>
-                    <input type="text" id="machineName" name="machineName" required placeholder="e.g., IRSN-2" class="shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <input type="text" id="machineName" name="machineName" required placeholder="e.g., MyMachineName" class="shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
                 <button type="submit" id="submitButton" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
                     Upload File
