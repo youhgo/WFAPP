@@ -6801,11 +6801,11 @@ class WindowsForensicArtefactParser:
         :param output_directory: (str) directory where the results file will be written
         :param separator: (str) separator for csv output file
         :param case_name:  (str) name that will be set into json result files (for practical purpose with elk)
-        :param main_config_file: (dict) json str containing the main configuration 
+        :param main_config: (dict) json str containing the main configuration
         :param artefact_config: (dict) json str containing the configuration for the artefacts names
         """
 
-        self.ascii_art_wfap = r"""
+        self.ascii_art_wapp = r"""
         ███████╗    ██████═╗ ██████╗ ██████╗ 
         ██╔════██╗██╔═════██╗██╔══██╗██╔══██
         ██║    ██║██║     ██║██║███ ║██║███
@@ -6816,7 +6816,7 @@ class WindowsForensicArtefactParser:
         Windows Forensic Artefect Parser Project
         Made by Hugo ROLLAND
         """
-        print(self.ascii_art_wfap)
+        print(self.ascii_art_wapp)
         self.path_to_archive = path_to_archive
         self.dir_out = output_directory
         self.case_name = case_name
@@ -6834,7 +6834,7 @@ class WindowsForensicArtefactParser:
             self.main_id = self.machine_name
 
 
-        self.tool_path = os.environ.get("TOOL_PATH", "python-docker/DOPP_MODULE/outils")
+        self.tool_path = os.environ.get("TOOL_PATH", "python-docker/WAPP_MODULE/outils")
         self.evtx_dump_path = os.path.join(self.tool_path, "evtx_dump")
         self.analyze_mft_tool_path = "/python-docker/analyzeMFT/analyzeMFT.py"
 
@@ -6944,7 +6944,7 @@ class WindowsForensicArtefactParser:
         }
         else:
             self.artefact_config = artefact_config
-
+        print(" main config is {}".format(main_config))
         if not main_config:
             self.main_config = {
                 "disk": 1,
@@ -6962,7 +6962,7 @@ class WindowsForensicArtefactParser:
             }
         else:
             self.main_config = main_config
-            
+        print(" main config is {}".format(self.main_config))
 
         self.plaso_storage_file = os.path.join(self.timeline_dir, "timeline.plaso")
         self.l2t_log_file = os.path.join(self.timeline_dir, "l2t.log.gz")
@@ -7071,7 +7071,6 @@ class WindowsForensicArtefactParser:
             self.logger_run.info("[CREATING][LOG2TIMELINE]", header="START", indentation=2)
             tool_path = "log2timeline.py"
             my_cmd = ["{}".format(tool_path),
-                      "--parsers", "{}".format("all"),
                       "--logfile", "{}".format(self.l2t_log_file),
                       "--storage-file", "{}".format(self.plaso_storage_file),
                       "{}".format(self.extracted_dir)]
@@ -7515,9 +7514,10 @@ if __name__ == '__main__':
                                       output_directory=args.output_dir,
                                       case_name=args.case_name,
                                       machine_name=args.machine_name,
+                                      separator="|",
                                       main_id=None,
                                       artefact_config=None,
-                                      main_config_file=None)
+                                      main_config=None)
         mp.do()
 
     else:

@@ -3,7 +3,7 @@ version: "2"
 services:
   reverse_proxy:
     image: "traefik:latest"
-    container_name: "wfapp_traefik"
+    container_name: "wapp_traefik"
     ports:
       - "443:443"
       - "8080:8080"
@@ -13,7 +13,7 @@ services:
       - ./dependencies/traefik/traefik.yml:/etc/traefik/traefik.yml
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      - WFAPPNet
+      - wappNet
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik=true"
@@ -21,42 +21,42 @@ services:
       - redis
 
   redis:
-    container_name: 'wfapp_redis'
+    container_name: 'wapp_redis'
     image: 'redis:4-alpine'
     ports:
       - '6379:6379'
     expose:
       - '6379'
     networks:
-        - WFAPPNet
+        - wappNet
 
-  wfapp_api:
+  wapp_api:
     build:
       context: api/
       dockerfile: docker_files/Dockerfile
-    container_name: "wfapp_api"
-    image: wfapp-api
+    container_name: "wapp_api"
+    image: wapp-api
     networks:
-      - WFAPPNet
+      - wappNet
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.wfapp.rule=Host(`WFAPP.localhost`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.wfapp.tls=true"
-      - "traefik.http.services.wfapp.loadbalancer.server.port=8880"
+      - "traefik.http.routers.wapp.rule=Host(`wapp.localhost`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.wapp.tls=true"
+      - "traefik.http.services.wapp.loadbalancer.server.port=8880"
     volumes:
       - /home/hro/Documents/shared:/python-docker/shared_files/
 
-  wfappWorker:
-    image: wfapp-worker
+  wapp_worker:
+    image: wapp-worker
     build:
-      context: ./DOPPEngine
-      dockerfile: DOPP_MODULE/docker_files/Dockerfile
-    container_name: "wfapp_worker"
+      context: ./WAPPEngine
+      dockerfile: WAPP_MODULE/docker_files/Dockerfile
+    container_name: "wapp_worker"
     command : celery -A tasks worker -l info -E -Q parse
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
-      TOOL_PATH: "/python-docker/DOPP_MODULE/outils"
+      TOOL_PATH: "/python-docker/WAPP_MODULE/outils"
       ELK_HOST: ${ELK_HOST}
       ELK_PORT: ${ELK_PORT}
 
@@ -65,27 +65,27 @@ services:
     depends_on:
       - redis
     networks:
-      - WFAPPNet
+      - wappNet
 
   web_interface:
     build:
       context: webui/
       dockerfile: docker_files/Dockerfile
-    container_name: "wfapp_web"
-    image: wfapp-web
+    container_name: "wapp_web"
+    image: wapp-web
     networks:
-      - WFAPPNet
+      - wappNet
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.wfapp-web.rule=Host(`WFAPP.localhost`) && PathPrefix(`/`)"
-      - "traefik.http.routers.wfapp-web.tls=true"
-      - "traefik.http.services.wfapp-web.loadbalancer.server.port=80"
+      - "traefik.http.routers.wapp-web.rule=Host(`wapp.localhost`) && PathPrefix(`/`)"
+      - "traefik.http.routers.wapp-web.tls=true"
+      - "traefik.http.services.wapp-web.loadbalancer.server.port=80"
     depends_on:
-      - wfapp_api
+      - wapp_api
       - reverse_proxy
 
 networks:
-    WFAPPNet:
+    wappNet:
 
 volumes:
   shared_files:

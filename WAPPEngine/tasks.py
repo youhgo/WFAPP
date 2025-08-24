@@ -2,7 +2,7 @@ import sys
 import os
 import traceback
 from celery import Celery
-from DOPP_MODULE.WindowsForensicArtefactParser import WindowsForensicArtefactParser
+from WAPP_MODULE.WindowsForensicArtefactParser import WindowsForensicArtefactParser
 
 SHARED_FOLDER_PATH = "/python-docker/shared_files/"
 DEPOT_FOLDER_PATH = os.path.join(SHARED_FOLDER_PATH, "depot")
@@ -35,18 +35,20 @@ def parse_archive(content, file_name):
         parser_config = content.get('parser_config', None)
         artefact_config = content.get('artefact_config', None)
 
-        wfap_parser = WindowsForensicArtefactParser(path_to_archive=archive_path,
+        wapp_parser = WindowsForensicArtefactParser(path_to_archive=archive_path,
                                                     output_directory=WORKING_FOLDER_PATH,
                                                     case_name=case_name,
                                                     machine_name=machine_name,
+                                                    separator="|",
                                                     main_id=main_id,
                                                     artefact_config=artefact_config,
-                                                    main_config_file=parser_config)
+                                                    main_config=parser_config)
 
-        wfap_parser.do()
+        wapp_parser.do()
         return {"taskId": "{}".format(main_id), "WokerStatus": "finished"}
 
     except Exception as ex:
+
         sys.stderr.write("\nerror : {}\n".format(traceback.format_exc()))
         return {"taskId": "{}".format(parse_archive.request.id), "WokerStatus": "Failled"}
 

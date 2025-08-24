@@ -1,4 +1,4 @@
-# Windows Forensic Artefact Parser Project (WFAPP) 💻
+# Windows Forensic Artefact Parser Project (WAPP) 💻
 
 > A fast and simple Docker-based solution for parsing Windows forensic artifacts and generating human-readable results.
 
@@ -12,9 +12,9 @@
 
 ---
 
-## 🧐 What is WFAPP?
+## 🧐 What is WAPP?
 
-WFAPP is an all-in-one solution designed to provide a fast, simple, and reliable way to parse Windows artifacts (event logs, MFT, registry hives, and more).
+WAPP is an all-in-one solution designed to provide a fast, simple, and reliable way to parse Windows artifacts (event logs, MFT, registry hives, and more).
 
 The tool is designed to process archives from the [DFIR-ORC](https://github.com/dfir-orc) collection tool but is compatible with any archive containing raw artifacts, like the one from [Kape](https://www.kroll.com/en/services/cyber/incident-response-recovery/kroll-artifact-parser-and-extractor-kape).
 
@@ -28,7 +28,7 @@ The tool is designed to process archives from the [DFIR-ORC](https://github.com/
 
 ## 🚀 How It Works
 
-WFAPP automates the forensic parsing workflow in a seamless pipeline:
+WAPP automates the forensic parsing workflow in a seamless pipeline:
 
 1. **Ingestion:** Processes a DFIR-ORC archive or any archive containing raw artifacts.
 2. **Parsing:** Parses all the collected evidence using a suite of powerful internal and external tools.
@@ -40,7 +40,7 @@ WFAPP automates the forensic parsing workflow in a seamless pipeline:
 
 ## 📈 Example Results
 
-WFAPP produces clear, actionable results by focusing on the most relevant information.
+WAPP produces clear, actionable results by focusing on the most relevant information.
 
 In this example, we can quickly identify key events like:
 * Mimikatz and Cobalt Strike beacon usage.
@@ -76,14 +76,14 @@ user_logon_id4624.csv
 
 ## 🛠️ Tool Architecture & Design
 
-WFAPP's architecture is built for simplicity and teamwork:
+WAPP's architecture is built for simplicity and teamwork:
 
 * **Dockerized:** The entire toolchain is containerized, making it incredibly easy to set up and run with a single command.
 * **API-Driven:** The built-in web server provides an API for sending archives and checking the status of processing tasks.
 * **Shared Results:** All results are stored in a shared folder, allowing any analyst with access to the share to review and analyze the data independently.
 * **No bullSh*t:** No shitty GUI to interact with the results, only CSV/Json, so you can investigate the way you want.
 
-<img src="./ressources/images/wfapp.png" width="800" alt="WFAPP System Architecture">
+<img src="./ressources/images/WAPP.png" width="800" alt="WAPP System Architecture">
 
 
 The tool also includes a simple Web GUI for common tasks:
@@ -92,13 +92,13 @@ The tool also includes a simple Web GUI for common tasks:
 * Download the DFIR-Orc.exe binary.
 * Stop running tasks.
 
-<img src="./ressources/images/Gui_main.png" width="800" alt="WFAPP System Architecture">
+<img src="./ressources/images/Gui_main.png" width="800" alt="WAPP System Architecture">
 
 ---
 
 ## 🔗 External Tools & Resources
 
-WFAPP leverages the power of these fantastic open-source tools:
+WAPP leverages the power of these fantastic open-source tools:
 
 * [**PREFETCH PARSER**](http://www.505forensics.com)
 * [**PLASO**](https://github.com/log2timeline/plaso)

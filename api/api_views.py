@@ -6,8 +6,9 @@ import celery.states as states
 from datetime import datetime
 import os
 import json
+from random import randint
 
-wfapp_api = Blueprint('wfapp_api', __name__)
+wapp_api = Blueprint('wapp_api', __name__)
 SHARED_FOLDER_PATH = "/python-docker/shared_files/"
 DEPOT_FOLDER_PATH = os.path.join(SHARED_FOLDER_PATH, "depot")
 WORKING_FOLDER_PATH = os.path.join(SHARED_FOLDER_PATH, "work")
@@ -16,7 +17,7 @@ LOG_FOLDER_PATH = os.path.join(WORKING_FOLDER_PATH, "execution_logs")
 RESOURCES_FOLDER_PATH = "/python-docker/ressources"
 
 
-@wfapp_api.route("/")
+@wapp_api.route("/")
 def index():
     """
     api function to welcom user and check if co is ok
@@ -37,7 +38,7 @@ def index():
     return jsonify(response)
 
 
-@wfapp_api.route("/index")
+@wapp_api.route("/index")
 def gui_index():
     """
     api function to welcom user and check if co is ok
@@ -52,7 +53,7 @@ def gui_index():
     return render_template('index.html')
 
 
-@wfapp_api.route('/api/stop_task/<task_id>', methods=['POST'])
+@wapp_api.route('/api/stop_task/<task_id>', methods=['POST'])
 def stop_single_task(task_id):
     """
     api function to kill task
@@ -76,7 +77,7 @@ def stop_single_task(task_id):
         return jsonify(response), 500
 
 
-@wfapp_api.route('/api/get_running_tasks')
+@wapp_api.route('/api/get_running_tasks')
 def get_running_tasks():
     """
     api function to get all running tasks
@@ -109,7 +110,7 @@ def stop_task(task_list):
     return l_killed_tasks
 
 
-@wfapp_api.route('/api/get_running_tasks_parse')
+@wapp_api.route('/api/get_running_tasks_parse')
 def get_parser_tasks():
     """
     api function to get tasks related to parser module
@@ -120,7 +121,6 @@ def get_parser_tasks():
     worker_parser_name = get_parser_worker_name(all_nodes)
     worker_parser_tasks = all_nodes.active().get(worker_parser_name, [])
     return worker_parser_tasks
-
 
 def get_parser_worker_name(all_nodes):
     """
@@ -134,8 +134,7 @@ def get_parser_worker_name(all_nodes):
         if "parser" in node:
             return node
 
-
-@wfapp_api.route('/api/get_parser_worker_name')
+@wapp_api.route('/api/get_parser_worker_name')
 def get_parser_worker_name_api():
     """
     api function to get the worker id that process the parsing tasks
@@ -145,8 +144,7 @@ def get_parser_worker_name_api():
     all_nodes = celery.control.inspect()
     return jsonify(get_parser_worker_name(all_nodes))
 
-
-@wfapp_api.route('/api/get_worker_details')
+@wapp_api.route('/api/get_worker_details')
 def get_worker_details_api():
     """
     api function to get the worker id that process the parsing tasks
@@ -156,8 +154,7 @@ def get_worker_details_api():
     all_nodes = celery.control.inspect()
     return jsonify(all_nodes.stats())
 
-
-@wfapp_api.route('/api/get_task_status/<task_id>')
+@wapp_api.route('/api/get_task_status/<task_id>')
 def get_task_status(task_id):
     """
     api function to get task status
@@ -170,34 +167,11 @@ def get_task_status(task_id):
     response = {
         "task_id": task.id,
         "task_status": task.status,
-        "task_result": task.result if task.result else "N/A"
+        "task_result": task.result if task.result else "Still running"
     }
     return jsonify(response)
 
-
-@wfapp_api.route('/api/parse/parse_archive', methods=['POST'])
-def parse_archive():
-    """
-    api function to parse archive
-    :return: task id
-    :rtype: dict
-    """
-    file_to_parse = request.files['file']
-    json_data = json.loads(request.form['json'])
-    case_name = json_data['caseName']
-    machine_name = json_data['machineName']
-    file_path = os.path.join(DEPOT_FOLDER_PATH, file_to_parse.filename)
-    file_to_parse.save(file_path)
-    task = celery.send_task('worker.parse_archive', args=[file_path, case_name, machine_name])
-    response = {
-        "taskId": task.id,
-        "statusUrl": f"/api/get_task_status/{task.id}",
-        "runLogUrl": f"/api/running_log/{task.id}"
-    }
-    return jsonify(response)
-
-
-@wfapp_api.route('/api/running_log/<task_id>')
+@wapp_api.route('/api/running_log/<task_id>')
 def running_log(task_id):
     """
     api function to get running log
@@ -206,7 +180,7 @@ def running_log(task_id):
     :return: log file
     :rtype: str
     """
-    log_file = os.path.join(LOG_FOLDER_PATH, f"{task_id}.log")
+    log_file = os.path.join(LOG_FOLDER_PATH, f"{task_id}_running.log")
     try:
         with open(log_file, "r") as f:
             return Response(f.read(), mimetype='text/plain')
@@ -215,8 +189,7 @@ def running_log(task_id):
     except Exception as e:
         return jsonify({"ERROR": str(e), "TASKID": task_id}), 500
 
-
-@wfapp_api.route('/api/download/dfir-orc')
+@wapp_api.route('/api/download/dfir-orc')
 def download_dfir_orc():
     try:
         print("Trying to send:", os.path.join(RESOURCES_FOLDER_PATH, 'DFIR-Orc.exe'), file=sys.stderr)
@@ -231,9 +204,7 @@ def download_dfir_orc():
         print(f"Error during download: {e}", file=sys.stderr)
         abort(500, description="Internal Server Error during download.")
 
-
-
-@wfapp_api.route('/api/debug/list_resources')
+@wapp_api.route('/api/debug/list_resources')
 def list_resources_api():
     """
     API function to list the contents of the 'resources' directory for debugging.
@@ -266,3 +237,26 @@ def list_resources_api():
             "message": f"An error occurred: {str(e)}"
         }
         return jsonify(response), 500
+
+'''
+@wapp_api.route('/api/parse/parse_archive', methods=['POST'])
+def parse_archive():
+    """
+    api function to parse archive
+    :return: task id
+    :rtype: dict
+    """
+    file_to_parse = request.files['file']
+    json_data = json.loads(request.form['json'])
+    case_name = json_data['caseName']
+    machine_name = json_data['machineName']
+    file_path = os.path.join(DEPOT_FOLDER_PATH, file_to_parse.filename)
+    file_to_parse.save(file_path)
+    task = celery.send_task('worker.parse_archive', args=[file_path, case_name, machine_name])
+    response = {
+        "taskId": task.id,
+        "statusUrl": f"/api/get_task_status/{task.id}",
+        "runLogUrl": f"/api/running_log/{task.id}"
+    }
+    return jsonify(response)
+'''

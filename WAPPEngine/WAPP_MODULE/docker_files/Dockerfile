@@ -30,17 +30,17 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Python packages from requirements.txt
-COPY DOPP_MODULE/docker_files/requirements.txt requirements.txt
+COPY WAPP_MODULE/docker_files/requirements.txt requirements.txt
 RUN pip3 install --upgrade pip && \
     pip3 install -U setuptools pip && \
     pip3 install -r requirements.txt --ignore-installed
 
 # Install yarp package from local tarball
-COPY DOPP_MODULE/docker_files/yarp-1.0.33.tar.gz yarp-1.0.33.tar.gz
+COPY WAPP_MODULE/docker_files/yarp-1.0.33.tar.gz yarp-1.0.33.tar.gz
 RUN pip3 install ./yarp-1.0.33.tar.gz
 
 # Run the install script for analyzeMFT
-COPY DOPP_MODULE/docker_files/install_analyzemft.sh install_analyzemft.sh
+COPY WAPP_MODULE/docker_files/install_analyzemft.sh install_analyzemft.sh
 RUN ./install_analyzemft.sh
 
 # Copy the rest of the application code

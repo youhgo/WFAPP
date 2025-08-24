@@ -9,10 +9,10 @@ def create_app():
     """
 
     app = Flask(__name__)
-    from api_views import wfapp_api
+    from api_views import wapp_api
     from api_parse import parse_api
 
-    app.register_blueprint(wfapp_api, url_prefix='/')
+    app.register_blueprint(wapp_api, url_prefix='/')
     app.register_blueprint(parse_api, url_prefix='/api/parse')
     app.config['CELERY_BROKER_URL'] = 'redis://redis:6379/0'
     app.config['CELERY_RESULT_BACKEND'] = 'redis://redis:6379/0'

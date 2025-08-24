@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y nano python-dev
 COPY docker_files/requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 COPY . .
-CMD [ "python3",  "wfapp_server.py"]
+CMD [ "python3",  "wapp_server.py"]
 
 
 
