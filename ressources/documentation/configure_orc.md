@@ -9,8 +9,8 @@ This guide provides step-by-step instructions on how to configure the DFIR-ORC c
 * **WAPP Repository:** [Available here](https://github.com/youhgo/WFAPP)
 ---
 
-I've made an ready to go DFIR-ORC Binary available [DFIR-ORC](https://github.com/youhgo/WFAPP/tree/master/api/ressources) collector. 
- if you dont wanna bother do thoses steps.
+I've made a ready to go DFIR-ORC Binary available [DFIR-ORC](https://github.com/youhgo/WFAPP/tree/master/api/ressources) collector. 
+ if you do not want to bother with thoses steps.
 
 ## What is ORC ?
 
@@ -79,9 +79,10 @@ Navigate to the `config/` directory and edit the `DFIR-ORC_embed.xml` file.
 Remove the following lines to prevent the tool from embedding memory dump tools, which are not needed for our configuration.
 
 ```xml
-		<file name="dumpit" path=".\tools\DumpIt.exe" />
-		<file name="winpmem" path=".\tools\winpmem.exe" />
+<file name="dumpit" path=".\tools\DumpIt.exe" />
+<file name="winpmem" path=".\tools\winpmem.exe" />
 ```
+
 Those line indicate to ORC-CONFIG to embed the tools "DumpIt" and "Winpmem" into the ORC binary. Since we don't wanna do a ram memory dump, we don't need this tools.
 If you still want to do a memory dump, keep those two lines.
 you will need to download DumpIt.exe and winpmem.exe and place them in the `tools` directory.
