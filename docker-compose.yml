@@ -1,0 +1,92 @@
+version: "2"
+
+services:
+  reverse_proxy:
+    image: "traefik:latest"
+    container_name: "wapp_traefik"
+    ports:
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - ./dependencies/traefik/certs:/etc/certs
+      - ./dependencies/traefik/config.yml:/etc/traefik/config.yml
+      - ./dependencies/traefik/traefik.yml:/etc/traefik/traefik.yml
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - wappNet
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik=true"
+    depends_on:
+      - redis
+
+  redis:
+    container_name: 'wapp_redis'
+    image: 'redis:4-alpine'
+    ports:
+      - '6379:6379'
+    expose:
+      - '6379'
+    networks:
+        - wappNet
+
+  wapp_api:
+    build:
+      context: api/
+      dockerfile: docker_files/Dockerfile
+    container_name: "wapp_api"
+    image: wapp-api
+    networks:
+      - wappNet
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wapp.rule=Host(`wapp.localhost`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.wapp.tls=true"
+      - "traefik.http.services.wapp.loadbalancer.server.port=8880"
+    volumes:
+      - /home/hro/Documents/shared:/python-docker/shared_files/
+
+  wapp_worker:
+    image: wapp-worker
+    build:
+      context: ./WAPPEngine
+      dockerfile: WAPP_MODULE/docker_files/Dockerfile
+    container_name: "wapp_worker"
+    command : celery -A tasks worker -l info -E -Q parse
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      TOOL_PATH: "/python-docker/WAPP_MODULE/outils"
+      ELK_HOST: ${ELK_HOST}
+      ELK_PORT: ${ELK_PORT}
+
+    volumes:
+      - /home/hro/Documents/shared:/python-docker/shared_files/
+    depends_on:
+      - redis
+    networks:
+      - wappNet
+
+  web_interface:
+    build:
+      context: webui/
+      dockerfile: docker_files/Dockerfile
+    container_name: "wapp_web"
+    image: wapp-web
+    networks:
+      - wappNet
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wapp-web.rule=Host(`wapp.localhost`) && PathPrefix(`/`)"
+      - "traefik.http.routers.wapp-web.tls=true"
+      - "traefik.http.services.wapp-web.loadbalancer.server.port=80"
+    depends_on:
+      - wapp_api
+      - reverse_proxy
+
+networks:
+    wappNet:
+
+volumes:
+  shared_files:
+
