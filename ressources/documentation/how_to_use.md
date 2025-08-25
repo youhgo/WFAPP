@@ -5,6 +5,15 @@ This guide covers both methods.
 
 ---
 
+## 📌 Useful Links
+
+* **WAPP Repository:** [Available here](https://github.com/youhgo/WFAPP)
+* **Installation tutorial:** [Installation Guide](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_install.md)
+* **Results explained:** [Results Architecture](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/Explaining_the_results.md)
+* **DFIR-ORC Configuration:** [Tutorial](https://youhgo.github.io/DOPP-Config-ORC-EN/)
+
+---
+
 ## 🚀 Using the Web GUI
 
 The default address for the GUI is:
