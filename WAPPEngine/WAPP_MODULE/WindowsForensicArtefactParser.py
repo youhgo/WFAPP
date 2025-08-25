@@ -2242,6 +2242,7 @@ class RegistryParser:
                     amcache_entries: List[Dict[str, Any]] = parsed_data.get("amcache", [])
 
                     if not amcache_entries:
+                        self.logger_run.warning("[PARSING][AMCACHE][REGPY] Regpy could'nt parse Amcache", header="FAILED", indentation=2)
                         return
 
                     formatted_for_csv = []

@@ -6,7 +6,7 @@ This guide will walk you through the simple process of setting up WAPP using Doc
 
 ## 🔗 Useful Links
 
-* **WAPP Repository:** <https://github.com/youhgo/WAPP>
+* **WAPP Repository:** <https://github.com/youhgo/WFAPP>
 * **Usage Tutorial:** <https://youhgo.github.io/DOPP-how-to-use-EN/>
 * **Results Architecture:** <https://youhgo.github.io/DOPP-Results/>
 
@@ -46,7 +46,7 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin 
 
 Clone the repository to your local machine:
 
-`git clone https://github.com/youhgo/WAPP`
+`git clone https://github.com/youhgo/WFAPP`
 
 ---
 
@@ -73,7 +73,7 @@ volumes:
 ```
 
 This change means all files in `/home/hro/Documents/working_zone/shared/` on your machine will be accessible by Docker.
-Every output from WAPP will be written is this directory.
+Every output from WAPP will be written is this directory and subdirectories.
 
 ---
 

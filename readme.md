@@ -6,8 +6,7 @@
 
 ### Key Links
 
-* **Documentation:** [Installation Guide](https://youhgo.github.io/DOPP-how-to-install-EN/) | [Usage Guide](https://youhgo.github.io/DOPP-how-to-use-EN/) | [Results Architecture](https://youhgo.github.io/DOPP-Results/)
-
+* **Documentation:** [Installation Guide](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_install.md) | [Usage Guide](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_use.md) | [Results Architecture](https://youhgo.github.io/DOPP-Results/)
 * **DFIR-ORC Configuration:** [Tutorial](https://youhgo.github.io/DOPP-Config-ORC-EN/)
 
 ---
@@ -21,7 +20,7 @@ The tool is designed to process archives from the [DFIR-ORC](https://github.com/
 ### Key Advantages:
 
 * **Fast:** Processes a 500MB archive in \~5 minutes (excluding Plaso).
-* **Simple:** Easily installable with a single `docker compose up` command.
+* **Simple:** Easily installable with a single `docker compose up --build` command.
 * **Effective:** Produces highly readable CSV files, allowing analysts to start investigations immediately.
 
 ---
@@ -83,7 +82,7 @@ WAPP's architecture is built for simplicity and teamwork:
 * **Shared Results:** All results are stored in a shared folder, allowing any analyst with access to the share to review and analyze the data independently.
 * **No bullSh*t:** No shitty GUI to interact with the results, only CSV/Json, so you can investigate the way you want.
 
-<img src="./ressources/images/WAPP.png" width="800" alt="WAPP System Architecture">
+<img src="./ressources/images/wfapp.png" width="800" alt="WAPP System Architecture">
 
 
 The tool also includes a simple Web GUI for common tasks:
