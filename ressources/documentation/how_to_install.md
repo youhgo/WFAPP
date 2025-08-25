@@ -6,11 +6,13 @@ This guide will walk you through the simple process of setting up WAPP using Doc
 
 ## 🔗 Useful Links
 
-* **WAPP Repository:** <https://github.com/youhgo/WFAPP>
-* **Usage Tutorial:** <https://youhgo.github.io/DOPP-how-to-use-EN/>
-* **Results Architecture:** <https://youhgo.github.io/DOPP-Results/>
+* **WAPP Repository:** [Available here](https://github.com/youhgo/WFAPP)
+* **Usage Tutorial:** [Tutorial](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_use.md)
+* **Results Architecture:** [Explained here](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/Explaining_the_results.md)
+* **DFIR-ORC Configuration:** [Tutorial](https://youhgo.github.io/DOPP-Config-ORC-EN/)
 
 ---
+
 
 ## 📋 Prerequisites
 
