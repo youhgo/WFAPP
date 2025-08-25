@@ -75,14 +75,54 @@ Keep in mind that this folder **doesn't aggregate ALL artefacts** , some other a
 Note: The Hive complex structure is hard to transpose as CSV and keept it readable, that's why they are left as Json line. 
 Only the Amcache is parsed as CSV as well. 
 
-This document provides a two-column layout detailing the contents of the `parsed_for_human` directory.
+### 🕵️ Example: Detecting Malicious Activity
 
-Please note that you will only get the full output if you use the DFIR-ORC config provided with ORC.
+From these results, you can quickly detect:
+
+* 🔑 Use of **Mimikatz**
+* 💀 A **Cobalt Strike beacon**
+* 🐚 A **backdoor**
+* 🦠 **Ransomware execution**
+* 🛡️ **Antivirus disabling**
+* 👤 Compromised user logons
+
+**Sample Investigation (with `ripgrep`):**
+
+```bash
+rg -i "2021-01-07\|03.(3|4|5)" \
+   user_logon_id4624.csv \
+   new_service_id7045.csv \
+   Amcache.hve_regpy.csv \
+   powershell.csv \
+   windefender.csv
+```
+
+**Output (excerpt):**
+
+```bash
+windefender.csv
+2021-01-07|03:32:30|1116 - Detection|VirTool:Win32/MSFPsExecCommand|Severe|NT AUTHORITY\SYSTEM|...|CmdLine:_C:\Windows\System32\cmd.exe ...
+
+2021-01-07|03:35:44|1116 - Detection|HackTool:Win64/Mikatz!dha|High|BROCELIANDE\\arthur|C:\Users\Public\mimikatz.exe|...
+
+app_compat_cache.csv
+2021-01-07|03:39:31|beacon.exe|C:\Users\Public\beacon.exe|...
+
+powershell.csv
+2021-01-07|03:37:03|600|powershell Set-MpPreference -DisableRealtimeMonitoring $true; ...
+```
+
+---
+
+### The results
+
+ Please note that you will only get the full output if you use the DFIR-ORC config provided with ORC.
 
 I've also provided a configured and ready to go [DFIR-ORC](https://github.com/youhgo/WFAPP/tree/master/api/ressources) collector. 
 
 More info: [DFIR-ORC Configuration Tutorial](https://youhgo.github.io/DOPP-Config-ORC-EN/)
 
+The contents of the `parsed_for_human` directory is detailed below:
 
 | **File Path**                   | **Description**                                                        | Prerequire                               | Come with ORC | Come with OTHER | 
  |---------------------------------|------------------------------------------------------------------------|------------------------------------------|---------------|-----------------| 
@@ -129,44 +169,7 @@ This is the **go-to folder** for investigators since it contains the most access
 
 ---
 
-## 🕵️ Example: Detecting Malicious Activity
 
-From these results, you can quickly detect:
-
-* 🔑 Use of **Mimikatz**
-* 💀 A **Cobalt Strike beacon**
-* 🐚 A **backdoor**
-* 🦠 **Ransomware execution**
-* 🛡️ **Antivirus disabling**
-* 👤 Compromised user logons
-
-**Sample Investigation (with `ripgrep`):**
-
-```bash
-rg -i "2021-01-07\|03.(3|4|5)" \
-   user_logon_id4624.csv \
-   new_service_id7045.csv \
-   Amcache.hve_regpy.csv \
-   powershell.csv \
-   windefender.csv
-```
-
-**Output (excerpt):**
-
-```bash
-windefender.csv
-2021-01-07|03:32:30|1116 - Detection|VirTool:Win32/MSFPsExecCommand|Severe|NT AUTHORITY\SYSTEM|...|CmdLine:_C:\Windows\System32\cmd.exe ...
-
-2021-01-07|03:35:44|1116 - Detection|HackTool:Win64/Mikatz!dha|High|BROCELIANDE\\arthur|C:\Users\Public\mimikatz.exe|...
-
-app_compat_cache.csv
-2021-01-07|03:39:31|beacon.exe|C:\Users\Public\beacon.exe|...
-
-powershell.csv
-2021-01-07|03:37:03|600|powershell Set-MpPreference -DisableRealtimeMonitoring $true; ...
-```
-
----
 
 ## ✅ Summary
 
