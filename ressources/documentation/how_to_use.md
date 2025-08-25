@@ -1,102 +1,94 @@
-# How to Use DOPP
+# How to Use WAPP
 
-DOPP is really easy to use thanks to the API
+WAPP is simple to use thanks to its **Web GUI** and **REST API**.  
+This guide covers both methods.
 
-## DOPP API
+---
 
-### Parsing URL
-The API Endpoint to send an archive is this one:
+## 🚀 Using the Web GUI
 
-```bash
-https://youDOPPAdress/api/parse/parse_archive
+The default address for the GUI is:
+
+```
+https://wapp.localhost/
 ```
 
+The interface provides **5 tabs**:
 
-The Endpoint is waiting for the archive file and a json parameter
+- **File Uploader** – Upload an archive you want to parse.  
+- **Log Viewer** – Monitor parsing status in real time.  
+- **Task Status** – Check the status of a specific task.  
+- **Running Tasks** – View all running tasks and stop them if needed.  
+- **Download DFIR-ORC** – Download a preconfigured, ready-to-use ORC collector.  
 
-The Json parameter must look like that
-```json
-{"caseName": "name_of_your_case", "machineName": "Name_of_the_machine_analyzed"}
+<p align="center">
+  <img src="../images/Gui_main.png" width="800" alt="WAPP Web GUI">
+</p>
+
+By uploading an archive, the tool will give you an ID. This id is needed to see the running logs and task status in the other tabs.
+
+---
+
+## ⚡ Using the API
+
+### Parsing an Archive
+
+**Endpoint**  
+```
+POST /api/parse/parse_archive
 ```
 
-It is possible to configure the tools you want to launch or not using the "config" parameter.
-The final JSON must look like that : 
+**Parameters**  
+- `file` – Archive file to parse  
+- `json` – JSON string with case and machine name  
+
+**Example JSON body:**
+
 ```json
 {
-  "caseName": "Name_Of_Your_Case" ,
-  "machineName": "Name_of_the_machine_analyzed",
-  "config":{
-  "EvtxToJson": 1,
-  "ParseEvtx": 1,
-  "ParseAutoruns": 1,
-  "ParseNetwork": 1,
-  "ParsePrefetch" : 1,
-  "ParseSrum" : 1,
-  "ParseSystemHivesRr": 1,
-  "parseUserHivesRr": 1,
-  "parseSystemHivesRegipy" : 1,
-  "parseLnk": 1,
-  "parseMft" : 1,
-  "plaso" : 1,
-  "mpp": 1
- }
+  "caseName": "name_of_your_case",
+  "machineName": "name_of_the_machine_analyzed"
 }
 ```
 
-In the "config" parameter, each line represent a tool.
-To use a tool, set his value to 1.
-By default, all tools are set to 1.
+**Example request with `curl`:**
 
-For exemple, send an archive through Curl :
 ```bash
-curl -X POST -k https://DOPP.localhost/api/parse/parse_archive -F file=@"/home/hro/Documents/cyber/working_zone/archive_orc/PC1.7z" -F json='{"caseName":"test", "machineName":"DesktopForest"}'
+curl -X POST -k https://wapp.localhost/api/parse/parse_archive   -F file=@"/path/to/archive.7z"   -F json='{"caseName":"test", "machineName":"DesktopForest"}'
+```
+
+**Example response:**
+
+```json
 {
-  "debugLogUrl":"https://DOPP.localhost/api/debug_log/b16b2be6-0c04-4540-96e9-ab922c27b2f7",
-  "message":"your parsing request has been send to queue",
-  "runLogUrl":"https://DOPP.localhost/api/running_log/b16b2be6-0c04-4540-96e9-ab922c27b2f7",
-  "statusUrl":"https://DOPP.localhost/api/check/b16b2be6-0c04-4540-96e9-ab922c27b2f7",
-  "taskId":"b16b2be6-0c04-4540-96e9-ab922c27b2f7"
-  }
+  "taskId": "b16b2be6-0c04-4540-96e9-ab922c27b2f7",
+  "statusUrl": "/api/get_task_status/b16b2be6-0c04-4540-96e9-ab922c27b2f7",
+  "runLogUrl": "/api/running_log/b16b2be6-0c04-4540-96e9-ab922c27b2f7"
+}
 ```
 
-The response will give you 3 URL and an id:
-* debugLogURL will display the debug log of the tool (for developers);
-* runLogUrl will display the run log of the tool (for user to know the processing timeline);
-* StatusUrl will display if whether or not the task is finished;
-* taskID is the ID of your task.
+---
 
-### check URL
-This endpoint allows you to check if a task is still running or not, you must provide the ask id provided when using the parsing url
-```bash 
-https://DOPP.localhost/api/check/<string:task_id>
-```
+### Other API Endpoints
 
-### debug log URL
-This endpoint allows you to check the debuglogs of the task
-```bash 
-https://DOPP.localhost/api/debug_log/<string:task_id>
-```
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Health check – returns welcome message and server time |
+| `/index` | GET | GUI index page |
+| `/api/get_task_status/<task_id>` | GET | Get the status and result of a task |
+| `/api/running_log/<task_id>` | GET | Get the running log of a task |
+| `/api/get_running_tasks` | GET | Get all currently running tasks |
+| `/api/stop_task/<task_id>` | POST | Stop a single task by ID |
+| `/api/get_running_tasks_parse` | GET | Get only parser-related tasks |
+| `/api/get_parser_worker_name` | GET | Get the worker handling parsing tasks |
+| `/api/get_worker_details` | GET | Get Celery worker statistics |
+| `/api/download/dfir-orc` | GET | Download the DFIR-Orc.exe collector |
+| `/api/debug/list_resources` | GET | List contents of the resources directory (debug) |
 
-### run log URL
-This endpoint allows you to check the run logs of the task
-```bash 
-https://DOPP.localhost/api/running_log/<string:task_id>
-```
+---
 
-### running task url
-This endpoint return all running task's ids 
-```bash 
-https://DOPP.localhost/api/get_running_tasks
-```
+## ✅ Summary
 
-### stop task url
-This endpoint allow you to stop a task by providing it's id
-```bash 
-https://DOPP.localhost/api/stop_analyze_tasks
-```
-
-
-
-
-
-
+- Use the **Web GUI** for quick interaction and task monitoring.  
+- Use the **API** for automation and integration into larger workflows.  
+- Always keep track of the `taskId` returned when submitting an archive—it is required to check status, view logs, or stop tasks.  

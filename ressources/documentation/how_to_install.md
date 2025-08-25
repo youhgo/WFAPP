@@ -54,9 +54,10 @@ Clone the repository to your local machine:
 
 To share results with other analysts, you need to create a shared volume between your host machine and the Docker containers.
 
-1.  Edit the `docker-compose.yml` file.
+1.  Edit the `docker-compose.yml._Modify_ME` file.
 2.  Locate the `volumes` variable under the `wappApi` and `wappWorker` sections. **Do not** modify any other `volumes` variables.
 3.  Change the path to your desired shared directory.
+4.  Rename the file `docker-compose.yml`
 
 For example on my machine:
 
