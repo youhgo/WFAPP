@@ -1,5 +1,5 @@
 
-# DFIR-ORC Parser Project : Configure DFIR-ORC
+# Windows Forensic Artefact Parser Project : Configure DFIR-ORC
 
 This guide provides step-by-step instructions on how to configure the DFIR-ORC collection tool for a streamlined and effective forensic investigation. It focuses on a configuration designed for speed and comprehensive artifact collection into a single archive
 

@@ -51,6 +51,10 @@ Clone the repository to your local machine:
 
 ---
 
+## NOTE
+
+It is highly recommended to follow [this guide](./Configure_WAPP.md) if you don't plan to use the pre-configured DFIR-Orc.exe collection tool.
+
 ## 🔧 Configure Shared Volume
 
 To share results with other analysts, you need to create a shared volume between your host machine and the Docker containers.
