@@ -74,7 +74,6 @@ curl -X POST -k https://wapp.localhost/api/parse/parse_archive   -F file=@"/path
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/` | GET | Health check – returns welcome message and server time |
-| `/index` | GET | GUI index page |
 | `/api/get_task_status/<task_id>` | GET | Get the status and result of a task |
 | `/api/running_log/<task_id>` | GET | Get the running log of a task |
 | `/api/get_running_tasks` | GET | Get all currently running tasks |
