@@ -1,0 +1,14 @@
+{
+  "disk": 1,
+  "elk": 0,
+  "evtx": 1,
+  "hive": 1,
+  "mft": 1,
+  "mpp": 1,
+  "network": 1,
+  "lnk": 1,
+  "plaso": 1,
+  "prefetch": 1,
+  "process": 1,
+  "system_info": 1
+}

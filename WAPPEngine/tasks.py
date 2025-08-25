@@ -1,3 +1,4 @@
+import json
 import sys
 import os
 import traceback
@@ -34,7 +35,9 @@ def parse_archive(content, file_name):
         machine_name = content.get("machineName", "No_Name")
         parser_config = content.get('parser_config', None)
         artefact_config = content.get('artefact_config', None)
+        print(json.dumps(content, indent=4))
 
+        '''
         wapp_parser = WindowsForensicArtefactParser(path_to_archive=archive_path,
                                                     output_directory=WORKING_FOLDER_PATH,
                                                     case_name=case_name,
@@ -45,6 +48,7 @@ def parse_archive(content, file_name):
                                                     main_config=parser_config)
 
         wapp_parser.do()
+        '''
         return {"taskId": "{}".format(main_id), "WokerStatus": "finished"}
 
     except Exception as ex:

@@ -6835,9 +6835,10 @@ class WindowsForensicArtefactParser:
             self.main_id = self.machine_name
 
 
-        self.tool_path = os.environ.get("TOOL_PATH", "python-docker/WAPP_MODULE/outils")
+        self.tool_path = os.environ.get("TOOL_PATH", "/python-docker/WAPP_MODULE/outils")
         self.evtx_dump_path = os.path.join(self.tool_path, "evtx_dump")
         self.analyze_mft_tool_path = "/python-docker/analyzeMFT/analyzeMFT.py"
+
 
         self.current_date = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
         self.machine_working_folder_name = self.machine_name + "_" + self.current_date
@@ -6866,104 +6867,132 @@ class WindowsForensicArtefactParser:
         self.running_log_file_path = os.path.join(self.log_dir, "{}_running.log".format(self.main_id))
 
         self.logger_run = LoggerManager("running", self.running_log_file_path, "INFO")
-        if not artefact_config:
-            self.artefact_config = {
-            "orc": {
-                "orc_run_logs": [r"Statistics.json", r"config.xml", r"Config.xml", r"FastFind_result.xml", r"GetThis*",
-                                 r"Statistics_*.json", r"_config.xml", r"getthis"]
-            },
-            "artefacts": {
-                "system": {
-                    "system_info": [r"Systeminfo.csv"]
-                },
-                "network": {
-                    "tcpvcon": [r"Tcpvcon.txt"],
-                    "arp_cache": [r"arp_cache.txt"],
-                    "dns_cache": [r"dns_cache.txt"],
-                    "netstat": [r"netstat.txt"],
-                    "routes": [r"routes.txt"],
-                    "hosts": [r"hosts$"],
-                    "lmhosts": [r"lmhosts.sam"],
-                    "protocol": [r"protocol$"],
-                    "services": [r"services$"],
-                    "network": [r"networks$"],
-                    "bits": [r"BITS_jobs.txt"]
-                },
-                "hives": {
-                    "NTUSER": [r"NTUSER.DAT$"],
-                    "AMCACHE": [r"Amcache.hve$"],
-                    "SOFTWARE": [r"SOFTWARE$"],
-                    "SYSTEM": [r"SYSTEM$"],
-                    "SECURITY": [r"SECURITY$"],
-                    "SAM": [r"SAM$"]
-                },
-                "process": {
-                    "process1": [r"process1.csv", r"processes1.csv"],
-                    "process2": [r"process2.csv", r"processes2.csv"],
-                    "autoruns": [r"autoruns.csv"],
-                    "sample_autoruns": [r"GetSamples_autoruns.xml", r"Process_Autoruns.xml"],
-                    "sample_timeline": [r"GetSamples_timeline.csv", r"Process_timeline.csv"],
-                    "sample_info": [r"GetSamples_sampleinfo.csv", r"Process_sampleinfo.csv"],
-                    "handle": [r"handle.txt"],
-                    "enum_lock": [r"Enumlocs.txt"],
-                    "list_dll": [r"Listdlls.txt"],
-                    "ps_services": [r"psService.txt"]
-                },
-                "event_logs": {
-                    "evtx": [r".*.evtx"]
-                },
-                "powershell": {
-                    "consol_history": [r"ConsoleHost_history.txt"],
-                    "Module_Analysis_Cache": [r"ModuleAnalysisCache"]
-                },
-                "master_file_table": {
-                    "MFT": [r"MFT$"]
-                },
-                "disk": {
-                    "usn_journal": [r"USNInfo.*.csv"],
-                    "VSS_List": [r"VSS_list.csv"]
-                },
-                "files": {
-                    "Activity_cache": [r"ActivitiesCache.db"],
-                    "sdb": [r".*.sdb"],
-                    "SRUM": [r"SRUDB.dat", r"SRU.*.log"],
-                    "super_fetch": [r"ag.*.db"],
-                    "Wmi": [r"OBJECTS.DATA", r"INDEX.BTR", r"MAPPING*.MAP"],
-                    "prefetch": [r".*.pf"],
-                    "lnk": [r".*.lnk"],
-                    "recent_file": [r".*-ms"]
-                },
-                "browsers": {
-                    "browser_history": [r".*.sqlite"]
-                },
-                "others": {
-                    "event_consumer": [r"EventConsumer.txt"],
-                    "setup_api": [r"setupapi"],
-                    "mrt": [r"mrt"]
-                }
-            }
-        }
-        else:
+
+        if artefact_config:
             self.artefact_config = artefact_config
-        print(" main config is {}".format(main_config))
-        if not main_config:
-            self.main_config = {
-                "disk": 1,
-                "elk": 0,
-                "evtx": 1,
-                "hive": 1,
-                "mft": 1,
-                "mpp": 1,
-                "network": 1,
-                "lnk": 1,
-                "plaso": 1,
-                "prefetch": 1,
-                "process": 1,
-                "system_info": 1
-            }
+            self.logger_run.info(
+                "[ARTEFACT][CONFIG] loading custom config  {}".format(json.dumps(self.artefact_config, indent=4)),
+                header="INFO", indentation=0)
         else:
+            artefact_config_path = "/python-docker/WAPP_MODULE/config/artefact_name_config.json"
+            try:
+                self.logger_run.info("[ARTEFACT][CONFIG] No config provided, loading default config file {}".format(artefact_config_path), header="INFO", indentation=0)
+                with open(artefact_config_path, "r") as config_file_stream:
+                    self.artefact_config = json.load(config_file_stream)
+            except:
+                self.artefact_config = {
+                    "orc": {
+                        "orc_run_logs": [r"Statistics.json", r"config.xml", r"Config.xml", r"FastFind_result.xml",
+                                         r"GetThis*",
+                                         r"Statistics_*.json", r"_config.xml", r"getthis"]
+                    },
+                    "artefacts": {
+                        "system": {
+                            "system_info": [r"Systeminfo.csv"]
+                        },
+                        "network": {
+                            "tcpvcon": [r"Tcpvcon.txt"],
+                            "arp_cache": [r"arp_cache.txt"],
+                            "dns_cache": [r"dns_cache.txt"],
+                            "netstat": [r"netstat.txt"],
+                            "routes": [r"routes.txt"],
+                            "hosts": [r"hosts$"],
+                            "lmhosts": [r"lmhosts.sam"],
+                            "protocol": [r"protocol$"],
+                            "services": [r"services$"],
+                            "network": [r"networks$"],
+                            "bits": [r"BITS_jobs.txt"]
+                        },
+                        "hives": {
+                            "NTUSER": [r"NTUSER.DAT$"],
+                            "AMCACHE": [r"Amcache.hve$"],
+                            "SOFTWARE": [r"SOFTWARE$"],
+                            "SYSTEM": [r"SYSTEM$"],
+                            "SECURITY": [r"SECURITY$"],
+                            "SAM": [r"SAM$"]
+                        },
+                        "process": {
+                            "process1": [r"process1.csv", r"processes1.csv"],
+                            "process2": [r"process2.csv", r"processes2.csv"],
+                            "autoruns": [r"autoruns.csv"],
+                            "sample_autoruns": [r"GetSamples_autoruns.xml", r"Process_Autoruns.xml"],
+                            "sample_timeline": [r"GetSamples_timeline.csv", r"Process_timeline.csv"],
+                            "sample_info": [r"GetSamples_sampleinfo.csv", r"Process_sampleinfo.csv"],
+                            "handle": [r"handle.txt"],
+                            "enum_lock": [r"Enumlocs.txt"],
+                            "list_dll": [r"Listdlls.txt"],
+                            "ps_services": [r"psService.txt"]
+                        },
+                        "event_logs": {
+                            "evtx": [r".*.evtx"]
+                        },
+                        "powershell": {
+                            "consol_history": [r"ConsoleHost_history.txt"],
+                            "Module_Analysis_Cache": [r"ModuleAnalysisCache"]
+                        },
+                        "master_file_table": {
+                            "MFT": [r"MFT$"]
+                        },
+                        "disk": {
+                            "usn_journal": [r"USNInfo.*.csv"],
+                            "VSS_List": [r"VSS_list.csv"]
+                        },
+                        "files": {
+                            "Activity_cache": [r"ActivitiesCache.db"],
+                            "sdb": [r".*.sdb"],
+                            "SRUM": [r"SRUDB.dat", r"SRU.*.log"],
+                            "super_fetch": [r"ag.*.db"],
+                            "Wmi": [r"OBJECTS.DATA", r"INDEX.BTR", r"MAPPING*.MAP"],
+                            "prefetch": [r".*.pf"],
+                            "lnk": [r".*.lnk"],
+                            "recent_file": [r".*-ms"]
+                        },
+                        "browsers": {
+                            "browser_history": [r".*.sqlite"]
+                        },
+                        "others": {
+                            "event_consumer": [r"EventConsumer.txt"],
+                            "setup_api": [r"setupapi"],
+                            "mrt": [r"mrt"]
+                        }
+                    }
+                }
+                self.logger_run.info(
+                    "[ARTEFACT][CONFIG] Error loading default config file, loading embedded config {}".format(json.dumps(self.artefact_config, indent=4)),
+                    header="INFO", indentation=0)
+
+        if main_config:
             self.main_config = main_config
-        print(" main config is {}".format(self.main_config))
+            self.logger_run.info("[PARSER][CONFIG] Custom config provided using: {}".format(json.dumps(self.main_config, indent=4)),
+                                  header="INFO",indentation=0)
+        else:
+            parser_config = "/python-docker/WAPP_MODULE/config/parser_config.json"
+            try:
+                self.logger_run.info("[ARTEFACT][CONFIG] No config provided, loading default config file {}".format(parser_config), header="INFO", indentation=0)
+                with open(parser_config, "r") as config_file_stream:
+                    self.main_config = json.load(config_file_stream)
+            except:
+
+                self.logger_run.error("[PARSER][CONFIG] Error loading config : {}".format(traceback.format_exc()),
+                                     header="ERROR", indentation=0)
+                self.main_config = {
+                    "disk": 1,
+                    "elk": 0,
+                    "evtx": 1,
+                    "hive": 1,
+                    "mft": 1,
+                    "mpp": 1,
+                    "network": 1,
+                    "lnk": 1,
+                    "plaso": 1,
+                    "prefetch": 1,
+                    "process": 1,
+                    "system_info": 1
+                }
+                self.logger_run.info("[PARSER][CONFIG] No config provided using embedded {}".format(json.dumps(self.main_config, indent=4)),
+                                     header="INFO", indentation=0)
+
+
 
         self.plaso_storage_file = os.path.join(self.timeline_dir, "timeline.plaso")
         self.l2t_log_file = os.path.join(self.timeline_dir, "l2t.log.gz")
