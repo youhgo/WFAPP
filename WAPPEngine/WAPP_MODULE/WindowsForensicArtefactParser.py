@@ -6869,14 +6869,20 @@ class WindowsForensicArtefactParser:
         self.logger_run = LoggerManager("running", self.running_log_file_path, "INFO")
 
         if artefact_config:
-            self.artefact_config = artefact_config
-            self.logger_run.info(
-                "[ARTEFACT][CONFIG] loading custom config  {}".format(json.dumps(self.artefact_config, indent=4)),
-                header="INFO", indentation=0)
+            if isinstance(artefact_config, dict):
+                self.artefact_config = artefact_config
+                self.logger_run.info(
+                    "[ARTEFACT][CONFIG] loading custom config  {}".format(json.dumps(self.artefact_config, indent=4)),
+                    header="INFO", indentation=0)
+            else :
+                self.logger_run.error(
+                    "[ARTEFACT][CONFIG] Incorrect config provided: {}, using default".format(
+                        json.dumps(artefact_config)), header="ERROR", indentation=0)
         else:
             artefact_config_path = "/python-docker/WAPP_MODULE/config/artefact_name_config.json"
             try:
-                self.logger_run.info("[ARTEFACT][CONFIG] No config provided, loading default config file {}".format(artefact_config_path), header="INFO", indentation=0)
+                self.logger_run.info("[ARTEFACT][CONFIG] Loading default config file {}".format(artefact_config_path),
+                                     header="INFO", indentation=0)
                 with open(artefact_config_path, "r") as config_file_stream:
                     self.artefact_config = json.load(config_file_stream)
             except:
@@ -6958,13 +6964,19 @@ class WindowsForensicArtefactParser:
                     }
                 }
                 self.logger_run.info(
-                    "[ARTEFACT][CONFIG] Error loading default config file, loading embedded config {}".format(json.dumps(self.artefact_config, indent=4)),
+                    "[ARTEFACT][CONFIG] Error loading default config file, loading embedded config {}".format(
+                        json.dumps(self.artefact_config, indent=4)),
                     header="INFO", indentation=0)
 
         if main_config:
-            self.main_config = main_config
-            self.logger_run.info("[PARSER][CONFIG] Custom config provided using: {}".format(json.dumps(self.main_config, indent=4)),
-                                  header="INFO",indentation=0)
+            if isinstance(main_config, dict):
+                self.main_config = main_config
+                self.logger_run.info("[PARSER][CONFIG] Loading Custom config provided: {}".format(json.dumps(self.main_config, indent=4)),
+                                      header="INFO",indentation=0)
+            else :
+                self.logger_run.error(
+                    "[PARSER][CONFIG] Incorrect config provided: {}, using default".format(
+                        json.dumps(artefact_config)), header="ERROR", indentation=0)
         else:
             parser_config = "/python-docker/WAPP_MODULE/config/parser_config.json"
             try:

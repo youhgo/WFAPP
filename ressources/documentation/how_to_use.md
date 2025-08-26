@@ -29,13 +29,65 @@ The interface provides **5 tabs**:
 - **Running Tasks** – View all running tasks and stop them if needed.  
 - **Download DFIR-ORC** – Download a preconfigured, ready-to-use ORC collector.  
 
+
+### Main Tab
 <p align="center">
   <img src="../images/Gui_main.png" width="800" alt="WAPP Web GUI">
 </p>
 
-By uploading an archive, the tool will give you an ID. This id is needed to see the running logs and task status in the other tabs.
+This Tab allows you to upload a collect archive. 
+On the right side, you have the possibility to choose the parsers you want to execute.
+You also have the possibility to use a default config file for artefacts.
+
+Please read the [tutorial](Configure_WAPP.md) as an invalid configuration format might break the tool.
+
+By uploading an archive, you will be provided with an ID,
+it will be needed to check the tasks status and its associated logs.
+
+You will be able to find it in the Running task tab if you lose it.
 
 ---
+
+### Log Viewer
+
+<p align="center">
+  <img src="../images/Gui_logs.png" width="800" alt="WAPP Web GUI">
+</p>
+
+This tabs allow you to see the logs associated with a parsing task and check if a parser failed or else.
+You need to provide it's associated task id.
+
+---
+
+### task Status
+
+<p align="center">
+  <img src="../images/Gui_status.png" width="800" alt="WAPP Web GUI">
+</p>
+
+This tab allow you to check onb the status of a task.
+
+---
+
+### Running Tasks 
+
+<p align="center">
+  <img src="../images/Gui_running_tasks.png" width="800" alt="WAPP Web GUI">
+</p>
+
+This tab allows you to get all the running tasks and stop one if needed.
+
+---
+### Download DFIR-ORC
+
+<p align="center">
+  <img src="../images/Gui_download_orc.png" width="800" alt="WAPP Web GUI">
+</p>
+
+This Tab allows you to download a already configured DFIR-Orc.exe collector and loaded with a config fully optimised.
+
+---
+
 
 ## ⚡ Using the API
 
@@ -59,6 +111,55 @@ POST /api/parse/parse_archive
 }
 ```
 
+**Example JSON body with custom parser config:**
+
+```json
+{
+  "caseName": "name_of_your_case",
+  "machineName": "name_of_the_machine_analyzed",
+  "parser_config": {
+      "disk": 1,
+      "elk": 0,
+      "evtx": 1,
+      "hive": 1,
+      "mft": 1,
+      "mpp": 1,
+      "network": 1,
+      "lnk": 1,
+      "plaso": 1,
+      "prefetch": 1,
+      "process": 1,
+      "system_info": 1
+  }
+}
+```
+
+**Example JSON body with custom parser config and artefact config:**
+
+Please read the [tutorial](Configure_WAPP.md) as an invalid configuration format might break the tool.
+
+```json
+{
+  "caseName": "name_of_your_case",
+  "machineName": "name_of_the_machine_analyzed",
+  "parser_config": {
+    "disk": 1,
+    "...": "...",
+    "system_info": 1
+  },
+  "artefact_config": {
+    "...": {"...": ["..."]},
+    "hives": {
+      "NTUSER": ["NTUSER.DAT$"], 
+      "...": ["..."],
+      "SAM": ["SAM$"]
+    },
+     "...": {"...": ["..."]}
+  }
+}
+```
+
+
 **Example request with `curl`:**
 
 ```bash
@@ -69,6 +170,7 @@ curl -X POST -k https://wapp.localhost/api/parse/parse_archive   -F file=@"/path
 
 ```json
 {
+  "message": "Your archive has been send to queue",
   "taskId": "b16b2be6-0c04-4540-96e9-ab922c27b2f7",
   "statusUrl": "/api/get_task_status/b16b2be6-0c04-4540-96e9-ab922c27b2f7",
   "runLogUrl": "/api/running_log/b16b2be6-0c04-4540-96e9-ab922c27b2f7"

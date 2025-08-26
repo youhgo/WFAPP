@@ -56,47 +56,44 @@
                 </br>
                 Please note that the index for Elastic ingestion will be caseName_machineName.
             </p>
-            <form id="uploadForm" class="space-y-6">
-                <div>
-                    <label for="fileInput" class="block text-sm font-medium text-gray-700 mb-1">Select Archive File</label>
-                    <input type="file" id="fileInput" name="file" required class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div>
-                    <label for="caseName" class="block text-sm font-medium text-gray-700 mb-1">Case Name</label>
-                    <input type="text" id="caseName" name="caseName" required placeholder="ex: MyAwesomeCaseName" class="shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div>
-                    <label for="machineName" class="block text-sm font-medium text-gray-700 mb-1">Machine Name</label>
-                    <input type="text" id="machineName" name="machineName" required placeholder="ex: MyMachine" class="shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <!-- Input for JSON configuration file with a clear button -->
-                <div>
-                    <label for="jsonConfigInput" class="block text-sm font-medium text-gray-700 mb-1">JSON Configuration File (optional)</label>
-                    <div class="flex items-center space-x-2">
-                        <input type="file" id="jsonConfigInput" name="jsonConfig" accept=".json" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <button type="button" id="clearJsonFileBtn" class="py-2.5 px-4 bg-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition duration-150 ease-in-out">
-                            Clear
-                        </button>
+            <form id="uploadForm">
+                <!-- Main flex container for form and module list -->
+                <div class="flex flex-col lg:flex-row lg:space-x-8">
+                    <!-- Left column for form inputs -->
+                    <div class="flex-1 space-y-6">
+                        <div>
+                            <label for="fileInput" class="block text-sm font-medium text-gray-700 mb-1">Select Archive File</label>
+                            <input type="file" id="fileInput" name="file" required class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="caseName" class="block text-sm font-medium text-gray-700 mb-1">Case Name</label>
+                            <input type="text" id="caseName" name="caseName" required placeholder="ex: MyAwesomeCaseName" class="shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="machineName" class="block text-sm font-medium text-gray-700 mb-1">Machine Name</label>
+                            <input type="text" id="machineName" name="machineName" required placeholder="ex: MyMachine" class="shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <!-- Input for JSON configuration file with a clear button -->
+                        <div>
+                            <label for="jsonConfigInput" class="block text-sm font-medium text-gray-700 mb-1">JSON Configuration File (optional)</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="file" id="jsonConfigInput" name="jsonConfig" accept=".json" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <button type="button" id="clearJsonFileBtn" class="py-2.5 px-4 bg-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition duration-150 ease-in-out">
+                                    Clear
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-
-                <!-- Dropdown for module selection -->
-                <div class="relative">
-                    <label for="moduleSelector" class="block text-sm font-medium text-gray-700 mb-1">Modules to analyze</label>
-                    <button id="moduleSelector" type="button" class="w-full flex justify-between items-center py-2 px-4 rounded-md border border-gray-300 bg-white shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <span id="selectedModulesText">Select modules</span>
-                        <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
-                    <div id="moduleDropdown" class="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 hidden max-h-60 overflow-y-auto">
-                        <div class="py-1" role="menu" aria-orientation="vertical" aria-labelledby="moduleSelector">
+                    <!-- Right column for module checklist -->
+                    <div class="lg:w-1/3 mt-6 lg:mt-0">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Modules to analyze</label>
+                        <div id="moduleChecklist" class="bg-gray-50 p-4 rounded-lg border border-gray-200 max-h-80 overflow-y-auto">
                             <!-- Checkboxes will be dynamically added here -->
                         </div>
                     </div>
                 </div>
 
-                <button type="submit" id="submitButton" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                <button type="submit" id="submitButton" class="w-full flex justify-center py-3 px-4 mt-6 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
                     Upload File
                 </button>
             </form>
@@ -262,50 +259,20 @@
                 "system_info": 1
             };
 
-            const moduleSelectorBtn = document.getElementById('moduleSelector');
-            const moduleDropdown = document.getElementById('moduleDropdown');
-            const selectedModulesText = document.getElementById('selectedModulesText');
+            const moduleChecklist = document.getElementById('moduleChecklist');
 
-            // Populate dropdown with checkboxes based on moduleConfig
-            const dropdownContent = moduleDropdown.querySelector('div');
+            // Populate checklist with checkboxes based on moduleConfig
             Object.keys(moduleConfig).forEach(moduleName => {
                 const isChecked = moduleConfig[moduleName] === 1;
                 const checkboxHtml = `
-                    <div class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                    <div class="flex items-center py-1">
                         <input type="checkbox" id="module-${moduleName}" name="modules" value="${moduleName}" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" ${isChecked ? 'checked' : ''}>
                         <label for="module-${moduleName}" class="ml-2 block text-sm text-gray-900 cursor-pointer">${moduleName}</label>
                     </div>
                 `;
-                dropdownContent.insertAdjacentHTML('beforeend', checkboxHtml);
+                moduleChecklist.insertAdjacentHTML('beforeend', checkboxHtml);
             });
 
-            // Update button text with selected modules count
-            const updateSelectedModulesText = () => {
-                const checkedModules = Array.from(document.querySelectorAll('input[name="modules"]:checked')).map(cb => cb.value);
-                if (checkedModules.length > 0) {
-                    selectedModulesText.textContent = `${checkedModules.length} module(s) selected`;
-                } else {
-                    selectedModulesText.textContent = "Select modules";
-                }
-            };
-
-            updateSelectedModulesText();
-
-            // Toggle dropdown visibility
-            moduleSelectorBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                moduleDropdown.classList.toggle('hidden');
-            });
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!moduleSelectorBtn.contains(e.target) && !moduleDropdown.contains(e.target)) {
-                    moduleDropdown.classList.add('hidden');
-                }
-            });
-
-            // Update text when a checkbox is clicked
-            dropdownContent.addEventListener('change', updateSelectedModulesText);
 
             // --- File Uploader Logic ---
             const uploadForm = document.getElementById('uploadForm');
@@ -337,9 +304,8 @@
 
                 // Get modules for parser_config
                 const parserConfig = {};
-                Object.keys(moduleConfig).forEach(moduleName => {
-                    const checkbox = document.getElementById(`module-${moduleName}`);
-                    parserConfig[moduleName] = checkbox.checked ? 1 : 0;
+                Array.from(document.querySelectorAll('input[name="modules"]')).forEach(checkbox => {
+                    parserConfig[checkbox.value] = checkbox.checked ? 1 : 0;
                 });
 
                 const jsonData = {
