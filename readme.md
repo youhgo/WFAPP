@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="./ressources/images/wapp_logo.png" width="200" height="200" alt="WAPP System Architecture">
-</p>
+<img src="./ressources/images/wapp_logo.png" style="display: block; margin: 0 auto;" width="200" height="200" alt="WAPP System Architecture">
 
 ---
 
