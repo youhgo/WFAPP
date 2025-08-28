@@ -47,6 +47,11 @@ The default hive configuration looks like this:
 
 Let's say the `SOFTWARE` hive collected by your tool is named `"SOFTWARE_HIVE"`. To ensure WAPP can find and parse this file, you need to add a new regex to the `SOFTWARE` list in your configuration.
 
+Each regex **MUST** be inside a list, even if there is only one pattern.
+I suggest you to just add your pattern to the list and leave the rest as is so you don't break the structure.
+
+**Note** : An invalid config file will result in the fail of the parsing task associated to it.
+
 The updated configuration would then look like this:
 ```json
 {

@@ -1,6 +1,14 @@
+<p align="center">
+  <img src="./ressources/images/wapp_logo.png" width="200" height="200" alt="WAPP System Architecture">
+</p>
+
+---
+
+
 # Windows Forensic Artefact Parser Project (WAPP) 💻
 
 > A fast and simple Docker-based solution for parsing Windows forensic artifacts and generating human-readable results.
+
 
 ---
 
@@ -11,6 +19,9 @@
 * **ELASTIC Connector:** Ongoing
 * **TimeSketch Connector:** Ongoing
 ---
+
+**Disclamer**: I'm not a professional dev and this not secure by design.
+Therefore, it is **ABSOLUTLY NOT** recommended to expose it to the internet.
 
 ## 🧐 What is WAPP?
 
