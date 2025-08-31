@@ -7573,27 +7573,8 @@ if __name__ == '__main__':
 
 """
 Info for further parsing
-location": "Microsoft-Windows-Windows Defender%4Operational.evtx
 location": "Microsoft-Windows-Windows Defender%4WHC.evtx
-event id 1116 1117 1015 1013 1014 1012 1011 1010 1009 1008 1007 1006 1005 1004 1003 1002 
-
-location": "Microsoft-Windows-Windows Firewall With Advanced Security%4ConnectionSecurity.evtx
-location": "Microsoft-Windows-Windows Firewall With Advanced Security%4FirewallDiagnostics.evtx
-location": "Microsoft-Windows-Windows Firewall With Advanced Security%4Firewall.evtx
-location": "Microsoft-Windows-WindowsUpdateClient%4Operational.evtx
-location": "Microsoft-Windows-WinINet-Config%4ProxyConfigChanged.evtx
-location": "Microsoft-Windows-Winlogon%4Operational.evtx
-location": "Microsoft-Windows-WinRM%4Operational.evtx
-location": "Microsoft-Windows-WMI-Activity%4Operational.evtx
-  
+event id 1116 1117 1015 1013 1014 1012 1011 1010 1009 1008 1007 1006 1005 1004 1003 1002   
 4614 This event is generated when a user attempts to change their password. It is logged on domain controllers 
 and member computers. 
-
-Send json to ELK with index through curl, doesnt work with big files
-jq -c -r '. | {"index": {"_index": "geelong"}}, .' amcache.json | curl -XPOST "http://localhost:9200/_bulk?pretty" -H "Content-Type: application/json" --data-binary @-
-
-
-Multiple plaso parser name
-"parser": "pe",
-"parser": "winreg/msie_zone",
 """

@@ -21,8 +21,10 @@
 * **TimeSketch Connector:** Ongoing
 ---
 
-**Disclamer**: I'm not a professional dev and this not secure by design.
-Therefore, it is **ABSOLUTLY NOT** recommended to expose it to the internet.
+**Disclamer**: I'm not a professional dev and this tool is not secure by design.
+Therefore, it is **ABSOLUTLY NOT** recommended to expose the API or Web UI to the internet.
+
+I'm currently working on an auth system.
 
 ## 🧐 What is WAPP?
 
