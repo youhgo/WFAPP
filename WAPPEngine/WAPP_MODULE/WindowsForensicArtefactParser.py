@@ -657,7 +657,7 @@ class ProcessParser:
                                     continue
                                 else:
                                     raw_timestamp = l_line[column_indices["Time"]].strip()
-                                    entry_val = l_line[column_indices["Entry"]].strip()
+                                    entry_val = l_line[column_indices["Entry Location"]].strip()
                                     imgpath_val = l_line[column_indices["Image Path"]].strip()
                                     launchstring_val = l_line[column_indices["Launch String"]].strip()
                                     md5_val = l_line[column_indices["MD5"]].strip()
