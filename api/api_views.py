@@ -92,6 +92,7 @@ def load_user(user_id):
 
 
 @wapp_api.route('/api/register', methods=['POST'])
+@login_required
 def register():
     data = request.get_json()
     username = data.get('username')

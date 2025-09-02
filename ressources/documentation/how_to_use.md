@@ -18,7 +18,16 @@ This guide covers both methods.
 The default address for the GUI is:
 
 ```
-https://wapp.localhost/
+https://wapp.localhost/login_page
+```
+<p align="center">
+  <img src="../images/auth_page.png" width="800" alt="WAPP Web GUI">
+</p>
+
+you will need to login. The default admin account is :
+```
+  user: wapp
+  password : changeme
 ```
 
 The interface provides **5 tabs**:
@@ -47,6 +56,12 @@ it will be needed to check the tasks status and its associated logs.
 You will be able to find it in the Running task tab if you lose it.
 
 ---
+
+### Manage Users
+<p align="center">
+  <img src="../images/manage_users.png" width="800" alt="WAPP Web GUI">
+</p>
+With an Admin account you can add and modify the users 
 
 ### Log Viewer
 
@@ -162,8 +177,18 @@ Please read the [tutorial](Configure_WAPP.md) as an invalid configuration format
 
 **Example request with `curl`:**
 
+First we need to login
 ```bash
-curl -X POST -k https://wapp.localhost/api/parse/parse_archive   -F file=@"/path/to/archive.7z"   -F json='{"caseName":"test", "machineName":"DesktopForest"}'
+curl -k -X POST \                                                                                                                                                                    60 ↵
+-H "Content-Type: application/json" \
+-d '{"username": "wapp", "password": "changeme"}' \
+-c cookie_jar.txt \
+https://wapp.localhost/api/login
+
+```
+
+```bash
+curl -b cookie_jar.txt -X POST -k https://wapp.localhost/api/parse/parse_archive   -F file=@"/path/to/archive.7z"   -F json='{"caseName":"test", "machineName":"DesktopForest"}'
 ```
 
 **Example response:**
@@ -181,21 +206,26 @@ curl -X POST -k https://wapp.localhost/api/parse/parse_archive   -F file=@"/path
 
 ### Other API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | Health check – returns welcome message and server time |
-| `/api/get_task_status/<task_id>` | GET | Get the status and result of a task |
-| `/api/running_log/<task_id>` | GET | Get the running log of a task |
-| `/api/get_running_tasks` | GET | Get all currently running tasks |
-| `/api/stop_task/<task_id>` | POST | Stop a single task by ID |
-| `/api/get_running_tasks_parse` | GET | Get only parser-related tasks |
-| `/api/get_parser_worker_name` | GET | Get the worker handling parsing tasks |
-| `/api/get_worker_details` | GET | Get Celery worker statistics |
-| `/api/download/dfir-orc` | GET | Download the DFIR-Orc.exe collector |
-| `/api/debug/list_resources` | GET | List contents of the resources directory (debug) |
+| Endpoint                         | Method | Description                                            | Authentication |
+|----------------------------------|--------|--------------------------------------------------------|----------------|
+| `/`                              | GET    | Health check – returns welcome message and server time | None           |
+| `/api/get_task_status/<task_id>` | GET    | Get the status and result of a task                    | required       |
+| `/api/running_log/<task_id>`     | GET    | Get the running log of a task                          | required       |
+| `/api/get_running_tasks`         | GET    | Get all currently running tasks                        | required       |
+| `/api/stop_task/<task_id>`       | POST   | Stop a single task by ID                               | required       |
+| `/api/get_running_tasks_parse`   | GET    | Get only parser-related tasks                          | required       |
+| `/api/get_parser_worker_name`    | GET    | Get the worker handling parsing tasks                  | required       |
+| `/api/get_worker_details`        | GET    | Get Celery worker statistics                           | required       |
+| `/api/download/dfir-orc`         | GET    | Download the DFIR-Orc.exe collector                    | required       |
+| `/api/debug/list_resources`      | GET    | List contents of the resources directory (debug)       | required       |
+| `/api/login`                     | POST   | 	Authenticates a user and starts a session.            | 	None          |
+| `/api/logout`                    | POST   | 	Logs the current user out of their session.           | 	Required      |
+| `/api/register`                  | POST   | 	Registers a new user.                                 | 	Admin only    |
+| `/api/users`                     | GET	   | Lists all registered users.                            | 	Admin only    |
+| `/api/users/<user_id>`           | PUT    | 	Updates an existing user's information.               | 	Admin only    |
+| `/api/users/<user_id>`           | DELETE | 	Deletes a user.                                       | 	Admin only    |
 
 ---
-
 ## ✅ Summary
 
 - Use the **Web GUI** for quick interaction and task monitoring.  
