@@ -1,3 +1,6 @@
 Flask
 celery
 redis
+flask-login
+Werkzeug
+Flask-SQLAlchemy

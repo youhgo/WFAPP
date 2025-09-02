@@ -1,34 +1,140 @@
 import sys
-import traceback
-from flask import Blueprint, Response, jsonify, render_template, request, send_from_directory, abort, send_file
-from worker import celery
-import celery.states as states
 from datetime import datetime
 import os
-import json
-from random import randint
+
+from flask import Blueprint, Response, jsonify, render_template, request, send_from_directory, abort
+from flask_login import login_user, logout_user, login_required, current_user
+from worker import celery
+from extensions import db, login_manager
+from models import User   # ✅ Import du modèle
 
 wapp_api = Blueprint('wapp_api', __name__)
 SHARED_FOLDER_PATH = "/python-docker/shared_files/"
+DB_FOLDER_PATH = "/python-docker/db/"
 DEPOT_FOLDER_PATH = os.path.join(SHARED_FOLDER_PATH, "depot")
 WORKING_FOLDER_PATH = os.path.join(SHARED_FOLDER_PATH, "work")
 LOG_FOLDER_PATH = os.path.join(WORKING_FOLDER_PATH, "execution_logs")
-# Define the path to the resources directory using the absolute path from your debug output
 RESOURCES_FOLDER_PATH = "/python-docker/ressources"
+
+
+# Page d’admin protégée
+@wapp_api.route("/admin/users")
+@login_required
+def users_admin():
+    # Vérification du nouveau champ is_admin
+    if not current_user.is_admin:
+        return jsonify({"message": "Access forbidden"}), 403
+    return render_template("users.html")
+
+
+# API pour récupérer la liste des utilisateurs
+@wapp_api.route("/api/users", methods=["GET"])
+@login_required
+def list_users():
+    if not current_user.is_admin:
+        return jsonify({"message": "Access forbidden"}), 403
+    from models import User
+    users = User.query.all()
+    # Inclure le statut d'administrateur dans la réponse
+    return jsonify([{"id": u.id, "username": u.username, "is_admin": u.is_admin} for u in users])
+
+
+# API pour modifier un user
+@wapp_api.route("/api/users/<int:user_id>", methods=["PUT"])
+@login_required
+def update_user(user_id):
+    if not current_user.is_admin:
+        return jsonify({"message": "Access forbidden"}), 403
+    from models import User, db
+    data = request.get_json()
+    user = User.query.get_or_404(user_id)
+    if "username" in data:
+        user.username = data["username"]
+    if "password" in data:
+        user.set_password(data["password"])
+    # Ajoutez la logique pour mettre à jour le statut d'administrateur
+    if "is_admin" in data:
+        user.is_admin = data["is_admin"]
+    db.session.commit()
+    return jsonify({"message": "User updated"})
+
+
+# API pour supprimer un user
+@wapp_api.route("/api/users/<int:user_id>", methods=["DELETE"])
+@login_required
+def delete_user(user_id):
+    if not current_user.is_admin:
+        return jsonify({"message": "Access forbidden"}), 403
+    from models import User, db
+    user = User.query.get_or_404(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({"message": "User deleted"})
+
+# Assurez-vous d'appliquer la même logique pour les autres routes admin.
+
+
+@wapp_api.route("/index")
+@login_required
+def gui_index():
+    return render_template('index.html')
+
+
+@wapp_api.route("/login_page")
+def login_page():
+    return render_template("login.html")
+
+
+# Fonction de chargement des utilisateurs
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
+@wapp_api.route('/api/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({"message": "Username and password are required"}), 400
+
+    existing_user = User.query.filter_by(username=username).first()
+    if existing_user:
+        return jsonify({"message": "Username already exists"}), 409
+
+    new_user = User(username=username)
+    new_user.set_password(password)
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({"message": "User created successfully"}), 201
+
+
+@wapp_api.route('/api/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    user = User.query.filter_by(username=username).first()
+    if user and user.check_password(password):
+        login_user(user)
+        return jsonify({"message": "Logged in successfully"}), 200
+    else:
+        return jsonify({"message": "Invalid username or password"}), 401
+
+
+@wapp_api.route('/api/logout', methods=['POST'])
+@login_required
+def logout():
+    """Déconnecte l'utilisateur actuel et le redirige vers la page de connexion."""
+    logout_user()
+    return jsonify({"message": "Successfully logged out"}), 200
 
 
 @wapp_api.route("/")
 def index():
-    """
-    api function to welcom user and check if co is ok
-    :return:
-    :rtype:
-    """
-    """
-    api function to check health
-    :return: OK
-    :rtype: json dict
-    """
     dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     response = {
         "message": "Welcome to Windows Forensic Artefact Parser Project",
@@ -37,31 +143,9 @@ def index():
     }
     return jsonify(response)
 
-
-@wapp_api.route("/index")
-def gui_index():
-    """
-    api function to welcom user and check if co is ok
-    :return:
-    :rtype:
-    """
-    """
-    api function to check health
-    :return: OK
-    :rtype: json dict
-    """
-    return render_template('index.html')
-
-
 @wapp_api.route('/api/stop_task/<task_id>', methods=['POST'])
+@login_required
 def stop_single_task(task_id):
-    """
-    api function to kill task
-    :param task_id: task id that will been killed
-    :type task_id: str
-    :return: list of tasks id that have been killed
-    :rtype: list
-    """
     try:
         celery.control.revoke(task_id, terminate=True, signal='SIGKILL')
         response = {
@@ -78,12 +162,8 @@ def stop_single_task(task_id):
 
 
 @wapp_api.route('/api/get_running_tasks')
+@login_required
 def get_running_tasks():
-    """
-    api function to get all running tasks
-    :return: dict of active tasks
-    :rtype: dict
-    """
     all_nodes = celery.control.inspect()
     response = {
         "active": all_nodes.active(),
@@ -93,14 +173,6 @@ def get_running_tasks():
 
 
 def stop_task(task_list):
-    """
-    function to kill tasks by it's id
-
-    :param task_list: list of tasks id that will been killed
-    :type task_list: list
-    :return: list of tasks id that have been killed
-    :rtype: list
-    """
     l_killed_tasks = []
     for task_info in task_list:
         task_id = task_info.get('id', "")
@@ -111,58 +183,37 @@ def stop_task(task_list):
 
 
 @wapp_api.route('/api/get_running_tasks_parse')
+@login_required
 def get_parser_tasks():
-    """
-    api function to get tasks related to parser module
-    :return: list of tasks id
-    :rtype: list
-    """
     all_nodes = celery.control.inspect()
     worker_parser_name = get_parser_worker_name(all_nodes)
     worker_parser_tasks = all_nodes.active().get(worker_parser_name, [])
     return worker_parser_tasks
 
+
 def get_parser_worker_name(all_nodes):
-    """
-    function to get the worker id that process the parsing tasks
-    :param all_nodes: all celery node
-    :type all_nodes: dict
-    :return: worker id
-    :rtype: str
-    """
     for node in all_nodes.active().keys():
         if "parser" in node:
             return node
 
+
 @wapp_api.route('/api/get_parser_worker_name')
+@login_required
 def get_parser_worker_name_api():
-    """
-    api function to get the worker id that process the parsing tasks
-    :return: worker id
-    :rtype: str
-    """
     all_nodes = celery.control.inspect()
     return jsonify(get_parser_worker_name(all_nodes))
 
+
 @wapp_api.route('/api/get_worker_details')
+@login_required
 def get_worker_details_api():
-    """
-    api function to get the worker id that process the parsing tasks
-    :return: worker details
-    :rtype: dict
-    """
     all_nodes = celery.control.inspect()
     return jsonify(all_nodes.stats())
 
+
 @wapp_api.route('/api/get_task_status/<task_id>')
+@login_required
 def get_task_status(task_id):
-    """
-    api function to get task status
-    :param task_id: task id
-    :type task_id: str
-    :return: task status
-    :rtype: dict
-    """
     task = celery.AsyncResult(task_id)
     response = {
         "task_id": task.id,
@@ -171,15 +222,10 @@ def get_task_status(task_id):
     }
     return jsonify(response)
 
+
 @wapp_api.route('/api/running_log/<task_id>')
+@login_required
 def running_log(task_id):
-    """
-    api function to get running log
-    :param task_id: task id
-    :type task_id: str
-    :return: log file
-    :rtype: str
-    """
     log_file = os.path.join(LOG_FOLDER_PATH, f"{task_id}_running.log")
     try:
         with open(log_file, "r") as f:
@@ -189,7 +235,9 @@ def running_log(task_id):
     except Exception as e:
         return jsonify({"ERROR": str(e), "TASKID": task_id}), 500
 
+
 @wapp_api.route('/api/download/dfir-orc')
+@login_required
 def download_dfir_orc():
     try:
         print("Trying to send:", os.path.join(RESOURCES_FOLDER_PATH, 'DFIR-Orc.exe'), file=sys.stderr)
@@ -204,18 +252,14 @@ def download_dfir_orc():
         print(f"Error during download: {e}", file=sys.stderr)
         abort(500, description="Internal Server Error during download.")
 
+
 @wapp_api.route('/api/debug/list_resources')
+@login_required
 def list_resources_api():
-    """
-    API function to list the contents of the 'resources' directory for debugging.
-    """
     try:
-        # List all files and directories in the target folder
         contents = os.listdir(RESOURCES_FOLDER_PATH)
-        # Separate files from directories for a cleaner output
         files = [f for f in contents if os.path.isfile(os.path.join(RESOURCES_FOLDER_PATH, f))]
         directories = [d for d in contents if os.path.isdir(os.path.join(RESOURCES_FOLDER_PATH, d))]
-
         response = {
             "status": "OK",
             "path_checked": RESOURCES_FOLDER_PATH,
@@ -237,26 +281,3 @@ def list_resources_api():
             "message": f"An error occurred: {str(e)}"
         }
         return jsonify(response), 500
-
-'''
-@wapp_api.route('/api/parse/parse_archive', methods=['POST'])
-def parse_archive():
-    """
-    api function to parse archive
-    :return: task id
-    :rtype: dict
-    """
-    file_to_parse = request.files['file']
-    json_data = json.loads(request.form['json'])
-    case_name = json_data['caseName']
-    machine_name = json_data['machineName']
-    file_path = os.path.join(DEPOT_FOLDER_PATH, file_to_parse.filename)
-    file_to_parse.save(file_path)
-    task = celery.send_task('worker.parse_archive', args=[file_path, case_name, machine_name])
-    response = {
-        "taskId": task.id,
-        "statusUrl": f"/api/get_task_status/{task.id}",
-        "runLogUrl": f"/api/running_log/{task.id}"
-    }
-    return jsonify(response)
-'''

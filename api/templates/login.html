@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login - WAPP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+  <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+    <h1 class="text-2xl font-bold mb-6 text-center">Login</h1>
+    <form id="loginForm" class="space-y-4">
+      <input type="text" id="username" placeholder="Username" required
+        class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
+      <input type="password" id="password" placeholder="Password" required
+        class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
+      <button type="submit"
+        class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200">
+        Login
+      </button>
+    </form>
+    <p id="errorMsg" class="text-red-600 mt-4 text-center hidden"></p>
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        if (res.ok) {
+          window.location.href = '/index'; // redirect vers GUI
+        } else {
+          const data = await res.json();
+          const errorMsgElement = document.getElementById('errorMsg');
+          errorMsgElement.textContent = data.message || 'Login failed';
+          errorMsgElement.classList.remove('hidden');
+          errorMsgElement.classList.add('p-2', 'bg-red-100', 'rounded-lg');
+        }
+      } catch (err) {
+        const errorMsgElement = document.getElementById('errorMsg');
+        errorMsgElement.textContent = 'Server error';
+        errorMsgElement.classList.remove('hidden');
+        errorMsgElement.classList.add('p-2', 'bg-red-100', 'rounded-lg');
+      }
+    });
+  </script>
+</body>
+</html>
