@@ -24,11 +24,10 @@
 **Disclamer**: I'm not a professional dev and this tool is not secure by design.
 Therefore, it is **ABSOLUTLY NOT** recommended to expose the API or Web UI to the internet.
 
-### Working on : 
-- Authentification System for Gui and API
+### Working on :
 - Ingest disk copy (VMDK, E01 etc) using only plaso and [**MaximumPlasoParser**](https://github.com/Xbloro/maximumPlasoTimelineParser)
 - ELK (currently the ingest is ~fine with 0.01% of failed, but the results are not indexed the way i want)
-- TimeSketch : Not a lot to do as the tool is already configured for plaso. Just setup.
+- TimeSketch : Not a lot to do as TS is already configured for plaso. Just setup.
 
 ## 🧐 What is WAPP?
 
