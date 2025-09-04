@@ -17,8 +17,14 @@
 
 * **Documentation:** [Installation Guide](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_install.md) | [Usage Guide](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_use.md) | [Results Architecture](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/Explaining_the_results.md)
 * **DFIR-ORC Configuration:** [Tutorial](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/configure_orc.md)
-* **ELASTIC Connector:** Ongoing
-* **TimeSketch Connector:** Ongoing
+
+### Ongoing 
+* **Online Large Scale ORC deployment and archive retrival with ORC built-in BITS capabilities**
+* **OffLine Large Scale ORC deployment using powershell and share server/internal bits server**
+* **Powershell module to deploy ORC with Velociraptor**
+* **ELASTIC Connector:** 
+* **TimeSketch Connector:**
+
 ---
 
 **Disclamer**: I'm not a professional dev and this tool is not secure by design.
