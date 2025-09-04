@@ -44,9 +44,9 @@ The tool is designed to process archives from the [DFIR-ORC](https://github.com/
 ### Key Advantages:
 
 * **Fast:** Processes a 500MB archive in \~5 minutes (excluding Plaso).
-* **Simple:** Easily installable with a single `docker compose up --build` command.
+* **Simple:** Easily installable with a single `docker compose build` command.
 * **Effective:** Produces highly readable CSV files, allowing analysts to start investigations immediately.
-
+* **Scalable:** By leveraging Redis and Celery, you can easily scale your workers to handle concurrent parsing.
 ---
 
 ## 🚀 How It Works
@@ -57,7 +57,7 @@ WAPP automates the forensic parsing workflow in a seamless pipeline:
 2. **Parsing:** Parses all the collected evidence using a suite of powerful internal and external tools.
 3. **Output:** Creates ultra-readable CSV files for quick analysis.
 4. **Timeline Creation:** Ingests all evidence with Plaso to create a comprehensive timeline.
-5. **Integration:** The timeline can be sent to Elastic using the integrated pipeline and a pipeline for TimeSketch is in development.
+5. **Integration:** The timeline can be sent to Elastic using the integrated pipeline (On going). 
 
 ---
 

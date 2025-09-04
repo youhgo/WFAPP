@@ -87,12 +87,14 @@ Every output from WAPP will be written is this directory and subdirectories.
 
 From the WAPP directory, run the following command to build and launch the entire application:
 
-`docker compose up --build`
+`docker compose build`
 
 ### Verification
 
 Once the build is complete, you can verify that the tool is running by making a simple `curl` request:
 
+`docker compose up`
+then 
 `curl -X GET -k https://wapp.localhost/ | jq`
 
 If successful, you will receive a response like this:
@@ -105,3 +107,7 @@ If successful, you will receive a response like this:
 ```
 
 Congratulations, WAPP is now ready to go!
+
+Note : you can set up multiple workers using the docker compose scale option, for 3 celery workers:
+
+`docker-compose up -d --scale wapp_worker=3`

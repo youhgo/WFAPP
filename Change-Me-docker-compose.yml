@@ -51,7 +51,6 @@ services:
     build:
       context: ./WAPPEngine
       dockerfile: WAPP_MODULE/docker_files/Dockerfile
-    container_name: "wapp_worker"
     command : celery -A tasks worker -l info -E -Q parse
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
