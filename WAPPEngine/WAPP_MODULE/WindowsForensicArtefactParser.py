@@ -7143,6 +7143,7 @@ class WindowsForensicArtefactParser:
 
             self.logger_run.info("[PARSING][PSORT] Sorting to CSV", header="START", indentation=2)
             my_cmd = ["{}".format(tool_path),
+                      "-o", "l2tcsv",
                       "--logfile", "{}".format(self.psort_log_file),
                       "-w",  "{}".format(self.timeline_csv_path),
                       "{}".format(self.plaso_storage_file)
