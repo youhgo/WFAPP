@@ -206,13 +206,14 @@
             <output  name="Browsers_history.log" source="StdOutErr" />
         </command>
 
+<!-- Browsers Artefacts
         <command keyword="GetBrowsersArtefacts">
             <execute name="Orc.exe" run="self:#GetThis" />
             <argument>/config=res:#GetBrowsersArtefacts_config.xml</argument>
             <output  name="Browsers_artefacts.7z" source="File" argument="/out={FileName}" />
             <output  name="Browsers_artefacts.log" source="StdOutErr" />
         </command>
-
+        -->
     <!-- Files########################################################################################################################################### -->
 
         <command keyword="GetSamples">

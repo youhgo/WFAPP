@@ -66,3 +66,5 @@ def get_machine_name(content_data, archive_file_name):
     else:
         machine_name = os.path.splitext(archive_file_name)[0]
     return machine_name
+
+

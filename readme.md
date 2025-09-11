@@ -18,12 +18,8 @@
 * **Documentation:** [Installation Guide](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_install.md) | [Usage Guide](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_use.md) | [Results Architecture](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/Explaining_the_results.md)
 * **DFIR-ORC Configuration:** [Tutorial](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/configure_orc.md)
 
-### Ongoing 
-* **Online Large Scale ORC deployment and archive retrival with ORC built-in BITS capabilities**
-* **OffLine Large Scale ORC deployment using powershell and share server/internal bits server**
-* **Powershell module to deploy ORC with Velociraptor**
-* **ELASTIC Connector:** 
-* **TimeSketch Connector:**
+### Ongoing
+* **Testing Splunk ingestion**
 
 ---
 
@@ -31,9 +27,9 @@
 Therefore, it is **ABSOLUTLY NOT** recommended to expose the API or Web UI to the internet.
 
 ### Working on :
-- Ingest disk copy (VMDK, E01 etc) using only plaso and [**MaximumPlasoParser**](https://github.com/Xbloro/maximumPlasoTimelineParser)
-- ELK (currently the ingest is ~fine with 0.01% of failed, but the results are not indexed the way i want)
-- TimeSketch : Not a lot to do as TS is already configured for plaso. Just setup.
+- ELK Connector's results are OK, need to test to send data directly from wapp worker to ELK.
+- Same with Splunk
+- Do a module for Linux UAC
 
 ## 🧐 What is WAPP?
 
@@ -46,7 +42,7 @@ The tool is designed to process archives from the [DFIR-ORC](https://github.com/
 * **Fast:** Processes a 500MB archive in \~5 minutes (excluding Plaso).
 * **Simple:** Easily installable with a single `docker compose build` command.
 * **Effective:** Produces highly readable CSV files, allowing analysts to start investigations immediately.
-* **Scalable:** By leveraging Redis and Celery, you can easily scale your workers to handle concurrent parsing.
+* **Horizontally Scalable:** By leveraging Redis and Celery, you can easily scale your workers to handle concurrent parsing.
 ---
 
 ## 🚀 How It Works

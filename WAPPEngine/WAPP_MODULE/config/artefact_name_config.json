@@ -1,7 +1,7 @@
 {
             "orc": {
-                "orc_run_logs": ["Statistics.json", "config.xml", "Config.xml", "FastFind_result.xml", "GetThis*",
-                                 "Statistics_*.json", "_config.xml", "getthis"]
+                "orc_run_logs": ["Statistics.json", "config.xml", "Config.xml", "FastFind_result.xml",
+                                 "Statistics_*.json", "_config.xml"]
             },
             "artefacts": {
                 "system": {
