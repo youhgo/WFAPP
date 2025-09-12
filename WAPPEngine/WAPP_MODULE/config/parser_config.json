@@ -1,4 +1,5 @@
 {
+  "restore": 0,
   "disk": 1,
   "elk": 0,
   "evtx": 1,

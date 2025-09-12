@@ -14,7 +14,6 @@ from .classes import DiskParser, EventParser, FileManager, Linkparser, LoggerMan
     NetWorkParser, OrcExtractor, plaso2Elk, PrefetchParser, ProcessParser, RegistryParser, SystemInfoParser, WebHistoryParser
 
 
-
 # Try importing pyscca; fail if it doesn't import
 try:
     import pyscca #Import pyscca, necessary from libscca
@@ -24,8 +23,7 @@ except ImportError:
 
 # TODO : Parsing
 # TODO : Parse Log erasure
-# MV adcomputeur.csv DNS_records.txt EventConsumer.txt
-
+# TODO : Export pre plaso as JSON for SIEM
 class WindowsForensicArtefactParser:
     """
        Class WindowsForensicArtefactParser
@@ -105,6 +103,7 @@ class WindowsForensicArtefactParser:
         self.result_parsed_dir = os.path.join(self.parsed_dir, "parsed_for_human")
         self.evt_dir = os.path.join(self.parsed_dir, "event")
         self.mft_dir = os.path.join(self.disk_dir, "mft")
+        self.other_dir = os.path.join(self.disk_dir, "others")
         self.initialise_working_directories()
 
         self.running_log_file_path = os.path.join(self.log_dir, "{}_running.log".format(self.main_id))
@@ -130,81 +129,112 @@ class WindowsForensicArtefactParser:
                     self.artefact_config = json.load(config_file_stream)
             except:
                 self.artefact_config = {
+
                     "orc": {
-                        "orc_run_logs": [r"Statistics.json", r"config.xml", r"Config.xml", r"FastFind_result.xml",
-                                         r"Statistics_*.json", r"_config.xml"]
+                        "orc_run_logs": [
+                            "Statistics.json",
+                            "config.xml",
+                            "Config.xml",
+                            "FastFind_result.xml",
+                            "Statistics_*.json",
+                            "_config.xml",
+                            "Artefacts.log",
+                            "VSS_list.log",
+                            "Browsers_artefacts.log",
+                            "UserHives.log",
+                            "autoruns.log",
+                            "MFT.log",
+                            "SystemHives.log",
+                            "Event.log",
+                            "processes2.log",
+                            "TextLogs.log",
+                            "AD_computers.log",
+                            "SAM.log",
+                            "DNS_records.log",
+                            "TextLogs",
+                            "Browsers_history.log",
+                            "EventConsumer.log",
+                            "USNInfo.log",
+                            "processes1.log"
+                        ]
                     },
                     "artefacts": {
                         "system": {
-                            "system_info": [r"Systeminfo.csv"]
+                            "system_info": ["Systeminfo.csv"]
                         },
                         "network": {
-                            "tcpvcon": [r"Tcpvcon.txt"],
-                            "arp_cache": [r"arp_cache.txt"],
-                            "dns_cache": [r"dns_cache.txt"],
-                            "netstat": [r"netstat.txt"],
-                            "routes": [r"routes.txt"],
-                            "hosts": [r"hosts$"],
-                            "lmhosts": [r"lmhosts.sam"],
-                            "protocol": [r"protocol$"],
-                            "services": [r"services$"],
-                            "network": [r"networks$"],
-                            "bits": [r"BITS_jobs.txt"]
+                            "tcpvcon": ["Tcpvcon.txt"],
+                            "arp_cache": ["arp_cache.txt"],
+                            "dns_cache": ["dns_cache.txt"],
+                            "netstat": ["netstat.txt"],
+                            "routes": ["routes.txt"],
+                            "hosts": ["hosts$"],
+                            "lmhosts": ["lmhosts.sam"],
+                            "protocol": ["protocol$"],
+                            "services": ["services$"],
+                            "network": ["networks$"],
+                            "bits": ["BITS_jobs.txt"],
+                            "dns_records": ["DNS_records.txt"]
                         },
                         "hives": {
-                            "NTUSER": [r"NTUSER.DAT$"],
-                            "AMCACHE": [r"Amcache.hve$"],
-                            "SOFTWARE": [r"SOFTWARE$"],
-                            "SYSTEM": [r"SYSTEM$"],
-                            "SECURITY": [r"SECURITY$"],
-                            "SAM": [r"SAM$"]
+                            "NTUSER": ["NTUSER.DAT$"],
+                            "AMCACHE": ["Amcache.hve$"],
+                            "SOFTWARE": ["SOFTWARE$"],
+                            "SYSTEM": ["SYSTEM$"],
+                            "SECURITY": ["SECURITY$"],
+                            "SAM": ["SAM$"]
                         },
                         "process": {
-                            "process1": [r"process1.csv", r"processes1.csv"],
-                            "process2": [r"process2.csv", r"processes2.csv"],
-                            "autoruns": [r"autoruns.csv"],
-                            "sample_autoruns": [r"GetSamples_autoruns.xml", r"Process_Autoruns.xml"],
-                            "sample_timeline": [r"GetSamples_timeline.csv", r"Process_timeline.csv"],
-                            "sample_info": [r"GetSamples_sampleinfo.csv", r"Process_sampleinfo.csv"],
-                            "handle": [r"handle.txt"],
-                            "enum_lock": [r"Enumlocs.txt"],
-                            "list_dll": [r"Listdlls.txt"],
-                            "ps_services": [r"psService.txt"]
+                            "process1": ["process1.csv", "processes1.csv"],
+                            "process2": ["process2.csv", "processes2.csv"],
+                            "autoruns": ["autoruns.csv"],
+                            "sample_autoruns": ["GetSamples_autoruns.xml", "Process_Autoruns.xml"],
+                            "sample_timeline": ["GetSamples_timeline.csv", "Process_timeline.csv"],
+                            "sample_info": ["GetSamples_sampleinfo.csv", "Process_sampleinfo.csv"],
+                            "handle": ["handle.txt"],
+                            "enum_lock": ["Enumlocs.txt"],
+                            "list_dll": ["Listdlls.txt"],
+                            "ps_services": ["psService.txt"]
                         },
                         "event_logs": {
-                            "evtx": [r".*.evtx"]
+                            "evtx": [".*.evtx"]
                         },
                         "powershell": {
-                            "consol_history": [r"ConsoleHost_history.txt"],
-                            "Module_Analysis_Cache": [r"ModuleAnalysisCache"]
+                            "consol_history": ["ConsoleHost_history.txt"],
+                            "Module_Analysis_Cache": ["ModuleAnalysisCache"],
+                            "powerview": ["PowerView"]
                         },
                         "master_file_table": {
-                            "MFT": [r"MFT$"]
+                            "MFT": ["MFT$"]
                         },
                         "disk": {
-                            "usn_journal": [r"USNInfo.*.csv"],
-                            "VSS_List": [r"VSS_list.csv"]
+                            "usn_journal": ["USNInfo.*.csv"],
+                            "VSS_List": ["VSS_list.csv"]
                         },
                         "files": {
-                            "Activity_cache": [r"ActivitiesCache.db"],
-                            "sdb": [r".*.sdb"],
-                            "SRUM": [r"SRUDB.dat", r"SRU.*.log"],
-                            "super_fetch": [r"ag.*.db"],
-                            "Wmi": [r"OBJECTS.DATA", r"INDEX.BTR", r"MAPPING*.MAP"],
-                            "prefetch": [r".*.pf"],
-                            "lnk": [r".*.lnk"],
-                            "recent_file": [r".*-ms"]
+                            "Activity_cache": ["ActivitiesCache.db"],
+                            "sdb": [".*.sdb"],
+                            "SRUM": ["SRUDB.dat", "SRU.*.log"],
+                            "super_fetch": ["ag.*.db"],
+                            "Wmi": ["OBJECTS.DATA", "INDEX.BTR", "MAPPING*.MAP"],
+                            "prefetch": [".*.pf"],
+                            "lnk": [".*.lnk"],
+                            "recent_file": [".*-ms"]
                         },
                         "browsers": {
-                            "browser_history": [r".*.sqlite"]
+                            "browser_history": [".*.sqlite"]
                         },
-                        "others": {
-                            "event_consumer": [r"EventConsumer.txt"],
-                            "setup_api": [r"setupapi"],
-                            "mrt": [r"mrt"]
+                        "others_text": {
+                            "event_consumer": ["EventConsumer.txt"],
+                            "ad_computer": ["AD_computers.csv"]
+                        },
+                        "others_bin": {
+                            "setup_api": ["setupapi"],
+                            "mrt": ["mrt"]
                         }
                     }
                 }
+
                 self.logger_run.info(
                     "[ARTEFACT][CONFIG] Error loading default config file, loading embedded config {}".format(
                         json.dumps(self.artefact_config, indent=4)),
@@ -230,6 +260,7 @@ class WindowsForensicArtefactParser:
                 self.logger_run.error("[PARSER][CONFIG] Error loading config : {}".format(traceback.format_exc()),
                                      header="ERROR", indentation=0)
                 self.main_config = {
+                    "restore": 0,
                     "disk": 1,
                     "elk": 0,
                     "evtx": 1,
@@ -282,6 +313,7 @@ class WindowsForensicArtefactParser:
             os.makedirs(self.lnk_dir, exist_ok=True)
             os.makedirs(self.orc_log_dir, exist_ok=True)
             os.makedirs(self.prefetch_dir, exist_ok=True)
+            os.makedirs(self.other_dir, exist_ok=True)
 
         except:
             sys.stderr.write("\nfailed to initialises directories {}\n".format(traceback.format_exc()))
@@ -303,20 +335,24 @@ class WindowsForensicArtefactParser:
 
             if file_ext in [".7z", ".zip"]:
                 self.logger_run.info("[EXTRACTING] {}".format(self.path_to_archive), header="START", indentation=1)
-                extraction_successful = extractor.extract_recursively(self.path_to_archive, self.extracted_dir)
+                extraction_successful = extractor.extract_recursively(file_ext, self.path_to_archive, self.extracted_dir)
             self.logger_run.info("[EXTRACTING] archives", header="FINISHED", indentation=0)
         except:
             self.logger_run.error("[EXTRACTING] archives {}".format(traceback.format_exc()), header="ERROR", indentation=0)
 
         if extraction_successful:
             try:
-                restorer = OrcExtractor.ArtefactRestorer(self.extracted_dir, self.restored_path, self.logger_run)
-                restorer.run()
+                if self.main_config.get("restore", False):
+                    restorer = OrcExtractor.ArtefactRestorer(self.extracted_dir, self.restored_path, self.logger_run)
+                    restorer.run()
+                else:
+                    renamer = OrcExtractor.ArtefactRenamer(self.extracted_dir, self.logger_run)
+                    renamer.run()
             except Exception as e:
-                self.logger_run.error(f"Une erreur critique est survenue durant la restauration : {e}\n{traceback.format_exc()}",
+                self.logger_run.error(f"Critical error while restoring : {e}\n{traceback.format_exc()}",
                              header="CRITICAL")
         else:
-            self.logger_run.error("Le processus de restauration est annulé car l'extraction a échoué.", header="ABORT")
+            self.logger_run.error("Restoration process failed.", header="ABORT")
 
     def clean_archive_name(self, pattern, og_name):
         new_name = re.sub(pattern, '', og_name)
@@ -356,6 +392,22 @@ class WindowsForensicArtefactParser:
             elif type(v) == str:
                 all_file_to_search.append(v)
         self.search_and_mv_artefacts(all_file_to_search, self.process_dir)
+
+        all_file_to_search = []
+        for k, v in self.artefact_config.get("artefacts", {}).get("disk", {}).items():
+            if type(v) == list:
+                all_file_to_search.extend(v)
+            elif type(v) == str:
+                all_file_to_search.append(v)
+        self.search_and_mv_artefacts(all_file_to_search, self.disk_dir)
+
+        all_file_to_search = []
+        for k, v in self.artefact_config.get("artefacts", {}).get("others_text", {}).items():
+            if type(v) == list:
+                all_file_to_search.extend(v)
+            elif type(v) == str:
+                all_file_to_search.append(v)
+        self.search_and_mv_artefacts(all_file_to_search, self.result_parsed_dir)
 
     def l2t(self):
         """
@@ -610,7 +662,6 @@ class WindowsForensicArtefactParser:
         To parse USN journal to human readble format (|DATE|TIME|ETC|ETC)
         :return:
         """
-
         try:
             self.logger_run.info("[PARSING][USNJRNL]", header="START", indentation=1)
 
@@ -618,16 +669,8 @@ class WindowsForensicArtefactParser:
             d_parser = DiskParser.DiskParser(self.logger_run)
             usn_paterns = self.artefact_config.get("artefacts", {}).get("disk", {}).get("usn_journal")
 
-            all_file_to_search = []
-            for k,v in self.artefact_config.get("artefacts", {}).get("disk", {}).items():
-                if type(v) == list:
-                    all_file_to_search.extend(v)
-                elif type(v) == str:
-                    all_file_to_search.append(v)
-            self.search_and_mv_artefacts(all_file_to_search, self.disk_dir)
-
             for usn_patern in usn_paterns:
-                usn_files = mngr.recursive_file_search(self.extracted_main_dir, usn_patern)
+                usn_files = mngr.recursive_file_search(self.parsed_dir, usn_patern)
                 for usn_file in usn_files:
                     d_parser.parse_usnjrnl(usn_file, self.result_parsed_dir)
 

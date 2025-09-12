@@ -1,7 +1,31 @@
 {
             "orc": {
-                "orc_run_logs": ["Statistics.json", "config.xml", "Config.xml", "FastFind_result.xml",
-                                 "Statistics_*.json", "_config.xml"]
+                "orc_run_logs": [
+                    "Statistics.json",
+                    "config.xml",
+                    "Config.xml",
+                    "FastFind_result.xml",
+                    "Statistics_*.json",
+                    "_config.xml",
+                    "Artefacts.log",
+                    "VSS_list.log",
+                    "Browsers_artefacts.log",
+                    "UserHives.log",
+                    "autoruns.log",
+                    "MFT.log",
+                    "SystemHives.log",
+                    "Event.log",
+                    "processes2.log",
+                    "TextLogs.log",
+                    "AD_computers.log",
+                    "SAM.log",
+                    "DNS_records.log",
+                    "TextLogs",
+                    "Browsers_history.log",
+                    "EventConsumer.log",
+                    "USNInfo.log",
+                    "processes1.log"
+                ]
             },
             "artefacts": {
                 "system": {
@@ -18,7 +42,8 @@
                     "protocol": ["protocol$"],
                     "services": ["services$"],
                     "network": ["networks$"],
-                    "bits": ["BITS_jobs.txt"]
+                    "bits": ["BITS_jobs.txt"],
+                    "dns_records": ["DNS_records.txt"]
                 },
                 "hives": {
                     "NTUSER": ["NTUSER.DAT$"],
@@ -45,7 +70,8 @@
                 },
                 "powershell": {
                     "consol_history": ["ConsoleHost_history.txt"],
-                    "Module_Analysis_Cache": ["ModuleAnalysisCache"]
+                    "Module_Analysis_Cache": ["ModuleAnalysisCache"],
+                    "powerview": ["PowerView"]
                 },
                 "master_file_table": {
                     "MFT": ["MFT$"]
@@ -67,8 +93,11 @@
                 "browsers": {
                     "browser_history": [".*.sqlite"]
                 },
-                "others": {
+                "others_text": {
                     "event_consumer": ["EventConsumer.txt"],
+                    "ad_computer": ["AD_computers.csv"]
+                },
+                "others_bin": {
                     "setup_api": ["setupapi"],
                     "mrt": ["mrt"]
                 }
