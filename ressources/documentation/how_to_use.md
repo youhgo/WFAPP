@@ -122,7 +122,8 @@ POST /api/parse/parse_archive
 ```json
 {
   "caseName": "name_of_your_case",
-  "machineName": "name_of_the_machine_analyzed"
+  "machineName": "name_of_the_machine_analyzed",
+  "archiveType" : "ORC"
 }
 ```
 
@@ -132,6 +133,7 @@ POST /api/parse/parse_archive
 {
   "caseName": "name_of_your_case",
   "machineName": "name_of_the_machine_analyzed",
+  "archiveType" : "ORC",
   "parser_config": {
       "disk": 1,
       "elk": 0,
@@ -157,6 +159,7 @@ Please read the [tutorial](Configure_WAPP.md) as an invalid configuration format
 {
   "caseName": "name_of_your_case",
   "machineName": "name_of_the_machine_analyzed",
+  "archiveType" : "ORC",
   "parser_config": {
     "disk": 1,
     "...": "...",
@@ -188,7 +191,7 @@ https://wapp.localhost/api/login
 ```
 
 ```bash
-curl -b cookie_jar.txt -X POST -k https://wapp.localhost/api/parse/parse_archive   -F file=@"/path/to/archive.7z"   -F json='{"caseName":"test", "machineName":"DesktopForest"}'
+curl -b cookie_jar.txt -X POST -k https://wapp.localhost/api/parse/parse_archive   -F file=@"/path/to/archive.7z"   -F json='{"caseName":"test", "machineName":"DesktopForest", "archiveType" : "ORC"}'
 ```
 
 **Example response:**
