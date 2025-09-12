@@ -45,7 +45,6 @@ class LoggerManager:
     def error(self, msg: str, header: str = "FAILED", indentation: int = 0):
         self._generic_log(msg, level="error", header_type=header, indentation=indentation)
 
-
 class OrcExtractor:
     """Classe pour extraire les archives .7z et .zip de manière récursive."""
 
@@ -131,7 +130,6 @@ class OrcExtractor:
                                       indentation=1)
         return True
 
-
 class ArtefactRenamer:
     """Renomme les artefacts sur place en utilisant les fichiers GetThis*.csv."""
 
@@ -213,8 +211,6 @@ class ArtefactRenamer:
                 indentation=2)
             self.error_count += 1
 
-
-
 class ArtefactRestorer:
     """Reconstruit l'arborescence originale des fichiers collectés."""
 
@@ -281,7 +277,6 @@ class ArtefactRestorer:
                               indentation=2)
             self.error_count += 1
 
-
 def parse_args():
     """Parse les arguments de la ligne de commande."""
     parser = argparse.ArgumentParser(
@@ -296,7 +291,6 @@ def parse_args():
     parser.add_argument('--rename-only', action='store_true',
                         help="Si spécifié, renomme les fichiers extraits sur place et s'arrête.")
     return parser.parse_args()
-
 
 if __name__ == '__main__':
     args = parse_args()

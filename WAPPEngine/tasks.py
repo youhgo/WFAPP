@@ -35,6 +35,11 @@ def parse_archive(content, file_name):
         machine_name = content.get("machineName", "No_Name")
         parser_config = content.get('parser_config', None)
         artefact_config = content.get('artefact_config', None)
+        if content.get("archiveType", "") == "ORC":
+            is_orc = True
+        else:
+            is_orc = False
+
         print(json.dumps(content, indent=4))
 
 
@@ -45,7 +50,8 @@ def parse_archive(content, file_name):
                                                     separator="|",
                                                     main_id=main_id,
                                                     artefact_config=artefact_config,
-                                                    main_config=parser_config)
+                                                    main_config=parser_config,
+                                                    is_orc = is_orc)
 
         wapp_parser.do()
 

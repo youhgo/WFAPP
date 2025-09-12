@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -76,6 +76,20 @@
                         <div>
                             <label for="machineName" class="block text-sm font-medium text-gray-700 mb-1">Machine Name</label>
                             <input type="text" id="machineName" name="machineName" required placeholder="ex: MyMachine" class="shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <!-- Champ pour le type d'archive ajouté -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Archive type</label>
+                            <div class="flex items-center space-x-6">
+                                <div class="flex items-center">
+                                    <input id="archiveTypeOrc" name="archiveType" type="radio" value="ORC" checked class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                                    <label for="archiveTypeOrc" class="ml-2 block text-sm text-gray-900">ORC</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input id="archiveTypeOther" name="archiveType" type="radio" value="autre" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                                    <label for="archiveTypeOther" class="ml-2 block text-sm text-gray-900">Autre</label>
+                                </div>
+                            </div>
                         </div>
                         <div>
                             <label for="jsonConfigInput" class="block text-sm font-medium text-gray-700 mb-1">JSON Configuration File (optional)</label>
@@ -318,9 +332,13 @@
                     parserConfig[checkbox.value] = checkbox.checked ? 1 : 0;
                 });
 
+                // Récupérer le type d'archive sélectionné
+                const selectedArchiveType = document.querySelector('input[name="archiveType"]:checked').value;
+
                 const jsonData = {
                     caseName: document.getElementById('caseName').value,
                     machineName: document.getElementById('machineName').value,
+                    archiveType: selectedArchiveType, // Ajouter le type d'archive au JSON
                     parser_config: parserConfig,
                 };
 

@@ -24,6 +24,8 @@ except ImportError:
 # TODO : Parsing
 # TODO : Parse Log erasure
 # TODO : Export pre plaso as JSON for SIEM
+# TODO : Parse AMCACHE FROM YARP
+
 class WindowsForensicArtefactParser:
     """
        Class WindowsForensicArtefactParser
@@ -34,7 +36,7 @@ class WindowsForensicArtefactParser:
        None
     """
 
-    def __init__(self, path_to_archive, output_directory, case_name, machine_name="", separator='|', main_id="",
+    def __init__(self, path_to_archive, output_directory, case_name, is_orc=True, machine_name="", separator='|', main_id="",
                  artefact_config=None, main_config=None) -> None:
         """
         Constructor for the WindowsForensicArtefactParser Class
@@ -62,7 +64,7 @@ class WindowsForensicArtefactParser:
         self.dir_out = output_directory
         self.case_name = case_name
         self.separator = separator
-
+        self.is_orc = is_orc
 
         if machine_name:
             self.machine_name = machine_name
@@ -340,7 +342,7 @@ class WindowsForensicArtefactParser:
         except:
             self.logger_run.error("[EXTRACTING] archives {}".format(traceback.format_exc()), header="ERROR", indentation=0)
 
-        if extraction_successful:
+        if extraction_successful and self.is_orc:
             try:
                 if self.main_config.get("restore", False):
                     restorer = OrcExtractor.ArtefactRestorer(self.extracted_dir, self.restored_path, self.logger_run)

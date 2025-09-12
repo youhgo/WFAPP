@@ -10,7 +10,7 @@ from regipy.plugins.utils import run_relevant_plugins
 import traceback
 from typing import Dict, List, Any
 from yarp import * # must be install from github : https://github.com/msuhanov/yarp/releases
-
+from pathlib import Path
 
 class RegistryParser:
     """
@@ -103,6 +103,78 @@ class RegistryParser:
                         "[PARSING][AMCACHE][REGPY]: An unexpected error occurred{}".format(traceback.format_exc()),
                         header="ERROR",
                         indentation=2)
+
+    def format_amcache_from_json_yarp(self, amcache_file: str, dir_out: str, output_delimiter='|'):
+        """
+        Parses an AmCache file in JSON Lines format (from YARP) and converts it to a CSV file.
+
+        This improved function correctly handles file reading line-by-line, separates parsing
+        from writing, provides more robust error handling, and uses the csv module
+        correctly to write the output.
+
+        Args:
+            amcache_file (str): Path to the input JSONL file containing AmCache data.
+            dir_out (str): Path to the directory where the output CSV file will be saved.
+            output_delimiter (str): The delimiter to use for the output CSV file.
+        """
+        output_file = os.path.join(dir_out, "amcache_yarp.csv")
+        parsed_data = []
+
+        # --- Step 1: Read and parse the JSONL file ---
+        try:
+            with open(amcache_file, 'r', encoding='utf-8') as infile:
+                for i, line in enumerate(infile):
+                    try:
+                        entry = json.loads(line)
+                        if isinstance(entry, dict):
+                            # Extract data with safe fallbacks using .get()
+                            timestamp = entry.get("last_written_timestamp", "1970-01-01T00:00:00.000000")
+                            date, time = timestamp.split("T", 1)  # Split only on the first T
+                            name = entry.get("name", "N/A")
+                            path = entry.get("path", "N/A")
+                            parsed_data.append([date, time, name, path])
+
+                    except json.JSONDecodeError:
+                        self.logger_run.error(f"[PARSING][AMCACHE] Line {i + 1}: Skipping malformed JSON line.")
+                    except (KeyError, ValueError) as e:
+                        self.logger_run.error(f"[PARSING][AMCACHE] Line {i + 1}: Error processing entry. Error: {e}")
+
+        except FileNotFoundError:
+            self.logger_run.error(f"[PARSING][AMCACHE] Input file not found: {amcache_file}")
+            return
+        except Exception as e:
+            self.logger_run.error(f"[PARSING][AMCACHE] An unexpected error occurred while reading the file: {e}")
+            return
+
+        # --- Step 1.5: Sort the data by date ---
+        if parsed_data:
+            # Sorts the list of lists. As the date is the first element and in
+            # YYYY-MM-DD format, a standard sort is sufficient.
+            parsed_data.sort()
+
+        # --- Step 2: Write the parsed data to a CSV file ---
+        if not parsed_data:
+            self.logger_run.warning("[PARSING][AMCACHE] No data was parsed. The output file will not be created.")
+            return
+
+        try:
+            # Ensure the output directory exists
+            os.makedirs(dir_out, exist_ok=True)
+
+            with open(output_file, 'w', newline='', encoding='utf-8') as outfile:
+                writer = csv.writer(outfile, delimiter=output_delimiter, quoting=csv.QUOTE_MINIMAL)
+
+                # Define and write the header
+                header = ['Date', 'Time', 'name', 'path']
+                writer.writerow(header)
+
+                # Write all the parsed data at once
+                writer.writerows(parsed_data)
+
+            self.logger_run.info(f"[PARSING][AMCACHE] Successfully created CSV file at {output_file}")
+
+        except IOError as e:
+            self.logger_run.error(f"[PARSING][AMCACHE] Could not write to output file: {output_file}. Error: {e}")
 
     def _recursively_read_key(self, key):
         """
@@ -355,7 +427,7 @@ class RegistryParser:
 
                     # Commencer le parcours récursif à partir de la clé racine
                     self._recursively_write_key(root_key, f_jsonl)
-
+                self.format_amcache_from_json_yarp(output_jsonl_path, output_path)
                 self.logger_run.info("[PARSING][AMCACHE][YARP]" , header="FINISHED", indentation=2)
                 return True
 
