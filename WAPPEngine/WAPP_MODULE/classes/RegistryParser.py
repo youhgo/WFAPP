@@ -54,7 +54,7 @@ class RegistryParser:
                     amcache_entries: List[Dict[str, Any]] = parsed_data.get("amcache", [])
 
                     if not amcache_entries:
-                        self.logger_run.warning("[PARSING][AMCACHE][REGPY] Regpy could'nt parse Amcache", header="FAILED", indentation=2)
+                        self.logger_run.warning(f"[PARSING][AMCACHE][REGPY] Regpy could'nt parse Amcache", header="FAILED", indentation=2)
                         return
 
                     formatted_for_csv = []
@@ -378,9 +378,9 @@ class RegistryParser:
         try:
             amcache_files = {
                 "amcache": r'Amcache\.hve$',
-                "log1": r'Amcache\.hve.LOG1$',
-                "log2": r'Amcache\.hve.LOG2$',
-                "log3": r'Amcache\.hve.LOG3$'
+                "log1": r'Amcache.hve.LOG1$',
+                "log2": r'Amcache.hve.LOG2$',
+                "log3": r'Amcache.hve.LOG3$'
             }
 
             primary_file_path_l = self.recursive_file_search(hive_file_dir, amcache_files.get("amcache"))

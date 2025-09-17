@@ -170,13 +170,15 @@ class DiskParser:
                 writer = csv.writer(csv_file, delimiter='|', quoting=csv.QUOTE_NONE, escapechar='\\')
 
                 # Write the header row.
-                header = ["timestamp", "event_type", "filename", "filesize", "recordnum"]
+                header = ["Date","Time", "event_type", "filename", "filesize", "recordnum"]
                 writer.writerow(header)
 
                 # Write the new rows to the CSV file.
                 for event in timeline_events:
+                    ev_date, ev_time = event.get('timestamp', "NATNA").split("T")
                     row_data = [
-                        event['timestamp'],
+                        ev_date,
+                        ev_time,
                         event['event_type'],
                         event['filename'],
                         event['filesize'],

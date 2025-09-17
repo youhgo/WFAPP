@@ -24,7 +24,6 @@ except ImportError:
 # TODO : Parsing
 # TODO : Parse Log erasure
 # TODO : Export pre plaso as JSON for SIEM
-# TODO : Parse AMCACHE FROM YARP
 
 class WindowsForensicArtefactParser:
     """
@@ -423,7 +422,7 @@ class WindowsForensicArtefactParser:
             my_cmd = ["{}".format(tool_path),
                       "--logfile", "{}".format(self.l2t_log_file),
                       "--storage-file", "{}".format(self.plaso_storage_file),
-                      "{}".format(self.restored_path)]
+                      "{}".format(self.extracted_main_dir)]
 
             subprocess.run(my_cmd)
             self.logger_run.info("[CREATING][LOG2TIMELINE]", header="FINISHED", indentation=2)
@@ -561,8 +560,9 @@ class WindowsForensicArtefactParser:
         try:
             self.logger_run.info("[CLEAN DUPLICATE]", header="START", indentation=1)
             mngr = FileManager.FileManager()
-            l_file = mngr.list_files_recursive(dir_to_clean, "")
+            l_file = mngr.list_files_recursive(dir_to_clean, "*")
             for file in l_file:
+                self.logger_run.info(f"[CLEAN DUPLICATE] Cleaning {file}", header="FINISH", indentation=1)
                 self.clean_duplicate_in_file(file)
             self.logger_run.info("[CLEAN DUPLICATE]", header="FINISH", indentation=1)
         except:
@@ -581,13 +581,12 @@ class WindowsForensicArtefactParser:
 
         source_files = mngr.list_files_recursive(self.result_parsed_dir, "*.csv")
         for file_path in source_files:
-            if file_path.name == "timeline.csv":
+            if file_path.name == "small_timeline.csv":
                 continue
 
             try:
                 with file_path.open('r', newline='', encoding='utf-8') as f:
                     reader = csv.reader(f, delimiter='|')
-
                     try:
                         header = next(reader)
                         if final_header is None:
@@ -620,7 +619,7 @@ class WindowsForensicArtefactParser:
         except IndexError:
             sorted_timeline = sorted(timeline_entries)  # Fallback to a simple sort
 
-        timeline_path = os.path.join(self.result_parsed_dir, "timeline.csv")
+        timeline_path = os.path.join(self.result_parsed_dir, "small_timeline.csv")
 
         try:
             with open(timeline_path,'w', newline='', encoding='utf-8') as tl:
