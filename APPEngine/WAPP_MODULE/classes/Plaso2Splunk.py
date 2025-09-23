@@ -22,7 +22,7 @@ class PlasoToSplunk:
     def __init__(self, path_to_timeline, splunk_host, splunk_token, splunk_index,
                  machine_name=None, splunk_port=8088, is_flat=False) -> None:
         """
-        Constructor for the PlasoToSplunk class.
+        Constructor for the PlasoToSplunk classes.
 
         Args:
             path_to_timeline (str): Path to the Plaso JSON timeline.

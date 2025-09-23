@@ -11,7 +11,7 @@ class NetWorkParser:
 
     def __init__(self, logger, artefact_config=None, separator="|") -> None:
         """
-        The constructor for NetWorkParser class
+        The constructor for NetWorkParser classes
         :param separator: str: csv separator default is pipe
         """
         self.logger_run = logger

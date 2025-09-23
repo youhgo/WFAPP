@@ -365,7 +365,7 @@ class WindowsForensicArtefactParser:
             l_file = mngr.recursive_file_search(self.extracted_main_dir, f_patern)
             if l_file:
                 for file in l_file:
-                    mngr.mv_file_to_dest(file, out_dir)
+                    mngr.move_file_to_dest(file, out_dir)
 
     def move_artefact_no_parsing(self):
 
@@ -639,7 +639,7 @@ class WindowsForensicArtefactParser:
             self.system_info = s_parser.parse_all(self.extracted_main_dir, self.result_parsed_dir)
             self.logger_run.info("[PARSING][SYSTEMINFO]", header="FINISHED", indentation=1)
 
-            if self.system_info[0].get("Nom d'hôte", ""):
+            if self.system_info and self.system_info[0].get("Nom d'hôte", ""):
                 self.machine_name = self.system_info[0].get("Nom d'hôte", "")
                 self.logger_run.info("Machine Name found : {}".format(self.machine_name), header="INFO", indentation=0)
         except Exception as ex:

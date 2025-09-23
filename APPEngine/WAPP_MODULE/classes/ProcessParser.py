@@ -18,7 +18,7 @@ class ProcessParser:
 
     def __init__(self, logger, artefact_config=None, separator="|") -> None:
         """
-        The constructor for ProcessParser class
+        The constructor for ProcessParser classes
         :param separator: str: csv separator default is pipe
         :param artefact_config: dict: artefact config
         """

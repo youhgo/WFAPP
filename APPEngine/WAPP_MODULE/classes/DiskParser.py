@@ -18,7 +18,7 @@ class DiskParser:
 
     def __init__(self,  logger_run, separator: str = "|") -> None:
         """
-        The constructor for DiskParser class.
+        The constructor for DiskParser classes.
 
         Args:
             separator: The separator to use for the output CSV file.
@@ -175,16 +175,19 @@ class DiskParser:
 
                 # Write the new rows to the CSV file.
                 for event in timeline_events:
-                    ev_date, ev_time = event.get('timestamp', "NATNA").split("T")
-                    row_data = [
-                        ev_date,
-                        ev_time,
-                        event['event_type'],
-                        event['filename'],
-                        event['filesize'],
-                        event['recordnum']
-                    ]
-                    writer.writerow(row_data)
+                    try:
+                        ev_date, ev_time = event.get('timestamp', "NATNA").split("T")
+                        row_data = [
+                            ev_date,
+                            ev_time,
+                            event['event_type'],
+                            event['filename'],
+                            event['filesize'],
+                            event['recordnum']
+                        ]
+                        writer.writerow(row_data)
+                    except Exception as ex:
+                        self.logger_run.failed(f"[PARSING][MFT] Error parsing entry {ex} ", header="FAILED", indentation=3)
             self.logger_run.info("[PARSING][MFT]", header="FINISHED", indentation=2)
 
         except json.JSONDecodeError as e:

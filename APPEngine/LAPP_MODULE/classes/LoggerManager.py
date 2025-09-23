@@ -9,7 +9,7 @@ class LoggerManager:
     Class to manage logging, based on Python's `logging` module.
     """
 
-    # Using an internal class to group headers
+    # Using an internal classes to group headers
     class Headers:
         START = "[START]"
         STOP = "[STOP]"
@@ -27,7 +27,7 @@ class LoggerManager:
 
     def __init__(self, logger_name: str, log_file_path: str, level: str = "INFO"):
         """
-        Constructor for the LoggerManager class.
+        Constructor for the LoggerManager classes.
 
         Args:
             logger_name (str): Name of the logger.

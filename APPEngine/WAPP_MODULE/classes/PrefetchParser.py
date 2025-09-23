@@ -20,7 +20,7 @@ class PrefetchParser:
 
     def __init__(self, logger_run) -> None:
         """
-        The constructor for PrefetchParser class.
+        The constructor for PrefetchParser classes.
         """
         self.logger_run = logger_run
         self.output = {}

@@ -26,7 +26,7 @@ class PlasoToELK:
     def __init__(self, path_to_timeline, case_name=None, machine_name=None, is_flat=False, elk_ip="localhost",
                  elk_port="9200") -> None:
         """
-        Constructor for class Plaso to ELK
+        Constructor for classes Plaso to ELK
 
          Args:
              path_to_timeline (str): path to the timeline to send

@@ -14,7 +14,7 @@ class FileManager:
 
     def __init__(self, config="") -> None:
         """
-        The constructor for FileManager class.
+        The constructor for FileManager classes.
         Parameters:
         """
         if config:
@@ -76,20 +76,32 @@ class FileManager:
     def delet_specific_files(self, file_name, folder_name):
         pass
 
-    def move_file_to_dest(self, file, new_dest):
-        if os.path.isfile(file):
-            end_path = os.path.join(new_dest, os.path.basename(file))
-            shutil.move(file, end_path)
+    def move_file_to_dest(self, file_path, new_dest):
+        """
+        Moves a file to a new destination. If a file with the same name
+        already exists, it adds a numerical suffix to avoid overwriting.
+        """
+
+        if not os.path.isfile(file_path):
+            print(f"Error: Source file not found at {file_path}")
+            return
+
+        os.makedirs(new_dest, exist_ok=True)
+        base_name = os.path.basename(file_path)
+        name, ext = os.path.splitext(base_name)
+        end_path = os.path.join(new_dest, base_name)
+        counter = 1
+        while os.path.exists(end_path):
+            new_name = f"{name}_{counter}{ext}"
+            end_path = os.path.join(new_dest, new_name)
+            counter += 1
+
+        shutil.move(file_path, end_path)
 
     def copy_file_to_dest(self, file, new_dest):
         if os.path.isfile(file):
             end_path = os.path.join(new_dest, os.path.basename(file))
             shutil.copy(file, end_path)
-
-    def mv_file_to_dest(self, file, new_dest):
-        if os.path.isfile(file):
-            end_path = os.path.join(new_dest, os.path.basename(file))
-            shutil.move(file, end_path)
 
     def copy_folder_to_dest(self, folder, new_dest):
         if os.path.isdir(folder):
