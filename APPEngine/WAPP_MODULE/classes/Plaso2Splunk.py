@@ -8,6 +8,7 @@ from datetime import datetime
 from lxml import etree
 import warnings
 from urllib3.exceptions import InsecureRequestWarning
+import os
 
 # Suppress only the single InsecureRequestWarning from urllib3 needed for self-signed certs
 warnings.filterwarnings('ignore', category=InsecureRequestWarning)
@@ -33,6 +34,15 @@ class PlasoToSplunk:
             splunk_port (int, optional): Splunk HEC port. Defaults to 8088.
             is_flat (bool, optional): Flattens XML data if True. Defaults to False.
         """
+        if not os.environ.get('SPLUNK_HOST'): self.splunk_host = splunk_host
+        else : self.splunk_host = os.environ.get('SPLUNK_HOST')
+
+        if not os.environ.get('SPLUNK_PORT'): self.splunk_port = splunk_port
+        else: self.splunk_port = os.environ.get('SPLUNK_PORT')
+
+        if not os.environ.get('SPLUNK_TOKEN'): self.splunk_token = splunk_token
+        else: self.splunk_token = os.environ.get('ELK_USER')
+
         self.path_to_timeline = path_to_timeline
         self.splunk_hec_url = f"https://{splunk_host}:{splunk_port}/services/collector"
         self.splunk_token = splunk_token

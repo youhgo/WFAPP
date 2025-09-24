@@ -9,9 +9,9 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk, streaming_bulk  # Added import for the bulk helper
 import warnings
 from urllib3.exceptions import InsecureRequestWarning
+import os
 
 warnings.filterwarnings('ignore', category=InsecureRequestWarning)
-
 
 class PlasoToELK:
     """
@@ -23,8 +23,8 @@ class PlasoToELK:
        None
     """
 
-    def __init__(self, path_to_timeline, case_name=None, machine_name=None, is_flat=False, elk_ip="localhost",
-                 elk_port="9200") -> None:
+    def __init__(self, path_to_timeline, case_name=None, machine_name=None, is_flat=False, elk_host="localhost",
+                 elk_port="9200", elk_user="elastic", elk_password="changeme") -> None:
         """
         Constructor for classes Plaso to ELK
 
@@ -33,24 +33,63 @@ class PlasoToELK:
              case_name (str): Name of the case, will be inside the index.
              machine_name (str): Name of the machine, will be inside the index.
              is_flat (str): Set to true to flatten all the json field to top level, better for Kibana Vue but can explode index field and slow down searchs
-             elk_ip (str): elastic ip addr
+             elk_host (str): elastic ip addr
              elk_port (str): elastic port
+             elk_user (str): user for elk
+             elk_password (str): password for user for elk
 
          Returns:
              type: (PlasoToELK)
          """
+
+        if not os.environ.get('ELK_HOST'): self.elk_host = elk_host
+        else : self.elk_host = os.environ.get('ELK_HOST')
+
+        if not os.environ.get('ELK_PORT'): self.elk_port = elk_port
+        else: self.elk_port = os.environ.get('ELK_PORT')
+
+        if not os.environ.get('ELK_USER'): self.elk_user = elk_user
+        else: self.elk_user = os.environ.get('ELK_USER')
+
+        if not os.environ.get('ELK_PASSWD'): self.elk_password = elk_password
+        else: self.elk_password = os.environ.get('ELK_PASSWD')
+
+        # Initialize the Elasticsearch client using the environment variables
+        self.elk_client = Elasticsearch(
+            f"https://{self.elk_host}:{ self.elk_port}",
+            basic_auth=(self.elk_user, self.elk_password),
+            ca_certs=False,
+            verify_certs=False
+        )
+
         self.path_to_timeline = path_to_timeline
         self.case_name = case_name
         self.machine_name = machine_name
-        self.elk_ip = elk_ip
-        self.elk_port = elk_port
-        self.elk_client = Elasticsearch("https://{}:{}".format(elk_ip, elk_port), basic_auth=('elastic', 'changeme'),
-                                        ca_certs=False, verify_certs=False)
+
+
         self.is_flat = is_flat
         self.id = 1
         self.index = "{}_{}".format(self.case_name, self.machine_name)
         self.mapping = {}
         self.settings = {}
+
+    def test_connection(self):
+        """
+        Tests the connection to the Elasticsearch cluster.
+
+        Returns:
+            bool: True if the connection is successful, False otherwise.
+        """
+        try:
+            if self.elk_client.ping():
+                print("Successfully connected to Elasticsearch.")
+                return True
+            else:
+                print("Could not connect to Elasticsearch. The server might be down or unreachable.")
+                return False
+        except Exception as e:
+            print(f"An error occurred while trying to connect to Elasticsearch: {e}")
+            return False
 
     def initialise_elk_client(self):
 
@@ -265,6 +304,9 @@ class PlasoToELK:
         """
         Bulk ingestion with immediate error reporting.
         """
+        if not self.test_connection():
+            return
+
         print("Starting bulk ingestion...")
         self.initialise_elk_client()
 
@@ -286,13 +328,12 @@ class PlasoToELK:
                 else:
                     fail_count += 1
                     # Print the error immediately
-                    print("\n❌ Failed document:")
+                    print("\nFailed document:")
                     print(json.dumps(result, indent=2))
-                    exit(1)
 
             print("\nIngestion complete.")
-            print(f"✅ Successfully indexed {success_count} documents.")
-            print(f"❌ Failed to index {fail_count} documents.")
+            print(f"Successfully indexed {success_count} documents.")
+            print(f"Failed to index {fail_count} documents.")
 
         except Exception as e:
             print("⚠️ Bulk ingestion crashed with exception:")

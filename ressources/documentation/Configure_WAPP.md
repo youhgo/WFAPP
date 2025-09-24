@@ -8,7 +8,7 @@ Note: It is possible to send a custom configuration through the API with the arc
 
 * **WAPP Repository:** <https://github.com/youhgo/WFAPP>
 
-* **Documentation:** [Installation Guide](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_install.md) | [Usage Guide](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_use.md) | [Results Architecture](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/Explaining_the_results.md)
+* **Documentation:** [Installation Guide](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_install.md) | [Usage Guide](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_use.md) | [Results Architecture](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/Explaining_the_results.md) | [Configure SIEM Ingestion](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/Configure_SIEM.md)
 
 ## How WAPP Works
 

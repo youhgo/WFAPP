@@ -825,7 +825,6 @@ class WindowsForensicArtefactParser:
         p_agent = plaso2Elk.PlasoToELK(self.logger_run, self.timeline_json_path, self.case_name, self.machine_name)
         if p_agent.test_connection():
             p_agent.send_to_elk_in_bulk()
-
         else:
             self.logger_run.error("[CONNECTING][ELK] aboarding", header="ERROR", indentation=1)
 
@@ -871,8 +870,7 @@ class WindowsForensicArtefactParser:
             if self.main_config.get("mpp", False):
                 self.do_maximum_plaso_parser()
         if self.main_config.get("elk", False):
-            pass
-            #self.do_elk()
+            self.do_elk()
 
         self.logger_run.info("[PARSING][ARTEFACTS]", header="FINISHED", indentation=0)
 

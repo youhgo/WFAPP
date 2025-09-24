@@ -60,6 +60,11 @@ services:
       TOOL_PATH: "/python-docker/WAPP_MODULE/outils"
       ELK_HOST: ${ELK_HOST}
       ELK_PORT: ${ELK_PORT}
+      ELK_USER: ${ELK_USER}
+      ELK_PASSWD: ${ELK_PASSWD}
+      SPLUNK_HOST: ${SPLUNK_HOST}
+      SPLUNK_PORT: ${SPLUNK_PORT}
+      SPLUNK_TOKEN: ${SPLUNK_TOKEN}
 
     volumes:
       - /please/change/me/shared:/python-docker/shared_files/
