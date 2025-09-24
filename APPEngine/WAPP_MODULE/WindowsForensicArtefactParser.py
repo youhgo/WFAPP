@@ -203,7 +203,8 @@ class WindowsForensicArtefactParser:
                         "powershell": {
                             "consol_history": ["ConsoleHost_history.txt"],
                             "Module_Analysis_Cache": ["ModuleAnalysisCache"],
-                            "powerview": ["PowerView"]
+                            "powerview": ["PowerView"],
+                            "scripts" : [".*.ps1"]
                         },
                         "master_file_table": {
                             "MFT": ["MFT$"]
@@ -232,6 +233,9 @@ class WindowsForensicArtefactParser:
                         "others_bin": {
                             "setup_api": ["setupapi"],
                             "mrt": ["mrt"]
+                        },
+                        "scripts": {
+                            "bat": [".*.bat"]
                         }
                     }
                 }
@@ -409,6 +413,7 @@ class WindowsForensicArtefactParser:
             elif type(v) == str:
                 all_file_to_search.append(v)
         self.search_and_mv_artefacts(all_file_to_search, self.result_parsed_dir)
+
 
     def l2t(self):
         """

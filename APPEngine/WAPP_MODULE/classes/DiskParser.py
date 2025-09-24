@@ -187,7 +187,7 @@ class DiskParser:
                         ]
                         writer.writerow(row_data)
                     except Exception as ex:
-                        self.logger_run.failed(f"[PARSING][MFT] Error parsing entry {ex} ", header="FAILED", indentation=3)
+                        self.logger_run.error(f"[PARSING][MFT] Error parsing entry {ex} ", header="FAILED", indentation=3)
             self.logger_run.info("[PARSING][MFT]", header="FINISHED", indentation=2)
 
         except json.JSONDecodeError as e:

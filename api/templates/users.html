@@ -3,9 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <title>User Management</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Remplacement du CDN par le chemin local -->
+  <script src="{{ url_for('static', filename='vendor/tailwindcss.js') }}"></script>
   <style>
-    /* Styles pour la modale */
+    /* Ajout de la police Inter pour la cohérence */
+    @import url("{{ url_for('static', filename='vendor/inter.css') }}");
+    body {
+        font-family: 'Inter', sans-serif;
+    }
     .modal {
       display: none;
       position: fixed;
@@ -83,7 +88,7 @@
       </form>
     </div>
   </div>
-
+    <!-- Le script reste inchangé -->
 <script>
 async function fetchUsers() {
   const res = await fetch('/api/users');

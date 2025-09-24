@@ -6,10 +6,6 @@ import sys
 import traceback
 from .classes import LoggerManager, Extractor
 
-# TODO : Parsing
-# TODO : Parse Log erasure
-# TODO : Export pre plaso as JSON for SIEM
-
 class LinuxForensicArtefactParser:
     """
        Class WindowsForensicArtefactParser

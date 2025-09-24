@@ -3,7 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <title>Login - WAPP</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Remplacement du CDN par le chemin local -->
+  <script src="{{ url_for('static', filename='vendor/tailwindcss.js') }}"></script>
+  <!-- Ajout de la police Inter pour la cohérence -->
+  <style>
+      @import url("{{ url_for('static', filename='vendor/inter.css') }}");
+      body {
+          font-family: 'Inter', sans-serif;
+      }
+  </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center h-screen">
   <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
@@ -20,7 +28,7 @@
     </form>
     <p id="errorMsg" class="text-red-600 mt-4 text-center hidden"></p>
   </div>
-
+  <!-- Le script reste inchangé -->
   <script>
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();

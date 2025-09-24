@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WAPP WEB Portal</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Remplacement du CDN par le chemin local -->
+    <script src="{{ url_for('static', filename='vendor/tailwindcss.js') }}"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        /* Remplacement de l'import Google Fonts par le chemin local */
+        @import url("{{ url_for('static', filename='vendor/inter.css') }}");
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
@@ -17,16 +19,14 @@
         .content-section.active {
             display: block;
         }
-        /* Sidebar styles */
         #sidebar {
             transition: transform 0.3s ease-in-out;
         }
-        /* Switch styles */
         .switch {
             position: relative;
             display: inline-block;
-            width: 3rem; /* 48px */
-            height: 1.5rem; /* 24px */
+            width: 3rem;
+            height: 1.5rem;
         }
         .switch input {
             opacity: 0;
@@ -47,8 +47,8 @@
         .slider:before {
             position: absolute;
             content: "";
-            height: 1.25rem; /* 20px */
-            width: 1.25rem; /* 20px */
+            height: 1.25rem;
+            width: 1.25rem;
             left: 2px;
             bottom: 2px;
             background-color: white;
@@ -56,14 +56,15 @@
             border-radius: 50%;
         }
         input:checked + .slider {
-            background-color: #2563eb; /* blue-600 */
+            background-color: #2563eb;
         }
         input:checked + .slider:before {
-            transform: translateX(1.5rem); /* 24px */
+            transform: translateX(1.5rem);
         }
     </style>
 </head>
 <body class="bg-gray-100">
+    <!-- Le reste de votre contenu HTML reste inchangé -->
     <div class="relative min-h-screen md:flex">
         <!-- Mobile menu button -->
         <div class="md:hidden flex justify-between items-center bg-white p-4 shadow-md">
@@ -233,9 +234,9 @@
             </div>
         </div>
     </div>
-
+    <!-- Le script reste inchangé -->
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', () => {
         const sidebar = document.getElementById('sidebar');
         const mobileMenuButton = document.getElementById('mobile-menu-button');
         const navLinks = document.querySelectorAll('.nav-link');

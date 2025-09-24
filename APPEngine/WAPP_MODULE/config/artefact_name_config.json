@@ -71,7 +71,8 @@
                 "powershell": {
                     "consol_history": ["ConsoleHost_history.txt"],
                     "Module_Analysis_Cache": ["ModuleAnalysisCache"],
-                    "powerview": ["PowerView"]
+                    "powerview": ["PowerView"],
+                    "scripts" : [".*.ps1"]
                 },
                 "master_file_table": {
                     "MFT": ["MFT$"]
@@ -100,6 +101,9 @@
                 "others_bin": {
                     "setup_api": ["setupapi"],
                     "mrt": ["mrt"]
-                }
+                },
+              "scripts": {
+                "bat": [".*.bat"]
+              }
             }
         }
