@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./ressources/images/wapp_logo.png" width="400" height="400" alt="APP System Architecture">
+  <img src="./ressources/images/wapp_logo.png" width="600" height="600" alt="APP System Architecture">
 </p>
 
 
@@ -9,9 +9,6 @@
 #  Forensic Artefact Parser Project (A.P.P) 💻
 
 > A fast and simple Docker-based solution for parsing forensic artifacts and generating human-readable results.
-> Windows: Made for DFIR-Orc. is compatible with Kape and any archive that contain row artifacts
-> Linux : Will only extract collection archive, like UAC or CatScale
-
 
 ---
 
