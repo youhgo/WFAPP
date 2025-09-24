@@ -869,8 +869,8 @@ class WindowsForensicArtefactParser:
             self.do_plaso()
             if self.main_config.get("mpp", False):
                 self.do_maximum_plaso_parser()
-        if self.main_config.get("elk", False):
-            self.do_elk()
+            if self.main_config.get("elk", False):
+                self.do_elk()
 
         self.logger_run.info("[PARSING][ARTEFACTS]", header="FINISHED", indentation=0)
 
