@@ -1,24 +1,24 @@
-# Windows Forensic Artifact Parser (WAPP) Project: In-depth Configuration
+# Artifact Parser Project (APP) : In-depth Configuration
 
-This guide provides step-by-step instructions on how to customize WAPP's configuration to meet your specific needs. It is highly recommended to follow this guide if you are not using the pre-configured DFIR-ORC setup.
+This guide provides step-by-step instructions on how to customize APP's configuration to meet your specific needs. It is highly recommended to follow this guide if you are not using the pre-configured DFIR-ORC setup.
 
 Note: It is possible to send a custom configuration through the API with the archive you want to parse.
 
 ### 📌 Key Links
 
-* **WAPP Repository:** <https://github.com/youhgo/WFAPP>
+* **APP Repository:** <https://github.com/youhgo/WFAPP>
 
 * **Documentation:** [Installation Guide](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_install.md) | [Usage Guide](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_use.md) | [Results Architecture](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/Explaining_the_results.md) | [Configure SIEM Ingestion](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/Configure_SIEM.md)
 
-## How WAPP Works
+## How APP Works
 
-WAPP uses regular expressions (regex) to find and identify artifacts. It reads a configuration file and, for each artifact type, searches for files that match the specified regex. The tool then uses the correct parser to analyze the discovered artifacts.
+APP uses regular expressions (regex) to find and identify artifacts. It reads a configuration file and, for each artifact type, searches for files that match the specified regex. The tool then uses the correct parser to analyze the discovered artifacts.
 
-**Note:** Everything in the uploaded archive will be ingested by `plaso`, even if WAPP doesn't have a specific parser for it. This ensures that all data is included in the final timeline.
+**Note:** Everything in the uploaded archive will be ingested by `plaso`, even if APP doesn't have a specific parser for it. This ensures that all data is included in the final timeline.
 
 ## Artifact Naming Configuration
 
-For WAPP to parse an artifact, you **must** provide a regex that matches its name in the configuration file. 
+For APP to parse an artifact, you **must** provide a regex that matches its name in the configuration file. 
 
 For it to work you must use this template, do NOT modify its structure.
 It's not possible to add a new artefact to the config as there is no parser for it.
@@ -45,7 +45,7 @@ The default hive configuration looks like this:
 }
 ```
 
-Let's say the `SOFTWARE` hive collected by your tool is named `"SOFTWARE_HIVE"`. To ensure WAPP can find and parse this file, you need to add a new regex to the `SOFTWARE` list in your configuration.
+Let's say the `SOFTWARE` hive collected by your tool is named `"SOFTWARE_HIVE"`. To ensure APP can find and parse this file, you need to add a new regex to the `SOFTWARE` list in your configuration.
 
 Each regex **MUST** be inside a list, even if there is only one pattern.
 I suggest you to just add your pattern to the list and leave the rest as is so you don't break the structure.
@@ -66,4 +66,4 @@ The updated configuration would then look like this:
 }
 ```
 
-By adjusting the regex patterns, you can make WAPP compatible with any forensic collection tool you use.
+By adjusting the regex patterns, you can make APP compatible with any forensic collection tool you use.

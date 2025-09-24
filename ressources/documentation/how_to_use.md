@@ -1,13 +1,13 @@
-# How to Use WAPP
+# How to Use APP
 
-WAPP is simple to use thanks to its **Web GUI** and **REST API**.  
+APP is simple to use thanks to its **Web GUI** and **REST API**.  
 This guide covers both methods.
 
 ---
 
 ## 📌 Useful Links
 
-* **WAPP Repository:** [Available here](https://github.com/youhgo/WFAPP)
+* **APP Repository:** [Available here](https://github.com/youhgo/WFAPP)
 * **Installation tutorial:** [Installation Guide](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_install.md)
 * **Results explained:** [Results Architecture](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/Explaining_the_results.md)
 * **DFIR-ORC Configuration:** [Tutorial](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/configure_orc.md)
@@ -21,7 +21,7 @@ The default address for the GUI is:
 https://wapp.localhost/login_page
 ```
 <p align="center">
-  <img src="../images/auth_page.png" width="800" alt="WAPP Web GUI">
+  <img src="../images/auth_page.png" width="800" alt="APP Web GUI">
 </p>
 
 you will need to login. The default admin account is :
@@ -41,7 +41,7 @@ The interface provides **5 tabs**:
 
 ### Main Tab
 <p align="center">
-  <img src="../images/Gui_main.png" width="800" alt="WAPP Web GUI">
+  <img src="../images/Gui_main.png" width="800" alt="APP Web GUI">
 </p>
 
 This Tab allows you to upload a collect archive. 
@@ -59,14 +59,14 @@ You will be able to find it in the Running task tab if you lose it.
 
 ### Manage Users
 <p align="center">
-  <img src="../images/manage_users.png" width="800" alt="WAPP Web GUI">
+  <img src="../images/manage_users.png" width="800" alt="APP Web GUI">
 </p>
 With an Admin account you can add and modify the users 
 
 ### Log Viewer
 
 <p align="center">
-  <img src="../images/Gui_logs.png" width="800" alt="WAPP Web GUI">
+  <img src="../images/Gui_logs.png" width="800" alt="APP Web GUI">
 </p>
 
 This tabs allow you to see the logs associated with a parsing task and check if a parser failed or else.
@@ -77,7 +77,7 @@ You need to provide it's associated task id.
 ### task Status
 
 <p align="center">
-  <img src="../images/Gui_status.png" width="800" alt="WAPP Web GUI">
+  <img src="../images/Gui_status.png" width="800" alt="APP Web GUI">
 </p>
 
 This tab allow you to check onb the status of a task.
@@ -87,7 +87,7 @@ This tab allow you to check onb the status of a task.
 ### Running Tasks 
 
 <p align="center">
-  <img src="../images/Gui_running_tasks.png" width="800" alt="WAPP Web GUI">
+  <img src="../images/Gui_running_tasks.png" width="800" alt="APP Web GUI">
 </p>
 
 This tab allows you to get all the running tasks and stop one if needed.
@@ -96,7 +96,7 @@ This tab allows you to get all the running tasks and stop one if needed.
 ### Download DFIR-ORC
 
 <p align="center">
-  <img src="../images/Gui_download.png" width="800" alt="WAPP Web GUI">
+  <img src="../images/Gui_download.png" width="800" alt="APP Web GUI">
 </p>
 
 This Tab allows you to download a already configured DFIR-Orc.exe collector and loaded with a config fully optimised.

@@ -1,12 +1,12 @@
-# Windows Artefact Parser Project - Installation Guide ⚙️
+# Artefact Parser Project - Installation Guide ⚙️
 
-This guide will walk you through the simple process of setting up WAPP using Docker.
+This guide will walk you through the simple process of setting up APP using Docker.
 
 ---
 
 ## 🔗 Useful Links
 
-* **WAPP Repository:** [Available here](https://github.com/youhgo/WFAPP)
+* **APP Repository:** [Available here](https://github.com/youhgo/WFAPP)
 * **Usage Tutorial:** [Tutorial](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_use.md)
 * **Results Architecture:** [Explained here](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/Explaining_the_results.md)
 * **DFIR-ORC Configuration:** [Tutorial](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/configure_orc.md)
@@ -43,7 +43,7 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin 
 
 ---
 
-## ⬇️ Download WAPP
+## ⬇️ Download APP
 
 Clone the repository to your local machine:
 
@@ -79,13 +79,13 @@ volumes:
 ```
 
 This change means all files in `/home/hro/Documents/working_zone/shared/` on your machine will be accessible by Docker.
-Every output from WAPP will be written is this directory and subdirectories.
+Every output from APP will be written is this directory and subdirectories.
 
 ---
 
 ## ▶️ Build and Run
 
-From the WAPP directory, run the following command to build and launch the entire application:
+From the APP directory, run the following command to build and launch the entire application:
 
 `docker compose build`
 
@@ -106,7 +106,7 @@ If successful, you will receive a response like this:
 }
 ```
 
-Congratulations, WAPP is now ready to go!
+Congratulations, APP is now ready to go!
 
 Note : you can set up multiple workers using the docker compose scale option, for 3 celery workers:
 

@@ -1,4 +1,4 @@
-#  Artifact Parser (WAPP) Project: SIEM Configuration
+#  Artifact Parser Project Project (APP): SIEM Configuration
 
 This guide provides instructions on how to setup APP to send plaso timeline to your SIEM.
 
@@ -6,7 +6,7 @@ Note: APP only support ELK and SPLUNK at the moment
 
 ### 📌 Key Links
 
-* **WAPP Repository:** <https://github.com/youhgo/WFAPP>
+* **AAPP Repository:** <https://github.com/youhgo/WFAPP>
 
 * **Documentation:** [Installation Guide](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_install.md) | [Usage Guide](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_use.md) | [Results Architecture](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/Explaining_the_results.md)
 
