@@ -8,7 +8,9 @@
 
 # Windows Forensic Artefact Parser Project (WAPP) 💻
 
-> A fast and simple Docker-based solution for parsing Windows forensic artifacts and generating human-readable results.
+> A fast and simple Docker-based solution for parsing forensic artifacts and generating human-readable results.
+> Windows: Made for DFIR-Orc. is compatible with Kape and any archive that contain row artifacts
+> Linux : Will only extract collection archive, like UAC or CatScale
 
 
 ---
@@ -27,9 +29,9 @@
 Therefore, it is **ABSOLUTLY NOT** recommended to expose the API or Web UI to the internet.
 
 ### Working on :
-- ELK Connector's results are OK, need to test to send data directly from wapp worker to ELK.
-- Same with Splunk
-- Do a module for Linux UAC
+- Configure credential + address to send data directly from wapp worker to ELK + Splunk
+- improving ORC config
+- Translating + comment everything
 
 ## 🧐 What is WAPP?
 
