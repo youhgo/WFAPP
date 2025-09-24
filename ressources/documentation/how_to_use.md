@@ -96,7 +96,7 @@ This tab allows you to get all the running tasks and stop one if needed.
 ### Download DFIR-ORC
 
 <p align="center">
-  <img src="../images/Gui_download_orc.png" width="800" alt="WAPP Web GUI">
+  <img src="../images/Gui_download.png" width="800" alt="WAPP Web GUI">
 </p>
 
 This Tab allows you to download a already configured DFIR-Orc.exe collector and loaded with a config fully optimised.

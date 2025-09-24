@@ -104,7 +104,8 @@ class WindowsForensicArtefactParser:
         self.result_parsed_dir = os.path.join(self.parsed_dir, "parsed_for_human")
         self.evt_dir = os.path.join(self.parsed_dir, "event")
         self.mft_dir = os.path.join(self.disk_dir, "mft")
-        self.other_dir = os.path.join(self.disk_dir, "others")
+        self.other_dir = os.path.join(self.parsed_dir, "others")
+        self.scripts_dir = os.path.join(self.parsed_dir, "scripts")
         self.initialise_working_directories()
 
         self.running_log_file_path = os.path.join(self.log_dir, "{}_running.log".format(self.main_id))
@@ -319,6 +320,7 @@ class WindowsForensicArtefactParser:
             os.makedirs(self.orc_log_dir, exist_ok=True)
             os.makedirs(self.prefetch_dir, exist_ok=True)
             os.makedirs(self.other_dir, exist_ok=True)
+            os.makedirs(self.scripts_dir, exist_ok=True)
 
         except:
             sys.stderr.write("\nfailed to initialises directories {}\n".format(traceback.format_exc()))
@@ -414,6 +416,13 @@ class WindowsForensicArtefactParser:
                 all_file_to_search.append(v)
         self.search_and_mv_artefacts(all_file_to_search, self.result_parsed_dir)
 
+        all_file_to_search = []
+        for k, v in self.artefact_config.get("artefacts", {}).get("scripts", {}).items():
+            if type(v) == list:
+                all_file_to_search.extend(v)
+            elif type(v) == str:
+                all_file_to_search.append(v)
+        self.search_and_mv_artefacts(all_file_to_search, self.scripts_dir)
 
     def l2t(self):
         """

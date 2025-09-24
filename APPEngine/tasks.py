@@ -30,8 +30,8 @@ def parse_archive(content, file_name):
     try:
         main_id = parse_archive.request.id
         if content.get("archiveType", "") == "UAC":
-            return {"taskId": "{}".format(parse_archive.request.id), "WokerStatus": "Failled", "Message": "UAC parser is not available for now"}
-            #return parse_uac(main_id, content, file_name)
+            #return {"taskId": "{}".format(parse_archive.request.id), "WokerStatus": "Failled", "Message": "UAC parser is not available for now"}
+            return parse_uac(main_id, content, file_name)
         if content.get("archiveType", "") == "ORC":
             return parse_orc(main_id, content, file_name)
         else:

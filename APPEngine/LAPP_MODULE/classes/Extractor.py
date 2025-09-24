@@ -6,9 +6,7 @@ import tarfile
 import gzip
 import lzma
 import logging
-
-# Configure basic logging to see the progress
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+import re
 
 class ArchiveExtractor:
     """
@@ -18,20 +16,19 @@ class ArchiveExtractor:
     archive file after a successful extraction.
     """
 
-    def __init__(self, destination_root):
+    def __init__(self, destination_root, logger):
         """
         Initializes the extractor.
 
         Args:
             destination_root (str): The root directory where archives will be extracted.
         """
+        self.logger_run = logger
         self.destination_root = destination_root
         if not os.path.isdir(self.destination_root):
-            logging.info(f"Creating destination directory: {self.destination_root}")
+            self.logger_run.info(f"Creating destination directory: {self.destination_root}")
             os.makedirs(self.destination_root, exist_ok=True)
 
-        # Map file extensions to their handler methods.
-        # The order can matter for getting the handler, so we list longest first.
         self.handlers = {
             '.tar.gz': self._extract_tar,
             '.tar.bz2': self._extract_tar,
@@ -44,8 +41,9 @@ class ArchiveExtractor:
             '.tbz2': self._extract_tar,
             '.txz': self._extract_tar,
         }
-        # For creating output paths, we need a sorted list of extensions
+
         self.known_extensions = sorted(self.handlers.keys(), key=len, reverse=True)
+
 
     def _get_handler(self, file_path):
         """Finds the correct handler based on the file extension."""
@@ -130,24 +128,24 @@ class ArchiveExtractor:
         # The new _get_output_path doesn't need the extension passed to it.
         output_path = self._get_output_path(file_path)
 
-        logging.info(f"Found archive: {file_path}")
-        logging.info(f"Attempting to extract to: {output_path}")
+        self.logger_run.info(f"Found archive: {file_path}")
+        self.logger_run.info(f"Attempting to extract to: {output_path}")
 
         try:
             if not os.path.exists(output_path):
                 os.makedirs(output_path, exist_ok=True)
 
             handler(file_path, output_path)
-            logging.info(f"Successfully extracted {os.path.basename(file_path)}")
+            self.logger_run.info(f"Successfully extracted {os.path.basename(file_path)}")
 
             os.remove(file_path)
-            logging.info(f"Deleted original archive: {file_path}")
+            self.logger_run.info(f"Deleted original archive: {file_path}")
 
             self.extract_recursively(output_path)
 
         except (zipfile.BadZipFile, tarfile.TarError, Exception) as e:
-            logging.error(f"Failed to extract {file_path}: {e}")
-            logging.error("Leaving corrupted or problematic archive in place.")
+            self.logger_run.error(f"Failed to extract {file_path}: {e}")
+            self.logger_run.error("Leaving corrupted or problematic archive in place.")
 
     def run(self, initial_archive_path):
         """
@@ -157,16 +155,21 @@ class ArchiveExtractor:
             initial_archive_path (str): The path to the first archive to extract.
         """
         if not os.path.exists(initial_archive_path):
-            logging.error(f"Initial archive not found: {initial_archive_path}")
+            self.logger_run.error(f"Initial archive not found: {initial_archive_path}")
             return
 
-        logging.info(f"Starting process for: {initial_archive_path}")
-        initial_dest_path = os.path.join(self.destination_root, os.path.basename(initial_archive_path))
+        self.logger_run.info(f"Starting process for: {initial_archive_path}")
+        cleaned_name_archive = self.clean_archive_name(r'__\d+$', initial_archive_path)
+
+        initial_dest_path = os.path.join(self.destination_root, os.path.basename(cleaned_name_archive))
         shutil.copy(initial_archive_path, initial_dest_path)
 
         self.extract_recursively(self.destination_root)
-        logging.info("Extraction process finished.")
+        self.logger_run.info("Extraction process finished.")
 
+    def clean_archive_name(self, pattern, og_name):
+        new_name = re.sub(pattern, '', og_name)
+        return new_name
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

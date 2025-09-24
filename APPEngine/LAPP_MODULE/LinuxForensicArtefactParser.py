@@ -5,6 +5,7 @@ import os
 import sys
 import traceback
 from .classes import LoggerManager, Extractor
+import re
 
 class LinuxForensicArtefactParser:
     """
@@ -90,6 +91,10 @@ class LinuxForensicArtefactParser:
         except:
             sys.stderr.write("\nfailed to initialises directories {}\n".format(traceback.format_exc()))
 
+    def clean_archive_name(self, pattern, og_name):
+        new_name = re.sub(pattern, '', og_name)
+        return new_name
+
     def extract(self):
         """
          to extract orc archives
@@ -97,16 +102,22 @@ class LinuxForensicArtefactParser:
         """
         extraction_successful = False
         try:
-            extractor = Extractor.ArchiveExtractor(self.path_to_archive)
+            extractor = Extractor.ArchiveExtractor(self.extracted_main_dir, self.logger_run)
 
             self.logger_run.info("[EXTRACTING] archives", header="START", indentation=0)
+            cleaned_name_archive = self.clean_archive_name(r'__\d+$', self.path_to_archive)
 
-            root, filename = os.path.split(self.extracted_main_dir)  # /blabla/ - orc1.7z
+            root, filename = os.path.split(cleaned_name_archive)  # /blabla/ - uac.tar.gz
             filename_wo_ext, file_ext = os.path.splitext(filename)  # /blabla/orc1
+            self.logger_run.info(f"[EXTRACTING] Got Archive {self.path_to_archive}", header="INFO", indentation=1)
+            self.logger_run.info(f"[EXTRACTING] Got Archive root :{root}  :Filename{filename}", header="INFO", indentation=1)
 
-            if file_ext in ["tar.gz"]:
-                self.logger_run.info("[EXTRACTING] {}".format(self.path_to_archive), header="START", indentation=1)
+            if file_ext in [".tar.gz",".tar",".gz"]:
+                self.logger_run.info(f"[EXTRACTING] {self.path_to_archive}", header="START", indentation=1)
                 extraction_successful = extractor.run(self.path_to_archive)
+            else:
+                self.logger_run.info("[EXTRACTING] No compatible archive found", header="INFO", indentation=1)
+
             self.logger_run.info("[EXTRACTING] archives", header="FINISHED", indentation=0)
         except:
             self.logger_run.error("[EXTRACTING] archives {}".format(traceback.format_exc()), header="ERROR",
@@ -122,7 +133,7 @@ def parse_args():
     """
 
     argument_parser = argparse.ArgumentParser(description=(
-        'Solution to parse DFIR-Orc archives'))
+        'Solution to parse UAC archives'))
 
     argument_parser.add_argument('-a', '--archive', action="store",
                                  required=False, dest="archive", default=False,
