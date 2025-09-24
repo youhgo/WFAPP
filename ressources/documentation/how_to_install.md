@@ -7,7 +7,8 @@ This guide will walk you through the simple process of setting up APP using Dock
 ## 🔗 Useful Links
 
 * **APP Repository:** [Available here](https://github.com/youhgo/WFAPP)
-* **Usage Tutorial:** [Tutorial](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_use.md)
+* * **Configuration Tutorial:** [Configuration Tutorial](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/Configure_WAPP.md)
+* **Usage Tutorial:** [Usage Tutorial](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_use.md)
 * **Results Architecture:** [Explained here](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/Explaining_the_results.md)
 * **DFIR-ORC Configuration:** [Tutorial](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/configure_orc.md)
 ---

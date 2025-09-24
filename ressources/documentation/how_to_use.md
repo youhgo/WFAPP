@@ -9,6 +9,7 @@ This guide covers both methods.
 
 * **APP Repository:** [Available here](https://github.com/youhgo/WFAPP)
 * **Installation tutorial:** [Installation Guide](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_install.md)
+* * * **Configuration Tutorial:** [Configuration Tutorial](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/Configure_WAPP.md)
 * **Results explained:** [Results Architecture](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/Explaining_the_results.md)
 * **DFIR-ORC Configuration:** [Tutorial](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/configure_orc.md)
 ---
