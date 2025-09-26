@@ -164,6 +164,7 @@ class DiskParser:
             # Step 3: Sort the flattened events chronologically.
             timeline_events.sort(key=lambda event: event.get('timestamp', '0'))
 
+
             # Step 4: Open the output CSV file and write the sorted data.
             with open(csv_file_path, 'w', encoding='utf-8', newline='') as csv_file:
                 # Create the csv writer with the pipe delimiter.

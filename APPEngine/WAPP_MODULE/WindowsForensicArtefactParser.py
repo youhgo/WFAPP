@@ -777,13 +777,13 @@ class WindowsForensicArtefactParser:
         """
         try:
             self.logger_run.info("[MAXIMUMPLASOPARSER]", header="START", indentation=1)
-            mp = MaximumPlasoParserJson.MaximumPlasoParserJson(path_to_timeline=self.timeline_json_path,
-                                        output_directory=self.parsed_dir,
-                                        output_type="csv",
-                                        separator=self.separator,
-                                        case_name=self.case_name,
-                                        config_file=None,
-                                        machine_name=self.machine_name)
+            mp = MaximumPlasoParserJson.MaximumPlasoParser(path_to_timeline=self.timeline_json_path,
+                                                           output_directory=self.parsed_dir,
+                                                           output_type="csv",
+                                                           separator=self.separator,
+                                                           case_name=self.case_name,
+                                                           config_file=None,
+                                                           machine_name=self.machine_name)
 
             mp.parse_timeline()
             self.logger_run.info("[MAXIMUMPLASOPARSER]", header="FINISHED", indentation=1)

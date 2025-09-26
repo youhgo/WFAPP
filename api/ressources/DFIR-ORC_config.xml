@@ -28,6 +28,65 @@
             <output  name="TextLogs.log" source="StdOutErr" />
         </command>
 
+    <!-- Hive########################################################################################################################################### -->
+
+        <command keyword="GetSystemHives">
+            <execute name="Orc.exe" run="self:#GetThis" />
+            <argument>/config=res:#GetSystemHives_config.xml /shadows</argument>
+            <output  name="SystemHives.7z" source="File" argument="/out={FileName}" />
+            <output  name="SystemHives.log" source="StdOutErr" />
+        </command>
+
+        <command keyword="GetUserHives">
+            <execute name="Orc.exe" run="self:#GetThis" />
+            <argument>/config=res:#GetUserHives_config.xml /shadows</argument>
+            <output  name="UserHives.7z" source="File" argument="/out={FileName}" />
+            <output  name="UserHives.log" source="StdOutErr" />
+        </command>
+
+        <command keyword="GetSamHive">
+            <execute name="Orc.exe" run="self:#GetThis" />
+            <argument>/config=res:#GetSamHive_config.xml</argument>
+            <output  name="SAM.7z" source="File" argument="/out={FileName}" />
+            <output  name="SAM.log" source="StdOutErr" />
+        </command>
+
+        <command keyword="EventConsumer"  winver="6.0+">
+            <execute name="powershell" run="%SystemRoot%\System32\WindowsPowerShell\V1.0\powershell.exe"/>
+            <argument>-NonInteractive -WindowStyle Hidden -NoProfile</argument>
+            <argument>Get-WMIObject -Namespace root\Subscription -Class __EventConsumer</argument>
+            <output  name="EventConsumer.txt" source="StdOut" />
+            <output  name="EventConsumer.log" source="StdErr" />
+        </command>
+
+    <!-- Disks########################################################################################################################################### -->
+        <command keyword="GetMFT">
+            <execute name="Orc.exe" run="self:#GetThis" />
+            <argument>/config=res:#GetMFT_config.xml</argument>
+            <output  name="MFT.7z" source="File" argument="/out={FileName}" />
+            <output  name="MFT.log" source="StdOutErr" />
+        </command>
+
+        <command keyword="USNInfo_systemdrive" queue="flush">
+            <execute name="Orc.exe" run="self:#USNInfo" />
+            <argument>%SystemDrive%\</argument>
+            <output name="USNInfo.7z" source="File" argument="/out={FileName}" />
+            <output name="USNInfo.log" source="StdOutErr" />
+        </command>
+
+        <command keyword="VSS_list">
+            <execute name="Orc.exe" run="self:#NTFSUtil" />
+            <argument>/VSS</argument>
+            <output  name="VSS_list.csv" source="File" argument="/out={FileName}" />
+            <output  name="VSS_list.log" source="StdOutErr" />
+        </command>
+
+        <command keyword="EnumLocs">
+            <execute name="Orc.exe" run="self:#NTFSUtil" />
+            <argument>/enumlocs</argument>
+            <output name="Enumlocs.txt" source="StdOutErr" />
+        </command>
+
     <!-- Process########################################################################################################################################### -->
 
         <command keyword="Autoruns">
@@ -126,77 +185,14 @@
             <output  name="AD_computers.log" source="StdErr" />
         </command>
 
-    <!-- Hive########################################################################################################################################### -->
-
-        <command keyword="GetSystemHives">
-            <execute name="Orc.exe" run="self:#GetThis" />
-            <argument>/config=res:#GetSystemHives_config.xml /shadows</argument>
-            <output  name="SystemHives.7z" source="File" argument="/out={FileName}" />
-            <output  name="SystemHives.log" source="StdOutErr" />
-        </command>
-
-        <command keyword="GetUserHives">
-            <execute name="Orc.exe" run="self:#GetThis" />
-            <argument>/config=res:#GetUserHives_config.xml /shadows</argument>
-            <output  name="UserHives.7z" source="File" argument="/out={FileName}" />
-            <output  name="UserHives.log" source="StdOutErr" />
-        </command>
-
-        <command keyword="GetSamHive">
-            <execute name="Orc.exe" run="self:#GetThis" />
-            <argument>/config=res:#GetSamHive_config.xml</argument>
-            <output  name="SAM.7z" source="File" argument="/out={FileName}" />
-            <output  name="SAM.log" source="StdOutErr" />
-        </command>
-
-        <command keyword="EventConsumer"  winver="6.0+">
-            <execute name="powershell" run="%SystemRoot%\System32\WindowsPowerShell\V1.0\powershell.exe"/>
-            <argument>-NonInteractive -WindowStyle Hidden -NoProfile</argument>
-            <argument>Get-WMIObject -Namespace root\Subscription -Class __EventConsumer</argument>
-            <output  name="EventConsumer.txt" source="StdOut" />
-            <output  name="EventConsumer.log" source="StdErr" />
-        </command>
-
-    <!-- Disks########################################################################################################################################### -->
-        <command keyword="GetMFT">
-            <execute name="Orc.exe" run="self:#GetThis" />
-            <argument>/config=res:#GetMFT_config.xml</argument>
-            <output  name="MFT.7z" source="File" argument="/out={FileName}" />
-            <output  name="MFT.log" source="StdOutErr" />
-        </command>
-        
-        <!-- NTFSINFO
-        <command keyword="NTFSInfo_little" queue="flush">
-            <execute name="Orc.exe" run="self:#NTFSInfo" />
-            <argument>/config=res:#NTFSInfo_little_config.xml</argument>
-            <output name="NTFSInfo_detail.7z" source="File" argument="/out={FileName}" />
-            <output name="NTFSInfo_detail.log" source="StdOutErr" />
-        </command>
-        -->
-
-        <command keyword="USNInfo_systemdrive" queue="flush">
-            <execute name="Orc.exe" run="self:#USNInfo" />
-            <argument>%SystemDrive%\</argument>
-            <output name="USNInfo.7z" source="File" argument="/out={FileName}" />
-            <output name="USNInfo.log" source="StdOutErr" />
-        </command>
-
-        <command keyword="VSS_list">
-            <execute name="Orc.exe" run="self:#NTFSUtil" />
-            <argument>/VSS</argument>
-            <output  name="VSS_list.csv" source="File" argument="/out={FileName}" />
-            <output  name="VSS_list.log" source="StdOutErr" />
-        </command>
-
-        <command keyword="EnumLocs">
-            <execute name="Orc.exe" run="self:#NTFSUtil" />
-            <argument>/enumlocs</argument>
-            <output name="Enumlocs.txt" source="StdOutErr" />
-        </command>
-
-
     <!-- code########################################################################################################################################### -->
 
+        <command keyword="GetScripts_little">
+            <execute name="Orc.exe" run="self:#GetThis" />
+            <argument>/config=res:#GetScript_little_config.xml</argument>
+            <output name="Scripts_little.7z" source="File" argument="/out={FileName}" />
+            <output name="Scripts_little.log" source="StdOutErr" />
+        </command>
 
     <!-- Browser########################################################################################################################################### -->
         <command keyword="GetBrowsersHistory">
@@ -206,14 +202,13 @@
             <output  name="Browsers_history.log" source="StdOutErr" />
         </command>
 
-<!-- Browsers Artefacts
         <command keyword="GetBrowsersArtefacts">
             <execute name="Orc.exe" run="self:#GetThis" />
             <argument>/config=res:#GetBrowsersArtefacts_config.xml</argument>
             <output  name="Browsers_artefacts.7z" source="File" argument="/out={FileName}" />
             <output  name="Browsers_artefacts.log" source="StdOutErr" />
         </command>
-        -->
+
     <!-- Files########################################################################################################################################### -->
 
         <command keyword="GetSamples">
