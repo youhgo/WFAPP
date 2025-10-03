@@ -41,10 +41,17 @@ services:
     networks:
       - wappNet
     labels:
+      # Router pour l'API
       - "traefik.enable=true"
-      - "traefik.http.routers.wapp.rule=Host(`wapp.localhost`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.wapp.tls=true"
-      - "traefik.http.services.wapp.loadbalancer.server.port=8880"
+      - "traefik.http.routers.wapp-api.rule=Host(`wapp.localhost`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.wapp-api.tls=true"
+      - "traefik.http.routers.wapp-api.service=wapp-api"
+      # Router pour les pages web (GUI)
+      - "traefik.http.routers.wapp-gui.rule=Host(`wapp.localhost`)"
+      - "traefik.http.routers.wapp-gui.tls=true"
+      - "traefik.http.routers.wapp-gui.service=wapp-api"
+      # Définition du service wapp-api une seule fois
+      - "traefik.http.services.wapp-api.loadbalancer.server.port=8880"
     volumes:
       - /please/change/me/shared:/python-docker/shared_files/
 
