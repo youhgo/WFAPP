@@ -56,27 +56,24 @@ Clone the repository to your local machine:
 
 It is highly recommended to follow [this guide](./Configure_WAPP.md) if you don't plan to use the pre-configured DFIR-Orc.exe collection tool.
 
-## 🔧 Configure Shared Volume
+## 🔧 Configure 
 
 To share results with other analysts, you need to create a shared volume between your host machine and the Docker containers.
 
-1.  Edit the `Change-Me-docker-compose.yml` file.
-2.  Locate the `volumes` variable under the `wappApi`,  `wappWorker` and `redis` sections. **Do not** modify any other `volumes` variables.
-3.  Change the path to your desired shared directory.
-4.  Rename the file `Change-Me-docker-compose.yml` to -> `docker-compose.yml`
+1.  Edit the `.env` file.
+2.  Locate the `WAPP_API_HOST` variable and modify it to the hostname you want the app to be accessible to
+3.  Locate the `SHARED_FOLDER_PATH` and change the path to your desired shared directory.
+4.  Edit the information for ELK and SPLUNK
 
 For example on my machine:
 
-**Before:**
-```yml
-volumes:
-  - /please/change/me/shared:/python-docker/shared_files/
-```
-
-**After:**
-```yml
-volumes:
-  - /home/hro/Documents/working_zone/shared:/python-docker/shared_files/
+```env
+ELK_HOST=192.168.1.19
+ELK_PORT=9200
+ELK_USER="elastic"
+ELK_PASSWD="changeme"
+WAPP_API_HOST=wapp.localhost
+SHARED_FOLDER_PATH=/home/hro/Documents/shared
 ```
 
 This change means all files in `/home/hro/Documents/working_zone/shared/` on your machine will be accessible by Docker.
@@ -101,8 +98,8 @@ then
 If successful, you will receive a response like this:
 ```json
 {
-"message": "Welcom to Windows Forensic Artefact Parser Project",
-"serveurTime": "02/05/2024 02:06:33",
+"message": "Welcome to Forensic Artefact Parser Project",
+"serveurTime": "02/05/2025 02:06:33",
 "status": "OK"
 }
 ```
