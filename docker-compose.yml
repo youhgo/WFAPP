@@ -1,4 +1,5 @@
-version: "2"
+# Using a more modern version of docker-compose is recommended
+version: "3.8"
 
 services:
   reverse_proxy:
@@ -7,6 +8,7 @@ services:
     ports:
       - "443:443"
       - "8080:8080"
+      - "80:80"
     volumes:
       - ./dependencies/traefik/certs:/etc/certs
       - ./dependencies/traefik/config.yml:/etc/traefik/config.yml
@@ -30,7 +32,7 @@ services:
     networks:
         - wappNet
     volumes:
-      - /please/change/me/redis_data:/data
+      - ${SHARED_FOLDER_PATH}/redis_db:/data
 
   wapp_api:
     build:
@@ -41,19 +43,22 @@ services:
     networks:
       - wappNet
     labels:
-      # Router pour l'API
+      # Router for the API
       - "traefik.enable=true"
-      - "traefik.http.routers.wapp-api.rule=Host(`wapp.localhost`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.wapp-api.rule=Host(`${WAPP_API_HOST}`) && PathPrefix(`/api`)"
       - "traefik.http.routers.wapp-api.tls=true"
       - "traefik.http.routers.wapp-api.service=wapp-api"
-      # Router pour les pages web (GUI)
-      - "traefik.http.routers.wapp-gui.rule=Host(`wapp.localhost`)"
+      # Router for the GUI
+      - "traefik.http.routers.wapp-gui.rule=Host(`${WAPP_API_HOST}`)"
       - "traefik.http.routers.wapp-gui.tls=true"
       - "traefik.http.routers.wapp-gui.service=wapp-api"
-      # Définition du service wapp-api une seule fois
       - "traefik.http.services.wapp-api.loadbalancer.server.port=8880"
     volumes:
-      - /please/change/me/shared:/python-docker/shared_files/
+      - ${SHARED_FOLDER_PATH}:/python-docker/shared_files/
+      - ./api/db:/python-docker/db
+    environment:
+      - FLASK_APP=wapp_server:create_app
+      - FLASK_ENV=development
 
   wapp_worker:
     image: wapp-worker
@@ -72,9 +77,8 @@ services:
       SPLUNK_HOST: ${SPLUNK_HOST}
       SPLUNK_PORT: ${SPLUNK_PORT}
       SPLUNK_TOKEN: ${SPLUNK_TOKEN}
-
     volumes:
-      - /please/change/me/shared:/python-docker/shared_files/
+      - ${SHARED_FOLDER_PATH}:/python-docker/shared_files/
     depends_on:
       - redis
     networks:
@@ -85,4 +89,3 @@ networks:
 
 volumes:
   shared_files:
-
