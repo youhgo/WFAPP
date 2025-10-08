@@ -1,0 +1,14 @@
+filebeat.inputs:
+- type: filestream
+  id: generic-file-input
+  enabled: false
+  paths:
+    - /tmp/placeholder/*
+
+output.elasticsearch:
+  # Connection details are read from environment variables.
+  hosts: ["${ELK_HOST}:${ELK_PORT}"]
+  username: "${ELK_USER}"
+  password: "${ELK_PASSWD}"
+
+  ssl.verification_mode: "none"

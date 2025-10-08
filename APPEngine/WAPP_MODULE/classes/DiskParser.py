@@ -10,13 +10,13 @@ from datetime import datetime
 
 class DiskParser:
     """
-    Class to parse disk info related artefacts, such as USN Journal logs.
+    Class to parse disk info related artefacts, such as USN Journal logs or MFT files.
     This is the standalone parser from WAPP : https://github.com/youhgo/WFAPP
-    MFT Input must be from analyzemft : https://github.com/rowingdude/analyzeMFT
+    MFT JSON Input must be from analyzemft : https://github.com/rowingdude/analyzeMFT
     USN Journal input must be from DFIR-Orc
     """
 
-    def __init__(self,  logger_run, separator: str = "|") -> None:
+    def __init__(self, logger_run, separator: str = "|") -> None:
         """
         The constructor for DiskParser classes.
 
@@ -26,6 +26,128 @@ class DiskParser:
         """
         self.separator = separator
         self.logger_run = logger_run
+
+    def parse_mft_csv(self, input_file_path: str, output_path: str):
+        """
+        Parses an MFT CSV from AnalyzeMFT, unnests timestamps into a timeline,
+        and saves it to a new pipe-separated CSV file.
+
+        Args:
+            input_file_path: Full path of the MFT CSV file to parse.
+            output_path: Directory where the formatted CSV results will be written.
+        """
+        output_file_path = os.path.join(output_path, "MFT_Timeline.csv")
+        self.logger_run.info(f"[PARSING][MFT_CSV] Starting MFT CSV parsing for {input_file_path}", header="START",
+                             indentation=1)
+
+        # Correctly define all required headers, including Record Number and File Type
+        required_headers = [
+            "Record Number", "File Type", "Filename", "Filepath",
+            "SI Creation Time", "SI Modification Time", "SI Access Time", "SI Entry Time",
+            "FN Creation Time", "FN Modification Time", "FN Access Time", "FN Entry Time",
+            "Logged Utility Stream"
+        ]
+
+        timestamp_fields = [
+            "SI Creation Time", "SI Modification Time", "SI Access Time", "SI Entry Time",
+            "FN Creation Time", "FN Modification Time", "FN Access Time", "FN Entry Time"
+        ]
+
+        timeline_events = []
+
+        try:
+            with open(input_file_path, 'r', newline='', encoding='utf-8') as infile:
+                reader = csv.reader(infile)
+                header = [h.strip() for h in next(reader)]
+
+                try:
+                    col_indices = {h: header.index(h) for h in required_headers}
+                except ValueError as e:
+                    self.logger_run.error(f"[PARSING][MFT_CSV] Missing required column in input file: {e}",
+                                          header="ERROR", indentation=2)
+                    return
+
+                for row in reader:
+                    # Parse the Logged Utility Stream into a clean keyword.
+                    lus_raw = row[col_indices["Logged Utility Stream"]]
+                    lus_processed = ""
+                    if lus_raw and lus_raw.strip() and lus_raw != 'N/A':
+                        if lus_raw.startswith('$Txf'):
+                            lus_processed = "$Txf"
+                        elif "EFS" in lus_raw.upper():
+                            lus_processed = "EFS"
+                        else:
+                            lus_processed = "Present"
+
+                    # This data is common to all timestamps in the current row
+                    common_data = {
+                        "Record Number": row[col_indices["Record Number"]],
+                        "File Type": row[col_indices["File Type"]],
+                        "Filename": row[col_indices["Filename"]],
+                        "Filepath": row[col_indices["Filepath"]],
+                        "Logged Utility Stream": lus_processed
+                    }
+
+                    # Un-nest the timestamps: create a new timeline event for each one
+                    for ts_field in timestamp_fields:
+                        timestamp_str = row[col_indices[ts_field]]
+                        if timestamp_str and timestamp_str.strip() and timestamp_str != 'N/A':
+                            timeline_events.append({
+                                **common_data,
+                                "timestamp": timestamp_str.replace(" ", "T"),
+                                "EventType": ts_field
+                            })
+
+        except FileNotFoundError:
+            self.logger_run.error(f"[PARSING][MFT_CSV] Input file not found at '{input_file_path}'.", header="ERROR",
+                                  indentation=2)
+            return
+        except Exception as e:
+            self.logger_run.error(
+                f"[PARSING][MFT_CSV] Unexpected error while reading input file: {traceback.format_exc()}",
+                header="ERROR", indentation=2)
+            return
+
+        try:
+            # Sort all events chronologically
+            timeline_events.sort(key=lambda x: x["timestamp"])
+
+            os.makedirs(output_path, exist_ok=True)
+
+            with open(output_file_path, 'w', newline='', encoding='utf-8') as outfile:
+                # Update the output header to include the new fields
+                output_header = ["Date", "Time", "EventType", "Filename", "FileType", "RecordNumber", "Filepath",
+                                 "LoggedUtilityStream"]
+                writer = csv.writer(outfile, delimiter=self.separator)
+                writer.writerow(output_header)
+
+                for event in timeline_events:
+                    try:
+                        date, time_part = event["timestamp"].split("T")
+                        time = time_part.split(".")[0]
+                        # Write the data in the correct order
+                        writer.writerow([
+                            date,
+                            time,
+                            event["EventType"],
+                            event["Filename"],
+                            event["File Type"],
+                            event["Record Number"],
+                            event["Filepath"],
+                            event["Logged Utility Stream"]
+                        ])
+                    except ValueError:
+                        self.logger_run.warning(f"Could not parse timestamp for event: {event}", header="WARNING",
+                                                indentation=3)
+                        continue
+
+            self.logger_run.info(f"[PARSING][MFT_CSV] Finished. Output written to {output_file_path}",
+                                 header="FINISHED", indentation=2)
+
+        except Exception:
+            self.logger_run.error(
+                f"[PARSING][MFT_CSV] Unexpected error while writing output file: {traceback.format_exc()}",
+                header="ERROR", indentation=2)
 
     def parse_usnjrnl(self, input_file_path: str, output_path: str):
         """
@@ -87,7 +209,7 @@ class DiskParser:
                 "[PARSING][USNJOURNAL]: Unexpected Error: {}".format(traceback.format_exc()), header="ERROR",
                 indentation=2)
 
-    def parse_mft(self, json_file_path, output_path):
+    def parse_mft_json(self, json_file_path, output_path):
         """
         Converts a JSON-formatted MFT bodyfile into a pipe-separated CSV timeline.
 
@@ -102,7 +224,7 @@ class DiskParser:
         :return: None
         """
 
-        csv_file_path =  os.path.join(output_path, "mft.csv")
+        csv_file_path = os.path.join(output_path, "mft.csv")
         try:
             # Step 1: Open the input JSON file and load the data.
             with open(json_file_path, 'r', encoding='utf-8') as json_file:
@@ -164,14 +286,13 @@ class DiskParser:
             # Step 3: Sort the flattened events chronologically.
             timeline_events.sort(key=lambda event: event.get('timestamp', '0'))
 
-
             # Step 4: Open the output CSV file and write the sorted data.
             with open(csv_file_path, 'w', encoding='utf-8', newline='') as csv_file:
                 # Create the csv writer with the pipe delimiter.
                 writer = csv.writer(csv_file, delimiter='|', quoting=csv.QUOTE_NONE, escapechar='\\')
 
                 # Write the header row.
-                header = ["Date","Time", "event_type", "filename", "filesize", "recordnum"]
+                header = ["Date", "Time", "event_type", "filename", "filesize", "recordnum"]
                 writer.writerow(header)
 
                 # Write the new rows to the CSV file.
@@ -188,7 +309,8 @@ class DiskParser:
                         ]
                         writer.writerow(row_data)
                     except Exception as ex:
-                        self.logger_run.error(f"[PARSING][MFT] Error parsing entry {ex} ", header="FAILED", indentation=3)
+                        self.logger_run.error(f"[PARSING][MFT] Error parsing entry {ex} ", header="FAILED",
+                                              indentation=3)
             self.logger_run.info("[PARSING][MFT]", header="FINISHED", indentation=2)
 
         except json.JSONDecodeError as e:
@@ -206,6 +328,7 @@ class DiskParser:
                 "[PARSING][MFT]: Unexpected Error: {}".format(traceback.format_exc()), header="ERROR",
                 indentation=2)
 
+
 def parse_args():
     """
         Function to parse args
@@ -218,16 +341,26 @@ def parse_args():
                                  required=False, dest="usnjrnl", default=False,
                                  help="path to the usnjrnl file")
 
-    argument_parser.add_argument('-m', '--mft', action="store",
-                                 required=False, dest="mft", default=False,
-                                 help="path to the mft file")
+    argument_parser.add_argument('-mj', '--mft_json', action="store",
+                                 required=False, dest="mft_json", default=False,
+                                 help="path to the mft json file")
+
+    argument_parser.add_argument('-mc', '--mft_csv', action="store",
+                                 required=False, dest="mft_csv", default=False,
+                                 help="path to the mft csv file")
 
     argument_parser.add_argument("-o", "--output", action="store",
                                  required=True, dest="output_dir", default=False,
                                  help="dest where the result will be written")
     return argument_parser
 
+
 if __name__ == '__main__':
+    # A dummy logger for standalone execution
+    class DummyLogger:
+        def __getattr__(self, name):
+            return lambda *args, **kwargs: print(f"[{name.upper()}] {' '.join(map(str, args))}")
+
 
     arg_parser = parse_args()
     args = arg_parser.parse_args()
@@ -237,16 +370,19 @@ if __name__ == '__main__':
     date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
     print(f"Started at: {date_time}")
 
-    if not args.usnjrnl and not args.mft:
-        print("Error: --mft or --usnjrnl argument must be provided.")
+    if not any([args.usnjrnl, args.mft_json, args.mft_csv]):
+        print("Error: at least one input file (--usnjrnl, --mft_json, or --mft_csv) must be provided.")
         arg_parser.print_help()
         exit(1)
 
     # 4. Initialize your custom parser and run the logic.
-    disk_parser = DiskParser(None) # Use a different name
+    disk_parser = DiskParser(DummyLogger())  # Use a different name
     if args.usnjrnl:
         disk_parser.parse_usnjrnl(args.usnjrnl, args.output_dir)
-    if args.mft:
-        disk_parser.parse_mft(args.mft, args.output_dir)
+    if args.mft_json:
+        disk_parser.parse_mft_json(args.mft_json, args.output_dir)
+    if args.mft_csv:
+        disk_parser.parse_mft_csv(args.mft_csv, args.output_dir)
 
     print(f"Finished in: {time.time() - start_time:.2f} seconds")
+

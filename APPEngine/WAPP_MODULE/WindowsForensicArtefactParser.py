@@ -548,6 +548,40 @@ class WindowsForensicArtefactParser:
                 "[TOOLING][ANALYZEMFT] {}".format( traceback.format_exc()), header="ERROR", indentation=3)
             return None
 
+    def convert_mft_to_csv(self):
+        """
+        To parse mft file with analyse mft and parse it to human readble format (|DATE|TIME|ETC|ETC)
+        :return:
+        """
+        try:
+            self.logger_run.info("[TOOLING][ANALYZEMFT]", header="START", indentation=2)
+            mft_result_file = os.path.join(self.mft_dir, "mft.csv")
+            mngr = FileManager.FileManager()
+
+            mft_patterns = self.artefact_config.get("artefacts", {}).get("master_file_table", {}).get("MFT", [])
+            if mft_patterns and isinstance(mft_patterns, list):
+                for mft_pattern in mft_patterns:
+                    mft_files = mngr.recursive_file_search(self.extracted_main_dir, mft_pattern)
+                    if mft_files:
+                        for mft_file in mft_files:
+                            my_cmd = ["python3", "{}".format(self.analyze_mft_tool_path),
+                                      "-f", "{}".format(mft_file),
+                                      "-o", "{}".format(mft_result_file),
+                                      "--csv",
+                                      "--verbose",
+                                      "--debug"]
+                            subprocess.run(my_cmd)
+
+                        self.logger_run.info("[TOOLING][ANALYZEMFT]", header="FINISHED", indentation=2)
+                        return mft_result_file
+            else:
+                self.logger_run.info("[TOOLING][ANALYZEMFT] No MFT File found", header="FAILED", indentation=2)
+                return None
+        except:
+            self.logger_run.error(
+                "[TOOLING][ANALYZEMFT] {}".format( traceback.format_exc()), header="ERROR", indentation=3)
+            return None
+
     def clean_duplicate_in_file(self, file):
         """
         Remove duplicated line in file
@@ -790,7 +824,7 @@ class WindowsForensicArtefactParser:
         except:
             self.logger_run.error("[MAXIMUMPLASOPARSER] {}".format(traceback.format_exc()), header="ERROR", indentation=1)
 
-    def do_mft(self):
+    def do_mft_json(self):
         """
         Launch the converting and parsing of mft
         :return:
@@ -800,7 +834,23 @@ class WindowsForensicArtefactParser:
             mft_result_file = self.convert_mft_to_json()
             if mft_result_file:
                 d_parser = DiskParser.DiskParser(self.logger_run)
-                d_parser.parse_mft(mft_result_file, self.result_parsed_dir)
+                d_parser.parse_mft_json(mft_result_file, self.result_parsed_dir)
+            self.logger_run.info("[PARSING][MFT]", header="FINISHED", indentation=1)
+        except:
+            self.logger_run.error("[PARSING][MFT] {}".format(traceback.format_exc()), header="ERROR",
+                                  indentation=1)
+
+    def do_mft_csv(self):
+        """
+        Launch the converting and parsing of mft
+        :return:
+        """
+        try:
+            self.logger_run.info("[PARSING][MFT]", header="START", indentation=1)
+            mft_result_file = self.convert_mft_to_csv()
+            if mft_result_file:
+                d_parser = DiskParser.DiskParser(self.logger_run)
+                d_parser.parse_mft_csv(mft_result_file, self.result_parsed_dir)
             self.logger_run.info("[PARSING][MFT]", header="FINISHED", indentation=1)
         except:
             self.logger_run.error("[PARSING][MFT] {}".format(traceback.format_exc()), header="ERROR",
@@ -850,7 +900,6 @@ class WindowsForensicArtefactParser:
             self.do_process()
         if self.main_config.get("webHistory", False):
             self.do_web_history()
-
         if self.main_config.get("lnk", False):
             self.do_lnk()
         if self.main_config.get("prefetch", False):
@@ -858,7 +907,7 @@ class WindowsForensicArtefactParser:
         if self.main_config.get("hive", False):
             self.do_hive()
         if self.main_config.get("mft", False):
-            self.do_mft()
+            self.do_mft_json() # not using csv cause analysemft fail inside docker...
         if self.main_config.get("disk", False):
             self.do_disk()
 

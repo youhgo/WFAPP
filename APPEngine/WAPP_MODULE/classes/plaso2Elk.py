@@ -15,12 +15,6 @@ warnings.filterwarnings('ignore', category=InsecureRequestWarning)
 
 class PlasoToELK:
     """
-       Class MaximumPlasoParser
-       MPP or MaximumPlasoParser is a python script that will parse a plaso - Log2Timeline json timeline file.
-       The goal is to provide easily readable and straight forward files for the Forensic analyst.
-       MPP will create a file for each artefact.
-       Attributes :
-       None
     """
 
     def __init__(self, path_to_timeline, case_name=None, machine_name=None, is_flat=False, elk_host="localhost",
