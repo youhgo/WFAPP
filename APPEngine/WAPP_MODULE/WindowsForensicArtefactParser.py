@@ -267,6 +267,7 @@ class WindowsForensicArtefactParser:
                                      header="ERROR", indentation=0)
                 self.main_config = {
                     "restore": 0,
+                    "rename_from_orc": 0,
                     "disk": 1,
                     "elk": 0,
                     "evtx": 1,
@@ -353,8 +354,12 @@ class WindowsForensicArtefactParser:
                     restorer = OrcExtractor.ArtefactRestorer(self.extracted_dir, self.restored_path, self.logger_run)
                     restorer.run()
                 else:
-                    renamer = OrcExtractor.ArtefactRenamer(self.extracted_dir, self.logger_run)
-                    renamer.run()
+                    if self.main_config.get("rename_from_orc"):
+                        renamer = OrcExtractor.ArtefactRenamer(self.extracted_dir, self.logger_run)
+                        renamer.run()
+                    else:
+                        f_manager = FileManager.FileManager()
+                        f_manager.rename_nested_folder(self.extracted_dir)
             except Exception as e:
                 self.logger_run.error(f"Critical error while restoring : {e}\n{traceback.format_exc()}",
                              header="CRITICAL")
@@ -492,7 +497,7 @@ class WindowsForensicArtefactParser:
                             try:
                                 evt_name = os.path.basename(evt)
                                 evt_name_wo_ext = os.path.splitext(evt_name)[0]
-                                evt_json_name = evt_name_wo_ext + ".json"
+                                evt_json_name = evt_name_wo_ext + ".evtx.json"
                                 self.logger_run.info("[TOOLING][EVTXDUMP] Converting {} to json".format(evt_name_wo_ext),
                                                      header="START", indentation=3)
 
@@ -555,7 +560,7 @@ class WindowsForensicArtefactParser:
         """
         try:
             self.logger_run.info("[TOOLING][ANALYZEMFT]", header="START", indentation=2)
-            mft_result_file = os.path.join(self.mft_dir, "mft.csv")
+            mft_result_file = os.path.join(self.mft_dir, "mft.timeline")
             mngr = FileManager.FileManager()
 
             mft_patterns = self.artefact_config.get("artefacts", {}).get("master_file_table", {}).get("MFT", [])
@@ -567,7 +572,7 @@ class WindowsForensicArtefactParser:
                             my_cmd = ["python3", "{}".format(self.analyze_mft_tool_path),
                                       "-f", "{}".format(mft_file),
                                       "-o", "{}".format(mft_result_file),
-                                      "--csv",
+                                      "--timeline",
                                       "--verbose",
                                       "--debug"]
                             subprocess.run(my_cmd)
@@ -848,9 +853,10 @@ class WindowsForensicArtefactParser:
         try:
             self.logger_run.info("[PARSING][MFT]", header="START", indentation=1)
             mft_result_file = self.convert_mft_to_csv()
+
             if mft_result_file:
                 d_parser = DiskParser.DiskParser(self.logger_run)
-                d_parser.parse_mft_csv(mft_result_file, self.result_parsed_dir)
+                d_parser.parse_plaso_csv(mft_result_file, self.result_parsed_dir)
             self.logger_run.info("[PARSING][MFT]", header="FINISHED", indentation=1)
         except:
             self.logger_run.error("[PARSING][MFT] {}".format(traceback.format_exc()), header="ERROR",
@@ -885,8 +891,7 @@ class WindowsForensicArtefactParser:
 
     def do(self):
         self.extract()
-        #f_manager = FileManager.FileManager()
-        #f_manager.rename_nested_folder(self.extracted_dir)
+
         self.move_artefact_no_parsing()
         self.logger_run.info("[PARSING][ARTEFACTS]", header="START", indentation=0)
 

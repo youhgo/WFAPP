@@ -35,10 +35,12 @@ class RegistryParser:
 
         self.logger_run.info("[PARSING][AMCACHE][REGPY]", header="START", indentation=2)
 
+
         for amcache_pattern in amcache_patterns:
             hve_l = self.recursive_file_search(input_dir, amcache_pattern)
             for file_path in hve_l:
                 try:
+
                     if not os.path.exists(file_path):
                         self.logger_run.error(
                             "[PARSING][AMCACHE][REGPY]: File not found {}".format(traceback.format_exc()),
@@ -46,11 +48,12 @@ class RegistryParser:
                             indentation=2)
                         return
 
+                    path_out_json = os.path.join(dir_out, f"{os.path.basename(file_path)}_regpy.json")
                     reg = RegistryHive(file_path)
                     parsed_data = run_relevant_plugins(reg, as_json=True)
+                    with open(path_out_json, "w") as outfile:
+                        json.dump(parsed_data, outfile, indent=4)
 
-                    # --- Step 2: Extract, format, and prepare data for CSV ---
-                    # Use .get() with an empty list as a default to avoid key errors
                     amcache_entries: List[Dict[str, Any]] = parsed_data.get("amcache", [])
 
                     if not amcache_entries:

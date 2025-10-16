@@ -328,6 +328,62 @@ class DiskParser:
                 "[PARSING][MFT]: Unexpected Error: {}".format(traceback.format_exc()), header="ERROR",
                 indentation=2)
 
+    def parse_plaso_csv(self, input_file_path: str, output_path: str):
+        """
+        Parses a Plaso-like CSV file with a Unix timestamp in the first column,
+        converts the timestamp to a readable format, and saves it to a new CSV.
+
+        Args:
+            input_file_path: Full path of the CSV file to parse.
+            output_path: Directory where the formatted CSV results will be written.
+        """
+        output_file_path = os.path.join(output_path, "Plaso_Timeline_Formatted.csv")
+        self.logger_run.info(f"[PARSING][PLASO_CSV] Starting Plaso CSV parsing for {input_file_path}", header="START",
+                             indentation=1)
+
+        try:
+            os.makedirs(output_path, exist_ok=True)
+            with open(input_file_path, 'r', newline='', encoding='utf-8') as infile, \
+                    open(output_file_path, 'w', newline='', encoding='utf-8') as outfile:
+
+                reader = csv.reader(infile, delimiter='|')
+                writer = csv.writer(outfile, delimiter=self.separator)
+
+                output_header = ["Date", "Time", "Source", "EventType", "Col5", "Col6", "Col7", "Filename",
+                                 "RecordNumber", "Col10", "Col11", "Col12", "Col13"]
+                writer.writerow(output_header)
+
+                for row in reader:
+                    if not row:
+                        continue
+                    try:
+
+                        unix_timestamp_str = row[0]
+                        unix_timestamp = float(unix_timestamp_str)
+                        dt_object = datetime.fromtimestamp(unix_timestamp)
+                        date_str = dt_object.strftime('%Y-%m-%d')
+                        time_str = dt_object.strftime('%H:%M:%S')
+
+                        new_row = [date_str, time_str] + row[1:]
+                        writer.writerow(new_row)
+
+                    except (ValueError, IndexError) as e:
+                        self.logger_run.warning(f"Skipping malformed row: {row}. Error: {e}", header="WARNING",
+                                                indentation=3)
+                        continue
+
+            self.logger_run.info(f"[PARSING][PLASO_CSV] Finished. Output written to {output_file_path}",
+                                 header="FINISHED", indentation=2)
+
+        except FileNotFoundError:
+            self.logger_run.error(
+                f"[PARSING][PLASO_CSV] Input file not found at '{input_file_path}'.", header="ERROR",
+                indentation=2)
+        except Exception:
+            self.logger_run.error(
+                f"[PARSING][PLASO_CSV] Unexpected error: {traceback.format_exc()}",
+                header="ERROR", indentation=2)
+
 
 def parse_args():
     """
@@ -335,7 +391,7 @@ def parse_args():
     """
 
     argument_parser = argparse.ArgumentParser(description=(
-        'Solution to parse a json plaso timeline'))
+        'Solution to parse a mft to more redable format'))
 
     argument_parser.add_argument('-u', '--usnjrnl', action="store",
                                  required=False, dest="usnjrnl", default=False,
@@ -348,6 +404,11 @@ def parse_args():
     argument_parser.add_argument('-mc', '--mft_csv', action="store",
                                  required=False, dest="mft_csv", default=False,
                                  help="path to the mft csv file")
+
+    # NOUVEAU
+    argument_parser.add_argument('-p', '--plaso_csv', action="store",
+                                 required=False, dest="plaso_csv", default=False,
+                                 help="path to the plaso-like csv file with Unix timestamp")
 
     argument_parser.add_argument("-o", "--output", action="store",
                                  required=True, dest="output_dir", default=False,
@@ -370,8 +431,9 @@ if __name__ == '__main__':
     date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
     print(f"Started at: {date_time}")
 
-    if not any([args.usnjrnl, args.mft_json, args.mft_csv]):
-        print("Error: at least one input file (--usnjrnl, --mft_json, or --mft_csv) must be provided.")
+    # NOUVEAU : Ajout de args.plaso_csv à la vérification
+    if not any([args.usnjrnl, args.mft_json, args.mft_csv, args.plaso_csv]):
+        print("Error: at least one input file (--usnjrnl, --mft_json, --mft_csv, or --plaso_csv) must be provided.")
         arg_parser.print_help()
         exit(1)
 
@@ -383,6 +445,8 @@ if __name__ == '__main__':
         disk_parser.parse_mft_json(args.mft_json, args.output_dir)
     if args.mft_csv:
         disk_parser.parse_mft_csv(args.mft_csv, args.output_dir)
+    # NOUVEAU : Appel de la nouvelle fonction
+    if args.plaso_csv:
+        disk_parser.parse_plaso_csv(args.plaso_csv, args.output_dir)
 
     print(f"Finished in: {time.time() - start_time:.2f} seconds")
-

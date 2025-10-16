@@ -61,44 +61,44 @@ class EventParser:
         # --- Mapping central des fichiers journaux vers les parsers ---
         self.log_file_map = {
             "security": {
-                "pattern": re.compile(r'(^|_)Security\.json$'),
+                "pattern": re.compile(r'(^|_)Security\.evtx\.json$'),
                 "parser": self.parse_generic_evtx_file
             },
             "system": {
-                "pattern": re.compile(r'^System\.json$'),
+                "pattern": re.compile(r'^System\.evtx\.json$'),
                 "parser": self.parse_generic_evtx_file
             },
             "task_scheduler": {
-                "pattern": re.compile(r'Microsoft-Windows-TaskScheduler%4Operational\.json$'),
+                "pattern": re.compile(r'Microsoft-Windows-TaskScheduler%4Operational\.evtx\.json$'),
                 "parser": self.parse_generic_evtx_file
             },
             "rdp_remote": {
                 "pattern": re.compile(
-                    r'Microsoft-Windows-TerminalServices-RemoteConnectionManager%4Operational\.json$'),
+                    r'Microsoft-Windows-TerminalServices-RemoteConnectionManager%4Operational\.evtx\.json$'),
                 "parser": self.parse_generic_evtx_file
             },
             "rdp_local": {
-                "pattern": re.compile(r'Microsoft-Windows-TerminalServices-LocalSessionManager%4Operational\.json$'),
+                "pattern": re.compile(r'Microsoft-Windows-TerminalServices-LocalSessionManager%4Operational\.evtx\.json$'),
                 "parser": self.parse_generic_evtx_file
             },
             "bits": {
-                "pattern": re.compile(r'Microsoft-Windows-Bits-Client%4Operational\.json$'),
+                "pattern": re.compile(r'Microsoft-Windows-Bits-Client%4Operational\.evtx\.json$'),
                 "parser": self.parse_generic_evtx_file
             },
             "powershell_operational": {
-                "pattern": re.compile(r'Microsoft-Windows-PowerShell%4Operational\.json$'),
+                "pattern": re.compile(r'Microsoft-Windows-PowerShell%4Operational\\.evtx.json$'),
                 "parser": self.parse_generic_evtx_file
             },
             "windows_powershell": {
-                "pattern": re.compile(r'Windows PowerShell\.json$'),
+                "pattern": re.compile(r'Windows PowerShell\.evtx\.json$'),
                 "parser": self.parse_generic_evtx_file
             },
             "wmi": {
-                "pattern": re.compile(r'Microsoft-Windows-WMI-Activity%4Operational\.json$'),
+                "pattern": re.compile(r'Microsoft-Windows-WMI-Activity%4Operational\.evtx\.json$'),
                 "parser": self.parse_generic_evtx_file
             },
             "windefender": {
-                "pattern": re.compile(r'Microsoft-Windows-Windows Defender%4Operational\.json$'),
+                "pattern": re.compile(r'Microsoft-Windows-Windows Defender%4Operational\.evtx\.json$'),
                 "parser": self.parse_generic_evtx_file
             }
         }
