@@ -11,7 +11,7 @@ import time
 import traceback
 
 from .classes import DiskParser, EventParser, FileManager, Linkparser, LoggerManager, MaximumPlasoParserJson, \
-    NetWorkParser, OrcExtractor, plaso2Elk, PrefetchParser, ProcessParser, RegistryParser, SystemInfoParser, WebHistoryParser
+    NetWorkParser, OrcExtractor, plaso2Elk, PrefetchParser, ProcessParser, RegistryParser, SystemInfoParser, WebHistoryParser, App_2_elk
 
 
 # Try importing pyscca; fail if it doesn't import
@@ -877,12 +877,27 @@ class WindowsForensicArtefactParser:
             self.logger_run.error("[PARSING][EVTX] {}".format(traceback.format_exc()), header="ERROR",
                                   indentation=1)
 
-    def do_elk(self):
+    def do_elk_legacy(self):
         p_agent = plaso2Elk.PlasoToELK(self.logger_run, self.timeline_json_path, self.case_name, self.machine_name)
         if p_agent.test_connection():
             p_agent.send_to_elk_in_bulk()
         else:
             self.logger_run.error("[CONNECTING][ELK] aboarding", header="ERROR", indentation=1)
+
+    def do_elk(self):
+
+        es_host = f"{os.getenv('ELK_HOST')}:{os.getenv('ELK_PORT')}"
+        pipeline = App_2_elk.ForensicPipeline(
+            case_name=self.case_name,
+            machine_name=self.machine_name,
+            source_dir=self.parsed_dir,
+            es_hosts=es_host,
+            es_user=os.getenv('ELK_USER'),
+            es_pass=os.getenv('ELK_PASSWD'),
+            chunk_size="15000",
+            verify_ssl="False"
+        )
+        pipeline.run()
 
     def do_web_history(self):
         w_parser = WebHistoryParser.HistoryExporter(self.logger_run, self.extracted_main_dir,
@@ -923,8 +938,8 @@ class WindowsForensicArtefactParser:
             self.do_plaso()
             if self.main_config.get("mpp", False):
                 self.do_maximum_plaso_parser()
-            if self.main_config.get("elk", False):
-                self.do_elk()
+        if self.main_config.get("elk", False):
+            self.do_elk()
 
         self.logger_run.info("[PARSING][ARTEFACTS]", header="FINISHED", indentation=0)
 
@@ -995,8 +1010,5 @@ if __name__ == '__main__':
 
 """
 Info for further parsing
-location": "Microsoft-Windows-Windows Defender%4WHC.evtx
-event id 1116 1117 1015 1013 1014 1012 1011 1010 1009 1008 1007 1006 1005 1004 1003 1002   
-4614 This event is generated when a user attempts to change their password. It is logged on domain controllers 
-and member computers. 
+event id 1015 1013 1014 1012 1011 1010 1009 1008 1007 1006 1005 1004 1003 1002   
 """

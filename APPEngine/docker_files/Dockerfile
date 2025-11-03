@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 FROM ubuntu:jammy
 
 # Set environment variables
@@ -8,10 +7,6 @@ ENV CELERY_BROKER_URL redis://redis:6379/0
 ENV CELERY_RESULT_BACKEND redis://redis:6379/0
 ENV C_FORCE_ROOT true
 
-# Set Filebeat version as an argument for easy updates
-ARG FILEBEAT_VERSION=8.11.1
-
-# Combine all apt-get commands into a single RUN instruction for efficiency.
 RUN apt-get update && \
     apt-get install -y software-properties-common && \
     add-apt-repository universe && \
@@ -25,25 +20,17 @@ RUN apt-get update && \
     nano \
     git \
     curl \
-    # Add wget for downloading Filebeat
-    wget && \
+    wget \
+    p7zip-full && \
     apt-get upgrade -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-
-# --- Add Filebeat Installation ---
-RUN wget --no-check-certificate https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-${FILEBEAT_VERSION}-amd64.deb && \
-    dpkg -i filebeat-${FILEBEAT_VERSION}-amd64.deb && \
-    rm filebeat-${FILEBEAT_VERSION}-amd64.deb
-
-# Copy the Filebeat configuration file into the correct location
-COPY docker_files/filebeat.yml /etc/filebeat/filebeat.yml
-# ---------------------------------
 
 # Install Python packages from requirements.txt
 COPY docker_files/requirements.txt requirements.txt
 RUN pip3 install --upgrade pip && \
     pip3 install -U setuptools pip && \
+    pip3 install --upgrade py7zr && \
     pip3 install -r requirements.txt --ignore-installed
 
 # Install yarp package from local tarball
@@ -69,3 +56,5 @@ ENTRYPOINT ["entrypoint.sh"]
 COPY . .
 
 # The CMD will be inherited from the 'command' in your docker-compose.yml
+
+

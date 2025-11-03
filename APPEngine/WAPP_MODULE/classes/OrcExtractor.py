@@ -7,7 +7,38 @@ import logging
 import traceback
 import py7zr
 import zipfile
+import hashlib
+import re
 from pathlib import Path
+
+
+def _clean_long_filename(base_name: str) -> str:
+    """
+    Applique la logique de nettoyage regex pour les noms de fichiers trop longs.
+    C'est la logique que vous avez fournie.
+    """
+    # Ne pas appliquer cette logique si le nom est déjà valide
+    if len(base_name.encode('utf-8')) <= 255:
+        return base_name
+
+    # Votre logique de nettoyage
+    filename_wo_tail1 = re.sub(r'_\{.*\}.data$', '', base_name)
+    filename_wo_tail2 = re.sub(r'\_data$', '', filename_wo_tail1)
+    new_base_name = re.sub(r'^(([a-zA-Z]|\d){0,30}_){0,3}', '', filename_wo_tail2)
+
+    # Sécurité: si le regex vide le nom, on garde au moins un hash
+    if not new_base_name:
+        file_hash = hashlib.md5(base_name.encode('utf-8')).hexdigest()[:8]
+        file_ext = Path(base_name).suffix
+        new_base_name = f"RENAMED_EMPTY_{file_hash}{file_ext}"
+
+    # Sécurité: si le nom est *encore* trop long, le tronquer
+    if len(new_base_name.encode('utf-8')) > 255:
+        file_ext = Path(new_base_name).suffix
+        # Tronque le nom en gardant l'extension
+        new_base_name = new_base_name[:(255 - len(file_ext) - 1)] + file_ext
+
+    return new_base_name
 
 
 class LoggerManager:
@@ -45,38 +76,187 @@ class LoggerManager:
     def error(self, msg: str, header: str = "FAILED", indentation: int = 0):
         self._generic_log(msg, level="error", header_type=header, indentation=indentation)
 
+
 class OrcExtractor:
     """Classe pour extraire les archives .7z et .zip de manière récursive."""
+
+    # Limite de caractères pour un nom de fichier sur la plupart des systèmes Linux
+    FILENAME_MAX_LENGTH = 255
 
     def __init__(self, logger: LoggerManager, password: str):
         self.logger = logger
         self.password = password
+        self.renamed_file_counter = 0
 
     def _extract_7z(self, archive_path, output_folder):
-        """Helper to extract a single .7z archive."""
+        """
+        Helper pour extraire une archive .7z, en gérant les noms de fichiers trop longs
+        en utilisant la méthode .read() de py7zr (conforme à la nouvelle documentation).
+        """
         try:
             with py7zr.SevenZipFile(archive_path, mode='r', password=self.password) as z:
-                z.extractall(path=output_folder)
+
+                try:
+                    all_filenames = z.getnames()
+                except Exception as e:
+                    self.logger.error(f"Impossible de lister les fichiers dans l'archive (getnames échoué): {e}",
+                                      header="CRITICAL", indentation=1)
+                    return False
+
+                files_to_extract = []
+                files_to_read = []  # Fichiers avec des noms trop longs
+
+                for filename in all_filenames:
+                    dir_path, base_name = os.path.split(filename)
+                    if not base_name:  # C'est un dossier
+                        continue
+
+                    if len(base_name.encode('utf-8')) <= self.FILENAME_MAX_LENGTH:
+                        files_to_extract.append(filename)
+                    else:
+                        files_to_read.append(filename)
+
+                # --- CAS 1: NOMS COURTS (Rapide) ---
+                if files_to_extract:
+                    try:
+                        z.extract(targets=files_to_extract, path=output_folder)
+                    except Exception as extract_err:
+                        self.logger.error(f"Erreur py7zr.extract() sur {len(files_to_extract)} fichiers: {extract_err}",
+                                          header="ERROR", indentation=1)
+
+                # --- CAS 2: NOMS TROP LONGS (Robuste, via .read()) ---
+                if files_to_read:
+                    try:
+                        # .read() lit les fichiers ciblés en mémoire
+                        # Renvoie un dict: {'nom_fichier': <BytesIO object>}
+                        file_data_dict = z.read(targets=files_to_read)
+
+                        for filename_in_archive, file_bytes_io in file_data_dict.items():
+                            dir_path, base_name = os.path.split(filename_in_archive)
+                            new_base_name = _clean_long_filename(base_name)
+
+                            self.logger.warning(
+                                f"Nom de fichier trop long détecté : '{filename_in_archive}'. "
+                                f"Renommé en : '{Path(dir_path) / new_base_name}'",
+                                header="RENAME", indentation=1)
+
+                            # S'assure que le dossier de destination existe
+                            target_file_dir = Path(output_folder) / dir_path
+                            target_file_dir.mkdir(parents=True, exist_ok=True)
+
+                            target_file_path = target_file_dir / new_base_name
+
+                            # Gérer les collisions (si le nettoyage produit un doublon)
+                            if target_file_path.exists():
+                                stem, suffix = target_file_path.stem, target_file_path.suffix
+                                counter = 1
+                                while True:
+                                    new_path = target_file_dir / f"{stem}_{counter}{suffix}"
+                                    if not new_path.exists():
+                                        target_file_path = new_path
+                                        break
+                                    counter += 1
+
+                            # Écrire le fichier depuis la mémoire
+                            try:
+                                with open(target_file_path, 'wb') as f_out:
+                                    f_out.write(file_bytes_io.getbuffer())
+                            except Exception as write_err:
+                                self.logger.error(
+                                    f"Impossible d'écrire le fichier renommé '{target_file_path}': {write_err}",
+                                    header="ERROR", indentation=1)
+
+                    except Exception as read_err:
+                        self.logger.error(f"Erreur py7zr.read() sur {len(files_to_read)} fichiers: {read_err}",
+                                          header="CRITICAL", indentation=1)
+
             self.logger.info(f"Extrait (.7z) : '{archive_path}'", header="SUCCESS", indentation=1)
             return True
+
         except py7zr.exceptions.PasswordRequired:
             self.logger.error(f"Mot de passe incorrect ou requis pour (.7z) '{archive_path}'", header="ERROR",
                               indentation=1)
         except py7zr.Bad7zFile:
             self.logger.error(f"Fichier invalide ou corrompu (.7z) : '{archive_path}'", header="ERROR", indentation=1)
+        except OSError as e:
+            # Attrape d'autres erreurs potentielles du système de fichiers
+            self.logger.error(f"Erreur OS pendant l'extraction (.7z) '{archive_path}': {e}", header="CRITICAL",
+                              indentation=1)
         except Exception as e:
             self.logger.error(f"Erreur inattendue sur (.7z) '{archive_path}': {e}", header="CRITICAL", indentation=1)
+
         return False
 
     def _extract_zip(self, archive_path, output_folder):
         """Helper to extract a single .zip archive."""
+        # Note: zipfile gère mal les noms longs, une logique similaire à 7z est nécessaire
         try:
             with zipfile.ZipFile(archive_path, 'r') as z:
-                z.extractall(path=output_folder, pwd=self.password.encode('utf-8'))
+                all_files = z.infolist()
+
+                for member in all_files:
+                    filename = member.filename.replace('\\', '/')  # Normaliser les slashes
+                    if not filename:
+                        continue
+
+                    # zipfile marque les dossiers avec un / à la fin
+                    is_directory = filename.endswith('/')
+
+                    dir_path, base_name = os.path.split(filename)
+
+                    target_dir = Path(output_folder) / dir_path
+                    if is_directory:
+                        # Si c'est un dossier, le chemin complet est le dossier
+                        target_dir = Path(output_folder) / filename
+
+                    target_dir.mkdir(parents=True, exist_ok=True)
+
+                    if is_directory:  # Si c'est un dossier, on a fini
+                        continue
+
+                    # Si on est ici, c'est un fichier
+                    new_base_name = base_name
+
+                    if len(base_name.encode('utf-8')) > self.FILENAME_MAX_LENGTH:
+                        new_base_name = _clean_long_filename(base_name)
+                        self.logger.warning(
+                            f"Nom de fichier trop long détecté (.zip) : '{filename}'. "
+                            f"Renommé en : '{target_dir.relative_to(output_folder) / new_base_name}'",
+                            header="RENAME", indentation=1)
+
+                    if not new_base_name:  # Ne devrait pas arriver si ce n'est pas un dossier
+                        continue
+
+                    target_file_path = target_dir / new_base_name
+
+                    # Gérer les collisions
+                    if target_file_path.exists():
+                        stem, suffix = target_file_path.stem, target_file_path.suffix
+                        counter = 1
+                        while True:
+                            new_path = target_dir / f"{stem}_{counter}{suffix}"
+                            if not new_path.exists():
+                                target_file_path = new_path
+                                break
+                            counter += 1
+
+                    # Écrire le fichier
+                    try:
+                        with z.open(member, pwd=self.password.encode('utf-8')) as source:
+                            with open(target_file_path, 'wb') as target:
+                                shutil.copyfileobj(source, target)
+                    except Exception as read_err:
+                        self.logger.error(f"Impossible de lire/écrire le fichier zip {filename}: {read_err}",
+                                          header="ERROR", indentation=1)
+
             self.logger.info(f"Extrait (.zip) : '{archive_path}'", header="SUCCESS", indentation=1)
             return True
         except zipfile.BadZipFile:
             self.logger.error(f"Fichier invalide ou corrompu (.zip) : '{archive_path}'", header="ERROR", indentation=1)
+        except NotADirectoryError as e:
+            # Erreur courante si un nom de fichier est traité comme un dossier
+            self.logger.error(f"Erreur de structure de dossier (NotADirectoryError) sur (.zip) '{archive_path}': {e}. "
+                              "Cela peut être dû à des noms de fichiers très longs.", header="ERROR", indentation=1)
         except RuntimeError as e:
             if "password" in str(e).lower():
                 self.logger.error(f"Mot de passe incorrect ou requis pour (.zip) '{archive_path}'", header="ERROR",
@@ -130,6 +310,7 @@ class OrcExtractor:
                                       indentation=1)
         return True
 
+
 class ArtefactRenamer:
     """Renomme les artefacts sur place en utilisant les fichiers GetThis*.csv."""
 
@@ -182,6 +363,7 @@ class ArtefactRenamer:
 
     def _process_row(self, row, current_dir):
         original_full_name, sample_name = row['FullName'], row['SampleName']
+        self.logger.info(f"Looking for file {sample_name}")
         if not original_full_name or not sample_name: return
 
         source_filename_to_find = Path(sample_name.replace('\\', '/')).name
@@ -190,13 +372,32 @@ class ArtefactRenamer:
         if not source_file_path.is_file():
             found = list(self.source_path.rglob(f"**/{source_filename_to_find}"))
             if not found:
-                self.logger.warning(f"Fichier source non trouvé pour SampleName : {sample_name}", indentation=2)
-                self.error_count += 1
-                return
-            source_file_path = found[0]
+                # RECHERCHE MODIFIÉE:
+                # Cherche le fichier "nettoyé" si le nom original est trop long
+                cleaned_name_to_find = _clean_long_filename(source_filename_to_find)
+                if cleaned_name_to_find == source_filename_to_find:
+                    # Le nom n'était pas trop long, donc il est vraiment introuvable
+                    self.logger.warning(f"Can't find file in directory: {source_filename_to_find}", indentation=2)
+                    self.error_count += 1
+                    return
+
+                found_cleaned = list(self.source_path.rglob(f"**/{cleaned_name_to_find}"))
+                if not found_cleaned:
+                    self.logger.warning(
+                        f"Can't find file in directory: {source_filename_to_find} (or as cleaned: {cleaned_name_to_find})",
+                        indentation=2)
+                    self.error_count += 1
+                    return
+
+                source_file_path = found_cleaned[0]
+            else:
+                source_file_path = found[0]
+
+        self.logger.info(f"Founded file : {sample_name} at {source_file_path}")
 
         cleaned_path = self._clean_original_path(original_full_name)
         original_filename = Path(cleaned_path.replace('\\', '/')).name
+
         if not original_filename: return
 
         destination_path = source_file_path.parent / original_filename
@@ -204,12 +405,14 @@ class ArtefactRenamer:
 
         try:
             shutil.move(str(source_file_path), str(unique_destination_path))
+            self.logger.info(f"renaming  {source_file_path} to {unique_destination_path}")
             self.renamed_count += 1
         except Exception as e:
             self.logger.error(
                 f"Impossible de renommer '{source_file_path.name}' en '{unique_destination_path.name}': {e}",
                 indentation=2)
             self.error_count += 1
+
 
 class ArtefactRestorer:
     """Reconstruit l'arborescence originale des fichiers collectés."""
@@ -252,23 +455,44 @@ class ArtefactRestorer:
     def _process_row(self, row, current_dir):
         original_full_name, sample_name = row['FullName'], row['SampleName']
         if not original_full_name or not sample_name: return
+
         source_filename_to_find = Path(sample_name.replace('\\', '/')).name
         source_file_path = current_dir / source_filename_to_find
+
         if not source_file_path.is_file():
             found = list(self.source_path.rglob(f"**/{source_filename_to_find}"))
             if not found:
-                self.logger.warning(f"Fichier source non trouvé pour SampleName : {sample_name}", indentation=2)
-                self.error_count += 1
-                return
-            source_file_path = found[0]
+                # RECHERCHE MODIFIÉE:
+                # Cherche le fichier "nettoyé" si le nom original est trop long
+                cleaned_name_to_find = _clean_long_filename(source_filename_to_find)
+                if cleaned_name_to_find == source_filename_to_find:
+                    self.logger.warning(f"Fichier source non trouvé pour SampleName : {sample_name}", indentation=2)
+                    self.error_count += 1
+                    return
+
+                found_cleaned = list(self.source_path.rglob(f"**/{cleaned_name_to_find}"))
+                if not found_cleaned:
+                    self.logger.warning(
+                        f"Fichier source non trouvé pour SampleName : {sample_name} (or as cleaned: {cleaned_name_to_find})",
+                        indentation=2)
+                    self.error_count += 1
+                    return
+
+                source_file_path = found_cleaned[0]
+            else:
+                source_file_path = found[0]
+
         cleaned_full_path = self._clean_original_path(original_full_name)
         path_as_posix = cleaned_full_path.replace('\\', '/')
         original_path_object = Path(path_as_posix)
         destination_folder = self.destination_path / original_path_object.parent
         original_filename = original_path_object.name
+
         if not original_filename: return
+
         destination_folder.mkdir(parents=True, exist_ok=True)
         destination_file_path = destination_folder / original_filename
+
         try:
             shutil.move(str(source_file_path), str(destination_file_path))
             self.processed_count += 1
@@ -276,6 +500,7 @@ class ArtefactRestorer:
             self.logger.error(f"Impossible de déplacer '{source_file_path.name}' vers '{destination_file_path}': {e}",
                               indentation=2)
             self.error_count += 1
+
 
 def parse_args():
     """Parse les arguments de la ligne de commande."""
@@ -292,8 +517,20 @@ def parse_args():
                         help="Si spécifié, renomme les fichiers extraits sur place et s'arrête.")
     return parser.parse_args()
 
+
 if __name__ == '__main__':
     args = parse_args()
+
+    # Détermine le type d'archive avant de commencer
+    archive_path = Path(args.archive)
+    if not archive_path.exists():
+        print(f"Erreur: Le fichier archive '{args.archive}' n'existe pas.")
+        exit(1)
+
+    archive_extension = archive_path.suffix.lower()
+    if archive_extension not in ['.7z', '.zip']:
+        print(f"Erreur: Format d'archive non supporté '{archive_extension}'.")
+        exit(1)
 
     Path(args.destination).mkdir(parents=True, exist_ok=True)
     logger = LoggerManager("ArtefactProcessor", os.path.join(args.destination, "runlog.log"))
@@ -302,8 +539,13 @@ if __name__ == '__main__':
     restored_path = os.path.join(args.destination, "restored")
 
     # --- Étape 1: Extraction Récursive ---
-    extractor = OrcExtractor(logger, args.password)
-    extraction_successful = extractor.extract_recursively(args.archive, extracted_raw_path)
+    try:
+        extractor = OrcExtractor(logger, args.password)
+        extraction_successful = extractor.extract_recursively(archive_extension, args.archive, extracted_raw_path)
+    except Exception as e:
+        logger.error(f"Erreur critique durant l'initialisation de l'extraction : {e}\n{traceback.format_exc()}",
+                     header="CRITICAL")
+        extraction_successful = False
 
     if not extraction_successful:
         logger.error("Le script est arrêté car l'extraction a échoué.", header="ABORT")
