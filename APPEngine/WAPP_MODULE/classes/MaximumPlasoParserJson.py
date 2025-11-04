@@ -27,7 +27,7 @@ class MaximumPlasoParser:
         self.path_to_timeline = path_to_timeline
         self.dir_out = output_directory
         self.separator = separator
-        self.machine_name = machine_name if machine_name else "no_name"
+        self.machine_name = machine_name if machine_name else "machine"
 
         self.current_date = datetime.utcnow().strftime("%Y-%m-%d_%H_%M_%S")
         self.work_dir = os.path.join(os.path.abspath(self.dir_out), f"mpp_{self.machine_name}_{self.current_date}")

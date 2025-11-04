@@ -65,40 +65,40 @@ class EventParser:
                 "parser": self.parse_generic_evtx_file
             },
             "system": {
-                "pattern": re.compile(r'^System\.evtx\.json$'),
+                "pattern": re.compile(r'(^|_)System\.evtx\.json$'),
                 "parser": self.parse_generic_evtx_file
             },
             "task_scheduler": {
-                "pattern": re.compile(r'Microsoft-Windows-TaskScheduler%4Operational\.evtx\.json$'),
+                "pattern": re.compile(r'(^|_)Microsoft-Windows-TaskScheduler%4Operational\.evtx\.json$'),
                 "parser": self.parse_generic_evtx_file
             },
             "rdp_remote": {
                 "pattern": re.compile(
-                    r'Microsoft-Windows-TerminalServices-RemoteConnectionManager%4Operational\.evtx\.json$'),
+                    r'(^|_)Microsoft-Windows-TerminalServices-RemoteConnectionManager%4Operational\.evtx\.json$'),
                 "parser": self.parse_generic_evtx_file
             },
             "rdp_local": {
-                "pattern": re.compile(r'Microsoft-Windows-TerminalServices-LocalSessionManager%4Operational\.evtx\.json$'),
+                "pattern": re.compile(r'(^|_)Microsoft-Windows-TerminalServices-LocalSessionManager%4Operational\.evtx\.json$'),
                 "parser": self.parse_generic_evtx_file
             },
             "bits": {
-                "pattern": re.compile(r'Microsoft-Windows-Bits-Client%4Operational\.evtx\.json$'),
+                "pattern": re.compile(r'(^|_)Microsoft-Windows-Bits-Client%4Operational\.evtx\.json$'),
                 "parser": self.parse_generic_evtx_file
             },
             "powershell_operational": {
-                "pattern": re.compile(r'Microsoft-Windows-PowerShell%4Operational\\.evtx.json$'),
+                "pattern": re.compile(r'(^|_)Microsoft-Windows-PowerShell%4Operational\\.evtx.json$'),
                 "parser": self.parse_generic_evtx_file
             },
             "windows_powershell": {
-                "pattern": re.compile(r'Windows PowerShell\.evtx\.json$'),
+                "pattern": re.compile(r'(^|_)Windows PowerShell\.evtx\.json$'),
                 "parser": self.parse_generic_evtx_file
             },
             "wmi": {
-                "pattern": re.compile(r'Microsoft-Windows-WMI-Activity%4Operational\.evtx\.json$'),
+                "pattern": re.compile(r'(^|_)Microsoft-Windows-WMI-Activity%4Operational\.evtx\.json$'),
                 "parser": self.parse_generic_evtx_file
             },
             "windefender": {
-                "pattern": re.compile(r'Microsoft-Windows-Windows Defender%4Operational\.evtx\.json$'),
+                "pattern": re.compile(r'(^|_)Microsoft-Windows-Windows Defender%4Operational\.evtx\.json$'),
                 "parser": self.parse_generic_evtx_file
             }
         }
@@ -168,7 +168,6 @@ class EventParser:
 
                 system_info = event.get("Event", {}).get("System", {})
                 event_code = system_info.get("EventID")
-
                 if isinstance(event_code, dict):
                     event_code = event_code.get("Value")
 
