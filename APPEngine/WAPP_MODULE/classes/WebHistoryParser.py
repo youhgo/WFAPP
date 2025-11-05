@@ -100,11 +100,11 @@ class HistoryExporter:
         try:
             with open(self.output_file, 'w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f, delimiter='|')
-                writer.writerow(['DATE', 'TYPE', 'PRIMARY_DATA', 'SECONDARY_DATA', 'ADDITIONAL_INFO'])
+                writer.writerow(['DATE', 'TIME', 'TYPE', 'PRIMARY_DATA', 'SECONDARY_DATA', 'ADDITIONAL_INFO'])
 
                 for entry in self.all_entries:
                     writer.writerow([
-                        entry["timestamp"].strftime('%Y-%m-%d %H:%M:%S'),
+                        entry["timestamp"].strftime('%Y-%m-%d|%H:%M:%S'),
                         entry["type"],
                         entry["data1"],
                         entry["data2"],
