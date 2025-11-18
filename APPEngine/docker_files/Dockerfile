@@ -1,11 +1,18 @@
 FROM ubuntu:jammy
 
-# Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /python-docker
 ENV CELERY_BROKER_URL redis://redis:6379/0
 ENV CELERY_RESULT_BACKEND redis://redis:6379/0
 ENV C_FORCE_ROOT true
+
+#ARG PROXY_USER
+#ARG PROXY_USER_PWD
+#ARG HTTP_PROXY_URL
+#ARG HTTPS_PROXY_URL
+
+#RUN echo 'Acquire::http::Proxy "http://${PROXY_USER}:${PROXY_USER_PWD}@${HTTP_PROXY_URL}";' > /etc/apt/apt.conf.d/10proxy \
+#        && echo 'Acquire::https::Proxy "http://${PROXY_USER}:${PROXY_USER_PWD}@${HTTPS_PROXY_URL}";' >> /etc/apt/apt.conf.d/10proxy
 
 RUN apt-get update && \
     apt-get install -y software-properties-common && \
@@ -26,35 +33,22 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Python packages from requirements.txt
 COPY docker_files/requirements.txt requirements.txt
 RUN pip3 install --upgrade pip && \
     pip3 install -U setuptools pip && \
     pip3 install --upgrade py7zr && \
     pip3 install -r requirements.txt --ignore-installed
 
-# Install yarp package from local tarball
 COPY docker_files/yarp-1.0.33.tar.gz yarp-1.0.33.tar.gz
 RUN pip3 install ./yarp-1.0.33.tar.gz
 
-# Run the install script for analyzeMFT
 COPY docker_files/install_analyzemft.sh install_analyzemft.sh
 RUN ./install_analyzemft.sh
 
 # --- Configure and Set Entrypoint ---
-# Copy the new entrypoint script
 COPY docker_files/entrypoint.sh /usr/local/bin/entrypoint.sh
-
-# Make the script executable
 RUN chmod +x /usr/local/bin/entrypoint.sh
-
-# Set the entrypoint for the container
 ENTRYPOINT ["entrypoint.sh"]
-# ------------------------------------
 
-# Copy the rest of the application code
 COPY . .
-
-# The CMD will be inherited from the 'command' in your docker-compose.yml
-
 

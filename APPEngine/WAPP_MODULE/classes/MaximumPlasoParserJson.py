@@ -11,6 +11,9 @@ import re
 import time
 from pathlib import Path
 
+# TO DO
+# PARSE SRUM
+
 
 class MaximumPlasoParser:
     """

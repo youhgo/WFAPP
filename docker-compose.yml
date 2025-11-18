@@ -38,6 +38,13 @@ services:
     build:
       context: api/
       dockerfile: docker_files/Dockerfile
+      args:
+        PROXY_USER: ${PROXY_USER}
+        PROXY_USER_PWD: ${PROXY_USER_PWD}
+        HTTP_PROXY_URL: ${HTTP_PROXY_URL}
+        HTTPS_PROXY_URL: ${HTTPS_PROXY_URL}
+    env_file:
+      - .env
     container_name: "wapp_api"
     image: wapp-api
     networks:
@@ -65,9 +72,16 @@ services:
     build:
       context: ./APPEngine
       dockerfile: docker_files/Dockerfile
+      args:
+        PROXY_USER: ${PROXY_USER}
+        PROXY_USER_PWD: ${PROXY_USER_PWD}
+        HTTP_PROXY_URL: ${HTTP_PROXY_URL}
+        HTTPS_PROXY_URL: ${HTTPS_PROXY_URL}
+    env_file:
+      - .env
     environment:
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CELERY_BROKER_URL: ${REDIS_URL}
+      CELERY_RESULT_BACKEND: ${REDIS_URL}
       TOOL_PATH: "/python-docker/WAPP_MODULE/outils"
       ELK_HOST: ${ELK_HOST}
       ELK_PORT: ${ELK_PORT}
