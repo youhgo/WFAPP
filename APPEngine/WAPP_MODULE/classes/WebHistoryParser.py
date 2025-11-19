@@ -5,7 +5,7 @@ import argparse
 import glob
 import csv
 import traceback
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 class HistoryExporter:
@@ -36,9 +36,15 @@ class HistoryExporter:
 
     @staticmethod
     def _convert_webkit_timestamp(webkit_timestamp):
-        """Converts a WebKit/Chrome timestamp to a Python datetime object."""
+        """
+        Converts a WebKit/Chrome timestamp to a Python datetime object.
+        The timestamp is explicitly set to UTC (Timezone Aware).
+        """
         if webkit_timestamp > 0:
-            return datetime(1601, 1, 1) + timedelta(microseconds=webkit_timestamp)
+            # WebKit/Chrome timestamps are microseconds since 1601-01-01 00:00:00 UTC.
+            # We explicitly assign the UTC timezone to the resulting datetime object.
+            base_time = datetime(1601, 1, 1, tzinfo=timezone.utc)
+            return base_time + timedelta(microseconds=webkit_timestamp)
         return None
 
     def _parse_history_file(self, db_path):
@@ -47,6 +53,7 @@ class HistoryExporter:
         all_entries list.
         """
         self.logger_run.info(f"[PARSING][WEBHISTORY] Parsing file: {db_path}", header="START", indentation=2)
+        # Unique temporary filename using microseconds
         temp_db_path = f"temp_copy_{os.path.basename(db_path)}_{datetime.now().strftime('%f')}.db"
 
         try:
@@ -54,6 +61,7 @@ class HistoryExporter:
             conn = sqlite3.connect(temp_db_path)
             cursor = conn.cursor()
 
+            # --- URL VISITS ---
             history_query = "SELECT url, title, last_visit_time FROM urls"
             cursor.execute(history_query)
             for url, title, last_visit_time in cursor.fetchall():
@@ -67,6 +75,7 @@ class HistoryExporter:
                         "data3": ""
                     })
 
+            # --- DOWNLOADS ---
             downloads_query = "SELECT target_path, tab_url, total_bytes, start_time FROM downloads"
             cursor.execute(downloads_query)
             for target_path, tab_url, total_bytes, start_time in cursor.fetchall():
@@ -81,7 +90,8 @@ class HistoryExporter:
                     })
 
         except sqlite3.Error as e:
-            self.logger_run.error(f"[PARSING][WEBHISTORY] error Parsing file: {db_path}, {e}", header="ERROR", indentation=2)
+            self.logger_run.error(f"[PARSING][WEBHISTORY] error Parsing file: {db_path}, {e}", header="ERROR",
+                                  indentation=2)
         finally:
             if 'conn' in locals() and conn:
                 conn.close()
@@ -94,23 +104,34 @@ class HistoryExporter:
             self.logger_run.warning(f"[PARSING][WEBHISTORY] No history entries found", header="WARNING", indentation=2)
             return
 
+        # Sort based on the timezone-aware datetime object
         self.all_entries.sort(key=lambda x: x["timestamp"])
-
 
         try:
             with open(self.output_file, 'w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f, delimiter='|')
-                writer.writerow(['DATE', 'TIME', 'TYPE', 'PRIMARY_DATA', 'SECONDARY_DATA', 'ADDITIONAL_INFO'])
+                writer.writerow(
+                    ['DATE', 'TIME', 'TIMEZONE', 'TYPE', 'PRIMARY_DATA', 'SECONDARY_DATA', 'ADDITIONAL_INFO'])
 
                 for entry in self.all_entries:
+                    # Explicitly convert to UTC and extract components
+                    utc_ts = entry["timestamp"].astimezone(timezone.utc)
+
+                    date_str = utc_ts.strftime('%Y-%m-%d')
+                    time_str = utc_ts.strftime('%H:%M:%S.%f')[:-3]  # Truncate microseconds to milliseconds
+                    timezone_str = 'UTC'  # Known timezone
+
                     writer.writerow([
-                        entry["timestamp"].strftime('%Y-%m-%d|%H:%M:%S'),
+                        date_str,
+                        time_str,
+                        timezone_str,
                         entry["type"],
                         entry["data1"],
                         entry["data2"],
                         entry["data3"]
                     ])
-            self.logger_run.info(f"[PARSING][WEBHISTORY]", header="FINISHED", indentation=2)
+            self.logger_run.info(f"[PARSING][WEBHISTORY] Finished. Output written to {self.output_file}",
+                                 header="FINISHED", indentation=2)
         except IOError as e:
             self.logger_run.error(
                 f"[PARSING][WEBHISTORY] Error Writing to file: {self.output_file}, {traceback.format_exc()}",
@@ -134,21 +155,3 @@ class HistoryExporter:
         self.write_to_csv()
 
 
-def main():
-    """Main function to handle command-line arguments and run the exporter."""
-    parser = argparse.ArgumentParser(
-        description="Recursively find and parse Chrome/Edge History files, then export the sorted data to a single CSV."
-    )
-    parser.add_argument("-d", "--directory", required=True, help="The root directory to search for History files.")
-    parser.add_argument("-o", "--output", required=True, help="The path for the output CSV file.")
-    args = parser.parse_args()
-
-    try:
-        exporter = HistoryExporter(None, args.directory, args.output)
-        exporter.run()
-    except FileNotFoundError as e:
-        print(e)
-
-
-if __name__ == "__main__":
-    main()

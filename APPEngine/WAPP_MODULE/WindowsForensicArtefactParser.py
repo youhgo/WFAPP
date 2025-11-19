@@ -538,9 +538,7 @@ class WindowsForensicArtefactParser:
                             my_cmd = ["python3", "{}".format(self.analyze_mft_tool_path),
                                       "-f", "{}".format(mft_file),
                                       "-o", "{}".format(mft_result_file),
-                                      "--json",
-                                      "--verbose",
-                                      "--debug"]
+                                      "--json"]
                             subprocess.run(my_cmd)
 
                         self.logger_run.info("[TOOLING][ANALYZEMFT]", header="FINISHED", indentation=2)
@@ -561,6 +559,7 @@ class WindowsForensicArtefactParser:
         try:
             self.logger_run.info("[TOOLING][ANALYZEMFT]", header="START", indentation=2)
             mft_result_file = os.path.join(self.mft_dir, "mft.timeline")
+
             mngr = FileManager.FileManager()
 
             mft_patterns = self.artefact_config.get("artefacts", {}).get("master_file_table", {}).get("MFT", [])
@@ -572,9 +571,7 @@ class WindowsForensicArtefactParser:
                             my_cmd = ["python3", "{}".format(self.analyze_mft_tool_path),
                                       "-f", "{}".format(mft_file),
                                       "-o", "{}".format(mft_result_file),
-                                      "--timeline",
-                                      "--verbose",
-                                      "--debug"]
+                                      "--timeline"]
                             subprocess.run(my_cmd)
 
                         self.logger_run.info("[TOOLING][ANALYZEMFT]", header="FINISHED", indentation=2)
@@ -924,7 +921,8 @@ class WindowsForensicArtefactParser:
         if self.main_config.get("hive", False):
             self.do_hive()
         if self.main_config.get("mft", False):
-            self.do_mft_json() # not using csv cause analysemft fail inside docker...
+            #self.do_mft_json() # not using cause is messy
+            self.do_mft_csv()
         if self.main_config.get("disk", False):
             self.do_disk()
 

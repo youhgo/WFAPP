@@ -5,8 +5,8 @@ import json
 import traceback
 import os
 import time
-from datetime import datetime
-
+from datetime import datetime, timezone
+from typing import List
 
 class DiskParser:
     """
@@ -330,60 +330,67 @@ class DiskParser:
 
     def parse_plaso_csv(self, input_file_path: str, output_path: str):
         """
-        Parses a Plaso-like CSV file with a Unix timestamp in the first column,
-        converts the timestamp to a readable format, and saves it to a new CSV.
-
-        Args:
-            input_file_path: Full path of the CSV file to parse.
-            output_path: Directory where the formatted CSV results will be written.
+        Parses a Plaso-like/TLN CSV file with a Unix timestamp in the first column.
+        Converts timestamp to UTC Date and Time (with microseconds).
+        Handles 'OverflowError' by attempting to divide the timestamp
+        (assuming nanoseconds/hundreds of nanoseconds).
         """
-        output_file_path = os.path.join(output_path, "Plaso_Timeline_Formatted.csv")
-        self.logger_run.info(f"[PARSING][PLASO_CSV] Starting Plaso CSV parsing for {input_file_path}", header="START",
-                             indentation=1)
+        output_file_path = os.path.join(output_path, "mft.csv")
+        out_delimiter = getattr(self, 'separator', ',')
 
+        self.logger_run.info(f"[PARSING][PLASO_CSV] Starting parsing for {input_file_path}", header="START",
+                             indentation=1)
         try:
             os.makedirs(output_path, exist_ok=True)
+
             with open(input_file_path, 'r', newline='', encoding='utf-8') as infile, \
                     open(output_file_path, 'w', newline='', encoding='utf-8') as outfile:
 
                 reader = csv.reader(infile, delimiter='|')
-                writer = csv.writer(outfile, delimiter=self.separator)
+                writer = csv.writer(outfile, delimiter=out_delimiter)
 
-                output_header = ["Date", "Time", "Source", "EventType", "Col5", "Col6", "Col7", "Filename",
-                                 "RecordNumber", "Col10", "Col11", "Col12", "Col13"]
+                output_header: List[str] = [
+                    "Date", "Time", "Source", "EventType",
+                    "Col5", "Col6", "Col7", "Col8",
+                    "Filename", "Inode",
+                    "Col11", "Col12", "Col13", "Col14"
+                ]
                 writer.writerow(output_header)
 
                 for row in reader:
                     if not row:
                         continue
                     try:
-
                         unix_timestamp_str = row[0]
                         unix_timestamp = float(unix_timestamp_str)
-                        dt_object = datetime.fromtimestamp(unix_timestamp)
+
+                        try:
+                            dt_object = datetime.fromtimestamp(unix_timestamp, tz=timezone.utc)
+
+                        except OverflowError:
+                            if unix_timestamp > 1_000_000_000:
+                                unix_timestamp_seconds = unix_timestamp / 1_000_000_000
+                                dt_object = datetime.fromtimestamp(unix_timestamp_seconds, tz=timezone.utc)
+                            else:
+                                raise ValueError(f"Timestamp {unix_timestamp} is out of expected range.")
+
                         date_str = dt_object.strftime('%Y-%m-%d')
-                        time_str = dt_object.strftime('%H:%M:%S')
+                        time_str = dt_object.strftime('%H:%M:%S.%f')
 
                         new_row = [date_str, time_str] + row[1:]
                         writer.writerow(new_row)
 
-                    except (ValueError, IndexError) as e:
-                        self.logger_run.warning(f"Skipping malformed row: {row}. Error: {e}", header="WARNING",
+                    except (ValueError, IndexError, OverflowError) as e:
+                        self.logger_run.warning(f"Skipping malformed row: {row}. Error: {e}",
+                                                header="WARNING",
                                                 indentation=3)
+
                         continue
+            self.logger_run.info(f"[PARSING][PLASO_CSV] Finished. Output: {output_file_path}", header="FINISHED",
+                                 indentation=2)
 
-            self.logger_run.info(f"[PARSING][PLASO_CSV] Finished. Output written to {output_file_path}",
-                                 header="FINISHED", indentation=2)
-
-        except FileNotFoundError:
-            self.logger_run.error(
-                f"[PARSING][PLASO_CSV] Input file not found at '{input_file_path}'.", header="ERROR",
-                indentation=2)
-        except Exception:
-            self.logger_run.error(
-                f"[PARSING][PLASO_CSV] Unexpected error: {traceback.format_exc()}",
-                header="ERROR", indentation=2)
-
+        except Exception as e:
+            self.logger_run.error(f"Critical error parsing Plaso CSV: {e}", header="ERROR")
 
 def parse_args():
     """
