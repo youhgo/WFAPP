@@ -11,10 +11,6 @@ import re
 import time
 from pathlib import Path
 
-# TO DO
-# PARSE SRUM
-
-
 class MaximumPlasoParser:
     """
     Class MaximumPlasoParser
@@ -918,7 +914,6 @@ class MaximumPlasoParser:
 
                     except Exception as e:
                         print(f"Warning: Could not clean duplicates from {file}. Error: {e}")
-
 
 def parse_args():
     """

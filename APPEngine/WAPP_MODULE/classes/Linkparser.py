@@ -44,7 +44,7 @@ class LinkParser:
         :param file_path: (str) Path to the lnk file.
         """
         lnk_name = Path(file_path).name
-        path_out_json = os.path.join(self.dir_out,"{}.json".format(Path(file_path).stem))
+        path_out_json = os.path.join(self.dir_out,"{}.lnk.json".format(Path(file_path).stem))
 
         try:
             with open(file_path, 'rb') as file_in:
