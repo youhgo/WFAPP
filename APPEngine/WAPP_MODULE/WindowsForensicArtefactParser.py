@@ -908,7 +908,7 @@ class WindowsForensicArtefactParser:
                 es_hosts=es_host,
                 es_user=os.getenv('ELK_USER'),
                 es_pass=os.getenv('ELK_PASSWD'),
-                chunk_size=os.getenv('ES_CHUNKSIZE'),
+                chunk_size=int(os.getenv('ES_CHUNKSIZE')),
                 verify_ssl=os.getenv('ES_VERIFYSSL'),
             )
             pipeline.run()
