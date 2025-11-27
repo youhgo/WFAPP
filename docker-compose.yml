@@ -87,18 +87,29 @@ services:
       ELK_PORT: ${ELK_PORT}
       ELK_USER: ${ELK_USER}
       ELK_PASSWD: ${ELK_PASSWD}
+      ES_TIMEOUT: ${ES_TIMEOUT}
+      ES_MODE: ${ES_MODE}
+      ES_NBTHREAD: ${ES_NBTHREAD}
+      ES_CHUNKSIZE: ${ES_CHUNKSIZE}
+      ES_VERIFYSSL: ${ES_VERIFYSSL}
+
       SPLUNK_HOST: ${SPLUNK_HOST}
       SPLUNK_PORT: ${SPLUNK_PORT}
       SPLUNK_TOKEN: ${SPLUNK_TOKEN}
+
+
     volumes:
       - ${SHARED_FOLDER_PATH}:/python-docker/shared_files/
     depends_on:
       - redis
     networks:
       - wappNet
+      - elk_net
 
 networks:
-    wappNet:
-
+  wappNet:
+  elk_net:
+    external: true
+    name: elastic
 volumes:
   shared_files:

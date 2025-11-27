@@ -11,8 +11,10 @@ import time
 import traceback
 
 from .classes import DiskParser, EventParser, FileManager, Linkparser, LoggerManager, MaximumPlasoParserJson, \
-    NetWorkParser, OrcExtractor, plaso2Elk, PrefetchParser, ProcessParser, RegistryParser, SystemInfoParser, WebHistoryParser, App_2_elk
+    NetWorkParser, OrcExtractor, PrefetchParser, ProcessParser, RegistryParser, SystemInfoParser, WebHistoryParser
 
+from .outils.plaso2ELK import plaso_2_siem
+from .outils.wapp2ELK import App_2_elk
 
 # Try importing pyscca; fail if it doesn't import
 try:
@@ -270,6 +272,7 @@ class WindowsForensicArtefactParser:
                     "rename_from_orc": 0,
                     "disk": 1,
                     "elk": 0,
+                    "plaso2elk": 1,
                     "evtx": 1,
                     "hive": 1,
                     "mft": 1,
@@ -871,27 +874,46 @@ class WindowsForensicArtefactParser:
             self.logger_run.error("[PARSING][EVTX] {}".format(traceback.format_exc()), header="ERROR",
                                   indentation=1)
 
-    def do_elk_legacy(self):
-        p_agent = plaso2Elk.PlasoToELK(self.logger_run, self.timeline_json_path, self.case_name, self.machine_name)
-        if p_agent.test_connection():
-            p_agent.send_to_elk_in_bulk()
-        else:
-            self.logger_run.error("[CONNECTING][ELK] aboarding", header="ERROR", indentation=1)
+    def do_plaso2elk(self):
+        try:
+            es_host = f"{os.getenv('ELK_HOST')}:{os.getenv('ELK_PORT')}"
+            self.logger_run.info("[PLASO][ELK]", header="START", indentation=1)
+            self.logger_run.info(
+                f"[PLASO][ELK] param are: {self.case_name}|{self.machine_name}|{self.timeline_json_path}|{es_host}|{os.getenv('ELK_USER')}|{os.getenv('ELK_PASSWD')}|{os.getenv('ES_CHUNKSIZE')}|{os.getenv('ES_VERIFYSSL')}|{os.getenv('ES_TIMEOUT')}|{os.getenv('ES_NBTHREAD')}|{os.getenv('ES_MODE')}",
+                header="START", indentation=1)
+            p_agent = plaso_2_siem.PlasoPipeline(case_name=self.case_name,
+                                                 machine_name=self.machine_name,
+                                                 timeline_path=self.timeline_json_path,
+                                                 es_hosts=es_host,
+                                                 es_user=os.getenv('ELK_USER'),
+                                                 es_pass=os.getenv('ELK_PASSWD'),
+                                                 chunk_size=int(os.getenv('ES_CHUNKSIZE')),
+                                                 verify_ssl=os.getenv('ES_VERIFYSSL'),
+                                                 es_timeout=int(os.getenv('ES_TIMEOUT')),
+                                                 thread_count=int(os.getenv('ES_NBTHREAD')),
+                                                 mode=os.getenv('ES_MODE'),
+                                                 )
+            p_agent.run()
+            self.logger_run.info("[PLASO][ELK]", header="FINISHED", indentation=1)
+        except:
+            self.logger_run.error(f"[PLASO][ELK] aboarding, ERROR: {traceback.format_exc()}", header="ERROR", indentation=1)
 
     def do_elk(self):
-
-        es_host = f"{os.getenv('ELK_HOST')}:{os.getenv('ELK_PORT')}"
-        pipeline = App_2_elk.ForensicPipeline(
-            case_name=self.case_name,
-            machine_name=self.machine_name,
-            source_dir=self.parsed_dir,
-            es_hosts=es_host,
-            es_user=os.getenv('ELK_USER'),
-            es_pass=os.getenv('ELK_PASSWD'),
-            chunk_size="15000",
-            verify_ssl="False"
-        )
-        pipeline.run()
+        try:
+            es_host = f"{os.getenv('ELK_HOST')}:{os.getenv('ELK_PORT')}"
+            pipeline = App_2_elk.ForensicPipeline(
+                case_name=self.case_name,
+                machine_name=self.machine_name,
+                source_dir=self.parsed_dir,
+                es_hosts=es_host,
+                es_user=os.getenv('ELK_USER'),
+                es_pass=os.getenv('ELK_PASSWD'),
+                chunk_size=os.getenv('ES_CHUNKSIZE'),
+                verify_ssl=os.getenv('ES_VERIFYSSL'),
+            )
+            pipeline.run()
+        except:
+            self.logger_run.error(f"[PLASO][ELK] aboarding, ERROR: {traceback.format_exc()}", header="ERROR", indentation=1)
 
     def do_web_history(self):
         w_parser = WebHistoryParser.HistoryExporter(self.logger_run, self.extracted_main_dir,
@@ -933,8 +955,8 @@ class WindowsForensicArtefactParser:
             self.do_plaso()
             if self.main_config.get("mpp", False):
                 self.do_maximum_plaso_parser()
-        if self.main_config.get("elk", False):
-            self.do_elk()
+            if self.main_config.get("plaso2elk", False):
+                self.do_plaso2elk()
 
         self.logger_run.info("[PARSING][ARTEFACTS]", header="FINISHED", indentation=0)
 

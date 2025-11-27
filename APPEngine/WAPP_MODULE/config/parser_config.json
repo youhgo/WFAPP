@@ -3,6 +3,7 @@
   "rename_from_orc": 0,
   "disk": 1,
   "elk": 0,
+  "plaso2elk": 1,
   "evtx": 1,
   "hive": 1,
   "mft": 1,
