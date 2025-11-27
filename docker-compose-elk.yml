@@ -104,10 +104,13 @@ services:
       - redis
     networks:
       - wappNet
+      - elk_net
 
 
 networks:
   wappNet:
-
+  elk_net:
+    external: true
+    name: elastic
 volumes:
   shared_files:
