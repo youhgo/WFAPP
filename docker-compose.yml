@@ -1,0 +1,112 @@
+# Using a more modern version of docker-compose is recommended
+version: "3.8"
+
+services:
+  reverse_proxy:
+    image: "traefik:latest"
+    container_name: "wapp_traefik"
+    ports:
+      - "443:443"
+      - "8080:8080"
+      - "80:80"
+    volumes:
+      - ./dependencies/traefik/certs:/etc/certs
+      - ./dependencies/traefik/config.yml:/etc/traefik/config.yml
+      - ./dependencies/traefik/traefik.yml:/etc/traefik/traefik.yml
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - wappNet
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik=true"
+    depends_on:
+      - redis
+
+  redis:
+    container_name: 'wapp_redis'
+    image: 'redis:4-alpine'
+    ports:
+      - '6379:6379'
+    expose:
+      - '6379'
+    networks:
+        - wappNet
+    volumes:
+      - ${SHARED_FOLDER_PATH}/redis_db:/data
+
+  wapp_api:
+    build:
+      context: api/
+      dockerfile: docker_files/Dockerfile
+      args:
+        PROXY_USER: ${PROXY_USER}
+        PROXY_USER_PWD: ${PROXY_USER_PWD}
+        HTTP_PROXY_URL: ${HTTP_PROXY_URL}
+        HTTPS_PROXY_URL: ${HTTPS_PROXY_URL}
+    env_file:
+      - .env
+    container_name: "wapp_api"
+    image: wapp-api
+    networks:
+      - wappNet
+    labels:
+      # Router for the API
+      - "traefik.enable=true"
+      - "traefik.http.routers.wapp-api.rule=Host(`${WAPP_API_HOST}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.wapp-api.tls=true"
+      - "traefik.http.routers.wapp-api.service=wapp-api"
+      # Router for the GUI
+      - "traefik.http.routers.wapp-gui.rule=Host(`${WAPP_API_HOST}`)"
+      - "traefik.http.routers.wapp-gui.tls=true"
+      - "traefik.http.routers.wapp-gui.service=wapp-api"
+      - "traefik.http.services.wapp-api.loadbalancer.server.port=8880"
+    volumes:
+      - ${SHARED_FOLDER_PATH}:/python-docker/shared_files/
+      - ./api/db:/python-docker/db
+    environment:
+      - FLASK_APP=wapp_server:create_app
+      - FLASK_ENV=development
+
+  wapp_worker:
+    image: wapp-worker
+    build:
+      context: ./APPEngine
+      dockerfile: docker_files/Dockerfile
+      args:
+        PROXY_USER: ${PROXY_USER}
+        PROXY_USER_PWD: ${PROXY_USER_PWD}
+        HTTP_PROXY_URL: ${HTTP_PROXY_URL}
+        HTTPS_PROXY_URL: ${HTTPS_PROXY_URL}
+    env_file:
+      - .env
+    environment:
+      CELERY_BROKER_URL: ${REDIS_URL}
+      CELERY_RESULT_BACKEND: ${REDIS_URL}
+      TOOL_PATH: "/python-docker/WAPP_MODULE/outils"
+      ELK_HOST: ${ELK_HOST}
+      ELK_PORT: ${ELK_PORT}
+      ELK_USER: ${ELK_USER}
+      ELK_PASSWD: ${ELK_PASSWD}
+      ES_TIMEOUT: ${ES_TIMEOUT}
+      ES_MODE: ${ES_MODE}
+      ES_NBTHREAD: ${ES_NBTHREAD}
+      ES_CHUNKSIZE: ${ES_CHUNKSIZE}
+      ES_VERIFYSSL: ${ES_VERIFYSSL}
+
+      SPLUNK_HOST: ${SPLUNK_HOST}
+      SPLUNK_PORT: ${SPLUNK_PORT}
+      SPLUNK_TOKEN: ${SPLUNK_TOKEN}
+
+
+    volumes:
+      - ${SHARED_FOLDER_PATH}:/python-docker/shared_files/
+    depends_on:
+      - redis
+    networks:
+      - wappNet
+
+networks:
+  wappNet:
+
+volumes:
+  shared_files:
