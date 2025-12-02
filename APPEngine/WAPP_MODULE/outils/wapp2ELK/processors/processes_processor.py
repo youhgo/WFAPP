@@ -101,7 +101,7 @@ class ProcessesProcessor(BaseFileProcessor):
             "registry": {"path": item.get("location")},
             "process": {"executable": item.get("imagepath"),
                         "name": os.path.basename(item.get("imagepath")) if item.get("imagepath") else None,
-                        "version": item.get("version"),
+                        " version": item.get("version"),
                         "hash": {"md5": item.get("md5hash"), "sha1": item.get("sha1hash"),
                                  "sha256": item.get("sha256hash")},
                         "code_signature": {"subject_name": item.get("signer"), "publisher": item.get("company")}},

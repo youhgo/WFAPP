@@ -898,7 +898,7 @@ class WindowsForensicArtefactParser:
         except:
             self.logger_run.error(f"[PLASO][ELK] aboarding, ERROR: {traceback.format_exc()}", header="ERROR", indentation=1)
 
-    def do_elk(self):
+    def do_elk(self, artifact_types):
         try:
             es_host = f"{os.getenv('ELK_HOST')}:{os.getenv('ELK_PORT')}"
             pipeline = App_2_elk.ForensicPipeline(
@@ -910,6 +910,7 @@ class WindowsForensicArtefactParser:
                 es_pass=os.getenv('ELK_PASSWD'),
                 chunk_size=int(os.getenv('ES_CHUNKSIZE')),
                 verify_ssl=os.getenv('ES_VERIFYSSL'),
+                artifact_types=artifact_types
             )
             pipeline.run()
         except:
@@ -950,12 +951,15 @@ class WindowsForensicArtefactParser:
 
         self.clean_duplicates(self.result_parsed_dir)
         self.create_timeline()
+        if self.main_config.get("elk", False):
+            self.do_elk("all")
 
         if self.main_config.get("plaso", False):
             self.do_plaso()
             if self.main_config.get("mpp", False):
                 self.do_maximum_plaso_parser()
             if self.main_config.get("plaso2elk", False):
+                self.do_elk("process,network")
                 self.do_plaso2elk()
 
         self.logger_run.info("[PARSING][ARTEFACTS]", header="FINISHED", indentation=0)
