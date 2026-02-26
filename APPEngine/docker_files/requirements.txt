@@ -9,3 +9,4 @@ xmltodict
 elasticsearch~=8.0
 lxml
 urllib3<2
+opensearch-py

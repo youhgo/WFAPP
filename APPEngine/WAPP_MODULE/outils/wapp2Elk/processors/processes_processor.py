@@ -101,7 +101,7 @@ class ProcessesProcessor(BaseFileProcessor):
             "registry": {"path": item.get("location")},
             "process": {"executable": item.get("imagepath"),
                         "name": os.path.basename(item.get("imagepath")) if item.get("imagepath") else None,
-                        " version": item.get("version"),
+                        "version": item.get("version"),
                         "hash": {"md5": item.get("md5hash"), "sha1": item.get("sha1hash"),
                                  "sha256": item.get("sha256hash")},
                         "code_signature": {"subject_name": item.get("signer"), "publisher": item.get("company")}},
@@ -112,17 +112,25 @@ class ProcessesProcessor(BaseFileProcessor):
 
     def _process_csv_file(self, filepath: str, dataset: str):
         print(f"  -> Lecture du fichier de Processus (CSV) : {filepath}")
-        with open(filepath, 'r', encoding='utf-8-sig', errors='ignore') as f:
+        file_encoding = 'utf-8'
+        file_encoding2 =  'utf-8-sig'
+        with open(filepath, 'rb') as raw_file:
+            if b'\x00' in raw_file.read(100):
+                file_encoding = 'utf-16'
+
+        with open(filepath, 'r', encoding=file_encoding, errors='replace') as f:
             lines = f.readlines()
 
         header_fields, header_index = None, -1
         for i, line in enumerate(lines):
             clean_line = line.strip()
+
             if not clean_line or "Sysinternals" in clean_line or "Copyright" in clean_line:
                 continue
             if "," in clean_line:
                 try:
                     header_fields = next(csv.reader([clean_line]))
+                    print(header_fields)
                     header_index = i
                     break
                 except StopIteration:
@@ -138,6 +146,7 @@ class ProcessesProcessor(BaseFileProcessor):
             "processes_sampleinfo": (self._process_sampleinfo_row, "SampleInfo"),
             "processes_timeline": (self._process_timeline_row, "Timeline"),
             "autoruns_sysinternals": (self._process_autoruns_csv_row, "Autoruns CSV")
+
         }
 
         parser_func, fmt = parser_map.get(dataset, (None, None))

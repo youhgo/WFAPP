@@ -3,103 +3,106 @@
 
 import json
 import traceback
+import warnings
 
-from elasticsearch import Elasticsearch
-from elasticsearch.helpers import streaming_bulk, parallel_bulk
-from elasticsearch.exceptions import ApiError
+# We use opensearchpy for Wazuh Indexer compatibility
+from opensearchpy import OpenSearch
+from opensearchpy.helpers import streaming_bulk, parallel_bulk
+from opensearchpy.exceptions import OpenSearchException, TransportError
 
 
 def json_default_serializer(obj):
     """Surcharge le sérialiseur JSON pour gérer les objets d'erreur non sérialisables."""
-    if isinstance(obj, ApiError):
-        # Convertit l'objet ApiError en sa représentation string ou dict
+    if isinstance(obj, (OpenSearchException, TransportError)):
         return str(obj)
     try:
-        # Tente de convertir l'objet en dictionnaire s'il a une méthode to_dict
         return obj.to_dict()
     except AttributeError:
-        # Reviens à la méthode par défaut (généralement raise TypeError)
         raise TypeError(f'Object of type {obj.__class__.__name__} is not JSON serializable')
 
 
-class ElasticUploader:
-    """Gère la connexion et l'envoi en masse des documents à Elasticsearch."""
+class WazuhUploader:
+    """Gère la connexion et l'envoi en masse des documents au Wazuh Indexer."""
 
     def __init__(self, es_hosts: list, es_user: str, es_pass: str, verify_ssl: bool, es_timeout: int, thread_count: int,
                  mode: str):
         self.es_timeout = es_timeout
         self.thread_count = thread_count
         self.mode = mode
+
         try:
-            # Paramètres de résilience de la connexion
+            # Configuration de la connexion Wazuh / OpenSearch
             es_options = {
-                "basic_auth": (es_user, es_pass),
+                "hosts": es_hosts,
+                "http_auth": (es_user, es_pass),  # Wazuh uses http_auth tuple
                 "verify_certs": verify_ssl,
-                "request_timeout": es_timeout,  # Timeout général de la requête
+                "timeout": es_timeout,
                 "max_retries": 10,
-                "retry_on_timeout": True
+                "retry_on_timeout": True,
+                "ssl_show_warn": False
             }
+
             if not verify_ssl:
-                import warnings
                 from urllib3.exceptions import InsecureRequestWarning
                 warnings.filterwarnings('ignore', category=InsecureRequestWarning)
-                es_options["ca_certs"] = False
+                es_options["ssl_assert_hostname"] = False  # Crucial for Wazuh docker setups
 
-            self.client = Elasticsearch(es_hosts, **es_options)
-            if not self.client.ping(): raise ConnectionError("La connexion à Elasticsearch a échoué.")
-            print("Connexion à Elasticsearch réussie.")
+            self.client = OpenSearch(**es_options)
+
+            if not self.client.ping():
+                raise ConnectionError("La connexion au Wazuh Indexer a échoué.")
+            print("Connexion au Wazuh Indexer réussie.")
+
         except Exception as e:
-            raise ConnectionError(f"Impossible d'initialiser le client Elasticsearch : {e}")
+            raise ConnectionError(f"Impossible d'initialiser le client Wazuh/OpenSearch : {e}")
 
     def _create_index_template(self, template_name: str, index_pattern: str, priority: int):
-        """Crée ou met à jour un template d'index pour forcer le mapping de @timestamp."""
+        """Crée ou met à jour un template d'index."""
+        # Note: OpenSearch syntax is slightly different for templates in some versions,
+        # but modern Wazuh supports composable templates similar to ES.
         template_body = {
             "index_patterns": [index_pattern],
-            "priority": priority,  # Priorité 400 pour éviter les conflits avec les anciens templates
+            "priority": priority,
             "template": {
-                "settings": {"index.mapping.total_fields.limit": 2000},
+                "settings": {
+                    "index.mapping.total_fields.limit": 5000  # Increased for Plaso
+                },
                 "mappings": {
                     "properties": {
-                        "estimestamp": {"type": "date", "format": "strict_date_optional_time||epoch_millis"}}}
+                        "estimestamp": {"type": "date", "format": "strict_date_optional_time||epoch_millis"}
+                    }
+                }
             }
         }
         try:
-            # Utilisation de put_index_template pour la compatibilité
-            self.client.indices.put_index_template(name=template_name, index_patterns=template_body["index_patterns"],
-                                                   priority=template_body["priority"],
-                                                   template=template_body["template"])
-            print(
-                f"Template d'index '{template_name}' pour le pattern '{index_pattern}' créé/mis à jour (Prio: {priority}).")
+            self.client.indices.put_index_template(
+                name=template_name,
+                body=template_body  # OpenSearch often expects 'body' arg
+            )
+            print(f"Template '{template_name}' pour '{index_pattern}' créé/mis à jour.")
         except Exception as e:
-            print(f"[Attention] Impossible de créer le template d'index '{template_name}'. Erreur: {e}")
+            print(f"[Attention] Impossible de créer le template '{template_name}'. Erreur: {e}")
 
     def setup_templates(self, priority: int = 400, **kwargs):
-        """Configure les templates pour les différents types de logs. kwargs = {name: pattern}"""
         for name, pattern in kwargs.items():
             self._create_index_template(f"forensic_{name}_template", pattern, priority)
 
     def bulk_upload(self, actions_generator, chunk_size: int):
-        """Envoie des documents en utilisant streaming_bulk ou parallel_bulk."""
-
-        # Choisir la fonction d'envoi
         if self.mode == 'parallel':
             bulk_func = parallel_bulk
             print(f"\nEnvoi en mode PARALLÈLE ({self.thread_count} threads) par lots de {chunk_size}...")
-            # Paramètres spécifiques à parallel_bulk
             kwargs = {"thread_count": self.thread_count}
-        else:  # streaming mode
+        else:
             bulk_func = streaming_bulk
             print(f"\nEnvoi en mode STREAMING (séquentiel) par lots de {chunk_size}...")
             kwargs = {}
 
         success_count, fail_count = 0, 0
         try:
-            # Le request_timeout de 60s/500s est hérité du client self.client
             for ok, result in bulk_func(
                     client=self.client,
                     actions=actions_generator,
                     chunk_size=chunk_size,
-                    # Transmission du timeout au niveau de l'opération bulk (sécurité)
                     request_timeout=self.es_timeout,
                     raise_on_error=False,
                     raise_on_exception=False,
@@ -109,7 +112,6 @@ class ElasticUploader:
                     success_count += 1
                 else:
                     fail_count += 1
-                    # Utiliser le sérialiseur par défaut pour gérer les ApiError
                     print(
                         f"\n[ERREUR D'ENVOI] Document échoué : {json.dumps(result, indent=2, default=json_default_serializer)}")
 
@@ -118,4 +120,4 @@ class ElasticUploader:
             if fail_count > 0:
                 print(f"Documents en échec : {fail_count}")
         except Exception as e:
-            print(f"Une erreur critique est survenue durant l'envoi en streaming : {traceback.format_exc()}")
+            print(f"Une erreur critique est survenue : {traceback.format_exc()}")

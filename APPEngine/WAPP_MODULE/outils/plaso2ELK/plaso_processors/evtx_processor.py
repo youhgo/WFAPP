@@ -22,9 +22,10 @@ class EvtxHandler:
             4648: self.handle_security_logon, 4672: self.handle_4672_special_privileges,
             4688: self.handle_security_process_created,
             4698: self.handle_security_task_created,
-            4720: self.handle_user_modification,
+            4720: self.handle_user_modification, 4722: self.handle_user_modification,
             4723: self.handle_user_modification, 4724: self.handle_user_modification,
-            4726: self.handle_user_modification
+            4725: self.handle_user_modification, 4726: self.handle_user_modification,
+            4738: self.handle_user_modification
         }
         self.POWERSHELL_EVENT_HANDLERS = {
             400: self.handle_ps_engine_state,

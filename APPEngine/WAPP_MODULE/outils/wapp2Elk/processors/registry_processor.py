@@ -69,7 +69,7 @@ class RegistryJsonProcessor(BaseFileProcessor):
             except Exception as e:
                 print(f"[ERREUR] Erreur inattendue lors de la lecture de {filepath}: {e}")
 
-    def _process_generic_reg_file(self, filepath: str, dataset: str):
+    def _process_generic_reg_file_legacy(self, filepath: str, dataset: str):
         print(f"    -> Fichier traité comme JSON Lines (dataset: {dataset}).")
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
 
@@ -83,7 +83,90 @@ class RegistryJsonProcessor(BaseFileProcessor):
                 except Exception as e:
                     print(f"\n[Attention] Impossible de traiter la ligne de registre #{line_num}. Erreur: {e}\n")
 
+    def _process_generic_reg_file(self, filepath: str, dataset: str):
+        print(f"    -> Fichier traité comme JSON Lines (dataset: {dataset}).")
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+
+            for line_num, line in enumerate(f, 1):
+                stripped_line = line.strip()
+                if not stripped_line: continue
+                try:
+                    raw_log_data = json.loads(stripped_line)
+                    if "path" in raw_log_data and "last_written_timestamp" in raw_log_data:
+                        # Routage spécifique pour la base SAM
+                        if dataset == 'registry_sam':
+                            yield self._process_sam_log(raw_log_data, dataset), "registry"
+                        else:
+                            yield self._process_generic_reg_log(raw_log_data, dataset), "registry"
+                except Exception as e:
+                    print(f"\n[Attention] Impossible de traiter la ligne de registre #{line_num}. Erreur: {e}\n")
+
     def process_file(self, filepath: str, **kwargs):
+        dataset = kwargs.get("dataset")
+        if not dataset:
+            print(f"  [Attention] Aucun 'dataset' spécifié pour {filepath}. Fichier ignoré.")
+            return
+
+        print(f"  -> Traitement du fichier de registre : {filepath}")
+        if dataset == 'amcache_regpy':
+            yield from self._process_regipy_amcache_file(filepath)
+        # Ajout de 'registry_sam' à la liste d'ingestion générique
+        elif dataset in ['amcache_yarp', 'registry_security', 'registry_software', 'registry_system',
+                         'registry_ntuser', 'registry_sam']:
+            yield from self._process_generic_reg_file(filepath, dataset)
+        else:
+            print(f"  [Attention] Dataset '{dataset}' non reconnu pour le processeur de registre. Fichier ignoré.")
+
+    def _process_sam_log(self, raw_log: dict, dataset: str) -> dict:
+        """
+        Traite un enregistrement de la base SAM en enrichissant les données
+        (extraction des RIDs, noms d'utilisateurs et groupes).
+        """
+        final_timestamp = self._parse_timestamp(raw_log.get("last_written_timestamp"))
+        values_as_json_string = json.dumps(raw_log.get("values", {}))
+
+        # Document de base ECS
+        doc = {
+            "@timestamp": final_timestamp,
+            "event": {"kind": "event", "category": "iam", "dataset": dataset, "original": json.dumps(raw_log)},
+            "registry": {"path": raw_log.get("path"), "key": raw_log.get("name"), "values_json": values_as_json_string}
+        }
+
+        path_parts = raw_log.get("path", "").split("\\")
+        name = raw_log.get("name", "")
+        values = raw_log.get("values", {})
+
+        # -- 1. Utilisateurs (Mappage Nom -> RID) --
+        # Exemple : ROOT\SAM\Domains\Account\Users\Names\Administrator
+        if len(path_parts) >= 7 and path_parts[4] == "Users" and path_parts[5] == "Names":
+            username = name
+            # Le RID est stocké dans le champ 'type' de la valeur par défaut dans cet export
+            rid_hex = values.get("", {}).get("type", "")
+
+            doc["user"] = {"name": username, "id": rid_hex}
+            doc["event"]["action"] = "sam_user_mapping"
+
+        # -- 2. Utilisateurs (Données brutes par RID) --
+        # Exemple : ROOT\SAM\Domains\Account\Users\000001F4
+        elif len(path_parts) == 6 and path_parts[4] == "Users" and name != "Users":
+            rid = name.lstrip("0")  # Convertit "000001F4" en "1F4"
+            if not rid: rid = "0"
+
+            doc["user"] = {"id": f"0x{rid.lower()}"}
+            doc["event"]["action"] = "sam_user_properties"
+
+        # -- 3. Groupes/Alias locaux (Mappage Nom -> RID) --
+        # Exemple : ROOT\SAM\Domains\Builtin\Aliases\Names\Administrators
+        elif len(path_parts) >= 7 and path_parts[4] == "Aliases" and path_parts[5] == "Names":
+            group_name = name
+            rid_hex = values.get("", {}).get("type", "")
+
+            doc["group"] = {"name": group_name, "id": rid_hex}
+            doc["event"]["action"] = "sam_group_mapping"
+
+        return doc
+
+    def process_file_legacy(self, filepath: str, **kwargs):
         dataset = kwargs.get("dataset")
         if not dataset:
             print(f"  [Attention] Aucun 'dataset' spécifié pour {filepath}. Fichier ignoré.")

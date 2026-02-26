@@ -9,6 +9,7 @@ import py7zr
 import zipfile
 import hashlib
 import re
+import subprocess  # Nécessaire pour le fallback 7za
 from pathlib import Path
 
 
@@ -77,7 +78,7 @@ class LoggerManager:
         self._generic_log(msg, level="error", header_type=header, indentation=indentation)
 
 
-class OrcExtractor:
+class OrcExtractor_legacy:
     """Classe pour extraire les archives .7z et .zip de manière récursive."""
 
     # Limite de caractères pour un nom de fichier sur la plupart des systèmes Linux
@@ -308,6 +309,378 @@ class OrcExtractor:
                 except OSError as e:
                     self.logger.error(f"Impossible de supprimer l'archive traitée '{archive}': {e}", header="ERROR",
                                       indentation=1)
+        return True
+
+
+class OrcExtractor:
+    """Classe pour extraire les archives .7z et .zip de manière récursive."""
+
+    # Limite de caractères pour un nom de fichier sur la plupart des systèmes Linux
+    FILENAME_MAX_LENGTH = 255
+
+    def __init__(self, logger, password: str):
+        self.logger = logger
+        self.password = password
+        self.renamed_file_counter = 0
+
+    def _extract_with_7z_binary(self, archive_path, output_folder):
+        """
+        Méthode de secours utilisant l'exécutable système 7za ou 7z.
+        Utile quand py7zr échoue sur des headers complexes ou corrompus.
+        """
+        # Cherche 7za (souvent standalone), 7z (full package) ou 7zz (modern 7-zip Linux)
+        seven_zip_exe = shutil.which('7za') or shutil.which('7z') or shutil.which('7zz')
+
+        if not seven_zip_exe:
+            self.logger.warning(f"Fallback impossible : exécutable '7za', '7z' ou '7zz' non trouvé dans le PATH.",
+                                header="WARNING", indentation=1)
+            return False
+
+        self.logger.info(f"Tentative d'extraction via binaire système ({seven_zip_exe}) : '{archive_path.name}'",
+                         header="FALLBACK", indentation=1)
+
+        # Construction de la commande : x (extract with full paths), -y (yes to all prompts), -o (output)
+        # -p{password} si nécessaire
+        command = [seven_zip_exe, 'x', str(archive_path), f'-o{output_folder}', '-y']
+        if self.password:
+            command.append(f'-p{self.password}')
+        else:
+            command.append('-p')  # Tente sans mot de passe, mais avec switch pour éviter prompt interactif
+
+        try:
+            # Capture output pour ne pas polluer la stdout, check returncode ensuite
+            # On utilise text=True pour avoir des strings en retour (Python 3.7+)
+            result = subprocess.run(command, capture_output=True, text=True)
+
+            # 7-Zip Return Codes: 0=Normal, 1=Warning (Non fatal), 2=Fatal Error
+            if result.returncode == 0:
+                self.logger.info(f"Extraction binaire réussie : '{archive_path.name}'", header="SUCCESS", indentation=1)
+                return True
+            elif result.returncode == 1:
+                self.logger.warning(f"Extraction binaire réussie avec avertissements : '{archive_path.name}'",
+                                    header="WARNING", indentation=1)
+                return True
+            else:
+                # Code 2 ou autre (Erreur Fatale / CRC Failed)
+                err_msg = result.stderr.strip() if result.stderr else "Erreur inconnue (voir stdout si vide)"
+
+                # VÉRIFICATION DE ROBUSTESSE :
+                # Même si 7z renvoie une erreur (ex: CRC Failed sur un fichier),
+                output_path = Path(output_folder)
+                has_extracted_files = any(
+                    output_path.iterdir()) if output_path.exists() and output_path.is_dir() else False
+
+                if has_extracted_files:
+                    self.logger.warning(
+                        f"Extraction binaire partielle (Code {result.returncode}) : {err_msg}. "
+                        f"Des fichiers ont été extraits malgré l'erreur, on continue.",
+                        header="WARNING", indentation=1
+                    )
+                    return True  # On retourne True pour permettre la suite du process (récursion)
+                else:
+                    self.logger.error(f"Échec extraction binaire (Code {result.returncode}) : {err_msg}",
+                                      header="ERROR", indentation=1)
+                    return False
+
+        except Exception as e:
+            self.logger.error(f"Erreur lors de l'exécution du fallback 7z : {e}", header="ERROR", indentation=1)
+            return False
+
+    def _extract_7z(self, archive_path, output_folder):
+        """
+        Helper pour extraire une archive .7z.
+        Tente d'abord py7zr (natif Python). Si échec ou incomplet, tente 7za (binaire).
+        Retourne True si succès complet ou partiel (via l'une des deux méthodes), False sinon.
+        """
+        extracted_something = False
+        py7zr_error_occurred = False
+
+        # --- TENTATIVE 1 : PY7ZR (Natif) ---
+        try:
+            # Vérification préalable si c'est un fichier valide 7z
+            if py7zr.is_7zfile(archive_path):
+                with py7zr.SevenZipFile(archive_path, mode='r', password=self.password) as z:
+                    try:
+                        all_filenames = z.getnames()
+                    except Exception as e:
+                        self.logger.error(f"py7zr: Impossible de lister les fichiers : {e}", header="ERROR",
+                                          indentation=1)
+                        py7zr_error_occurred = True
+                        all_filenames = []
+
+                    files_to_extract = []
+                    files_to_read = []
+
+                    for filename in all_filenames:
+                        dir_path, base_name = os.path.split(filename)
+                        if not base_name: continue
+
+                        if len(base_name.encode('utf-8')) <= self.FILENAME_MAX_LENGTH:
+                            files_to_extract.append(filename)
+                        else:
+                            files_to_read.append(filename)
+
+                    # Noms courts (standard)
+                    if files_to_extract:
+                        try:
+                            z.extract(targets=files_to_extract, path=output_folder)
+                            extracted_something = True
+                        except Exception as extract_err:
+                            self.logger.error(f"py7zr: Erreur extraction standard : {extract_err}", header="ERROR",
+                                              indentation=1)
+                            py7zr_error_occurred = True
+
+                    # Noms longs (mémoire)
+                    if files_to_read:
+                        try:
+                            file_data_dict = z.read(targets=files_to_read)
+                            for filename_in_archive, file_bytes_io in file_data_dict.items():
+                                extracted_something = True
+                                dir_path, base_name = os.path.split(filename_in_archive)
+
+                                try:
+                                    new_base_name = _clean_long_filename(base_name)
+                                except NameError:
+                                    new_base_name = base_name[:50] + "_renamed" + Path(base_name).suffix
+
+                                self.logger.warning(f"py7zr: Renommage '{base_name}' -> '{new_base_name}'",
+                                                    header="RENAME", indentation=1)
+                                target_file_dir = Path(output_folder) / dir_path
+                                target_file_dir.mkdir(parents=True, exist_ok=True)
+                                target_file_path = target_file_dir / new_base_name
+
+                                if target_file_path.exists():
+                                    stem, suffix = target_file_path.stem, target_file_path.suffix
+                                    counter = 1
+                                    while True:
+                                        new_path = target_file_dir / f"{stem}_{counter}{suffix}"
+                                        if not new_path.exists():
+                                            target_file_path = new_path
+                                            break
+                                        counter += 1
+
+                                with open(target_file_path, 'wb') as f_out:
+                                    f_out.write(file_bytes_io.getbuffer())
+                        except Exception as read_err:
+                            self.logger.error(f"py7zr: Erreur extraction mémoire : {read_err}", header="ERROR",
+                                              indentation=1)
+                            py7zr_error_occurred = True
+            else:
+                self.logger.warning(f"py7zr: Header invalide ou format non reconnu pour '{archive_path.name}'",
+                                    header="WARNING", indentation=1)
+                py7zr_error_occurred = True
+
+        except py7zr.exceptions.PasswordRequired:
+            self.logger.error(f"py7zr: Mot de passe incorrect", header="ERROR", indentation=1)
+            py7zr_error_occurred = True
+        except py7zr.Bad7zFile:
+            self.logger.error(f"py7zr: Fichier corrompu", header="ERROR", indentation=1)
+            py7zr_error_occurred = True
+        except Exception as e:
+            self.logger.error(f"py7zr: Erreur inattendue : {e}", header="ERROR", indentation=1)
+            py7zr_error_occurred = True
+
+        # Si py7zr a réussi a tout extraire sans erreur apparente
+        if extracted_something and not py7zr_error_occurred:
+            self.logger.info(f"Extraction terminée (.7z) : '{archive_path.name}'", header="SUCCESS", indentation=1)
+            return True
+
+        # --- TENTATIVE 2 : FALLBACK (Si échec ou partiel) ---
+        # Si rien n'a été extrait, OU si une erreur est survenue pendant l'extraction (pour tenter de récupérer le reste)
+        if not extracted_something or py7zr_error_occurred:
+            if self._extract_with_7z_binary(archive_path, output_folder):
+                return True
+
+        # Si on arrive ici : py7zr a échoué (ou rien extrait) ET le fallback a échoué (ou n'est pas dispo)
+        if extracted_something:
+            # On a extrait des trucs, mais avec erreurs, et le fallback a échoué.
+            # On considère "Semi-Succès" pour ne pas bloquer, mais on log fortement.
+            self.logger.warning(f"Extraction partielle (.7z) : '{archive_path.name}'. Fallback échoué.",
+                                header="WARNING", indentation=1)
+            return True
+
+        return False
+
+    def _extract_zip(self, archive_path, output_folder):
+        """Helper pour extraire une archive .zip."""
+        try:
+            if not zipfile.is_zipfile(archive_path):
+                self.logger.error(f"Ce n'est pas un zip valide : '{archive_path}'", header="ERROR", indentation=1)
+                return False
+
+            with zipfile.ZipFile(archive_path, 'r') as z:
+                # Test de l'archive avant extraction (rapide pour détecter corruption header)
+                if z.testzip() is not None:
+                    self.logger.warning(f"Zip potentiellement corrompu (testzip failed) : '{archive_path}'",
+                                        header="WARNING", indentation=1)
+
+                all_files = z.infolist()
+
+                for member in all_files:
+                    try:
+                        filename = member.filename.replace('\\', '/')
+                        if not filename: continue
+
+                        is_directory = filename.endswith('/')
+                        dir_path, base_name = os.path.split(filename)
+                        target_dir = Path(output_folder) / dir_path
+
+                        if is_directory:
+                            target_dir = Path(output_folder) / filename
+
+                        target_dir.mkdir(parents=True, exist_ok=True)
+
+                        if is_directory: continue
+
+                        # Gestion fichier
+                        new_base_name = base_name
+                        if len(base_name.encode('utf-8')) > self.FILENAME_MAX_LENGTH:
+                            try:
+                                new_base_name = _clean_long_filename(base_name)
+                            except NameError:
+                                new_base_name = base_name[:50] + "_renamed" + Path(base_name).suffix
+
+                            self.logger.warning(f"Zip nom long renommé : {new_base_name}", header="RENAME",
+                                                indentation=1)
+
+                        target_file_path = target_dir / new_base_name
+
+                        # Collisions
+                        if target_file_path.exists():
+                            stem, suffix = target_file_path.stem, target_file_path.suffix
+                            counter = 1
+                            while True:
+                                new_path = target_dir / f"{stem}_{counter}{suffix}"
+                                if not new_path.exists():
+                                    target_file_path = new_path
+                                    break
+                                counter += 1
+
+                        # Extraction streamée
+                        with z.open(member, pwd=self.password.encode('utf-8') if self.password else None) as source:
+                            with open(target_file_path, 'wb') as target:
+                                shutil.copyfileobj(source, target)
+
+                    except Exception as inner_e:
+                        # Une erreur sur UN fichier du zip ne doit pas arrêter tout le zip
+                        self.logger.error(f"Erreur sur un fichier du zip ({member.filename}) : {inner_e}",
+                                          header="ERROR", indentation=2)
+                        continue
+
+            self.logger.info(f"Extraction terminée (.zip) : '{archive_path.name}'", header="SUCCESS", indentation=1)
+            return True
+
+        except zipfile.BadZipFile:
+            self.logger.error(f"Fichier zip invalide/corrompu : '{archive_path.name}'", header="ERROR", indentation=1)
+        except RuntimeError as e:
+            if "password" in str(e).lower():
+                self.logger.error(f"Mot de passe incorrect (.zip) : '{archive_path.name}'", header="ERROR",
+                                  indentation=1)
+            else:
+                self.logger.error(f"Erreur Runtime zip : {e}", header="ERROR", indentation=1)
+        except Exception as e:
+            self.logger.error(f"Erreur inattendue zip : {e}", header="CRITICAL", indentation=1)
+
+        return False
+
+    def extract_recursively(self, extension, initial_archive_path, output_folder):
+        self.logger.info(f"Début de l'extraction récursive de : {initial_archive_path}", header="PROCESS")
+
+        main_archive_path = Path(initial_archive_path)
+        initial_extract_path = Path(output_folder) / main_archive_path.stem
+        initial_extract_path.mkdir(parents=True, exist_ok=True)
+
+        # Extraction de l'archive "Mère"
+        success_main = False
+        if extension == '.7z':
+            success_main = self._extract_7z(main_archive_path, initial_extract_path)
+        elif extension == '.zip':
+            success_main = self._extract_zip(main_archive_path, initial_extract_path)
+        else:
+            self.logger.error(f"Format non supporté : '{main_archive_path.suffix}'", header="ERROR")
+            return False
+
+        if not success_main:
+            self.logger.error("L'archive principale n'a pas pu être extraite. Arrêt.", header="STOP")
+            return False
+
+        # Boucle sur les archives imbriquées
+        loop_counter = 0
+        MAX_LOOPS = 100  # Sécurité contre boucles infinies théoriques
+
+        while True:
+            loop_counter += 1
+            if loop_counter > MAX_LOOPS:
+                self.logger.warning("Limite de profondeur de récursion atteinte (100 tours).", header="WARNING")
+                break
+
+            # On cherche de nouvelles archives.
+            # Note: rglob est dynamique, il trouvera les fichiers extraits au tour précédent.
+            nested_7z = list(Path(output_folder).rglob('*.7z'))
+            nested_zip = list(Path(output_folder).rglob('*.zip'))
+
+            # Filtrer pour ne pas reprendre celles qu'on a renommées en .corrupted
+            # (rglob *.zip ne prend pas *.zip.corrupted, donc c'est ok par défaut,
+            # mais on s'assure de ne traiter que des fichiers qui ne sont pas marqués).
+            nested_archives = nested_7z + nested_zip
+
+            if not nested_archives:
+                self.logger.info("Plus aucune archive imbriquée à traiter.", header="INFO")
+                break
+
+            self.logger.info(f"Tour {loop_counter}: {len(nested_archives)} archive(s) trouvée(s).", header="PROCESS")
+
+            for archive in nested_archives:
+                # --- BLOC DE ROBUSTESSE ---
+                # On isole chaque extraction pour qu'un crash ne stoppe pas la boucle 'for'
+                try:
+                    extract_to = archive.with_suffix('')
+                    extract_to.mkdir(exist_ok=True)
+
+                    extraction_success = False
+
+                    # Appel extraction
+                    if archive.suffix == '.7z':
+                        extraction_success = self._extract_7z(archive, extract_to)
+                    elif archive.suffix == '.zip':
+                        extraction_success = self._extract_zip(archive, extract_to)
+
+                    # Gestion post-extraction
+                    if extraction_success:
+                        # Cas Nominal : On supprime l'archive pour ne pas la re-traiter
+                        try:
+                            os.remove(archive)
+                        except OSError as e:
+                            self.logger.error(f"Impossible de supprimer l'archive traitée '{archive.name}': {e}",
+                                              header="ERROR", indentation=1)
+                            # Si on ne peut pas la supprimer, on force un renommage pour éviter boucle infinie
+                            try:
+                                archive.rename(archive.with_suffix(archive.suffix + ".processed"))
+                            except:
+                                pass
+                    else:
+                        # Cas Échec : On renomme l'archive en .corrupted
+                        # Cela permet de conserver le fichier pour analyse manuelle
+                        # ET cela l'exclut du prochain rglob('*.zip')
+                        self.logger.warning(f"Échec extraction : '{archive.name}'. Renommage en .corrupted",
+                                            header="FAIL", indentation=1)
+                        try:
+                            new_name = archive.with_suffix(archive.suffix + ".corrupted")
+                            archive.rename(new_name)
+                        except OSError as e:
+                            self.logger.error(f"Impossible de renommer l'archive corrompue '{archive.name}': {e}",
+                                              header="CRITICAL", indentation=1)
+
+                except Exception as critical_loop_error:
+                    # Filet de sécurité ultime pour la boucle for
+                    self.logger.error(f"Crash inattendu lors du traitement de '{archive}': {critical_loop_error}",
+                                      header="CRITICAL", indentation=1)
+                    # Tenter de neutraliser le fichier pour éviter boucle infinie au prochain while
+                    try:
+                        archive.rename(archive.with_suffix(archive.suffix + ".crashed"))
+                    except:
+                        pass
+
         return True
 
 

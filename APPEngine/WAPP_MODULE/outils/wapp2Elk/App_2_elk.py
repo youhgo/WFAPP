@@ -4,14 +4,14 @@ import re
 import os
 import argparse
 import traceback
-from .elastic_uploader import ElasticUploader
-from .processors.evtx_processor import EvtxJsonProcessor
-from .processors.disk_processor import DiskProcessor
-from .processors.lnk_processor import LnkJsonProcessor
-from .processors.registry_processor import RegistryJsonProcessor
-from .processors.network_processor import NetworkProcessor
-from .processors.processes_processor import ProcessesProcessor
-from .processors.prefetch_processor import PrefetchJsonProcessor
+from elastic_uploader import ElasticUploader
+from processors.evtx_processor import EvtxJsonProcessor
+from processors.disk_processor import DiskProcessor
+from processors.lnk_processor import LnkJsonProcessor
+from processors.registry_processor import RegistryJsonProcessor
+from processors.network_processor import NetworkProcessor
+from processors.processes_processor import ProcessesProcessor
+from processors.prefetch_processor import PrefetchJsonProcessor
 
 
 class ForensicPipeline:
@@ -137,7 +137,7 @@ class ForensicPipeline:
         print(f"[*] Recherche récursive des artefacts dans : {self.source_dir}")
 
         # Liste des dossiers à ignorer (en minuscules pour être insensible à la casse)
-        IGNORED_DIRS = {'parsed_for_human', 'timeline'}
+        #IGNORED_DIRS = {'parsed_for_human', 'timeline'}
         IGNORED_DIRS = {'timeline'}
 
         # On récupère 'dirs' pour pouvoir le modifier in-place

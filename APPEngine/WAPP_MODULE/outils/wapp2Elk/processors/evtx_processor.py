@@ -19,8 +19,9 @@ class EvtxHandler:
             4624: self.handle_security_logon, 4625: self.handle_security_logon_fail,
             4648: self.handle_security_logon, 4672: self.handle_4672_special_privileges,
             4688: self.handle_security_process_created, 4720: self.handle_user_modification,
-            4723: self.handle_user_modification, 4724: self.handle_user_modification,
-            4726: self.handle_user_modification
+            4722: self.handle_user_modification, 4723: self.handle_user_modification,
+            4724: self.handle_user_modification, 4725: self.handle_user_modification,
+            4726: self.handle_user_modification, 4738: self.handle_user_modification,
         }
         # Dispatcher pour les logs PowerShell
         self.POWERSHELL_EVENT_HANDLERS = {
@@ -143,7 +144,8 @@ class EvtxHandler:
 
     def handle_user_modification(self, raw_log: dict) -> dict:
         doc, data = self._create_base_document(raw_log), self._get_event_data(raw_log)
-        actions = {4720: "user_created", 4726: "user_deleted", 4723: "password_changed", 4724: "password_reset"}
+        actions = {4720: "user_created", 4722: "User_Account_Enabled",4723: "password_changed", 4724: "password_reset",
+                   4725: "User_Account_Disabled", 4726: "user_deleted", 4738: "User_Account_Changed"}
         doc.update({"event": {**doc["event"], "action": actions.get(doc["winlog"]["event_id"], "user_modified")},
                     "user": {"name": data.get("TargetUserName"), "id": data.get("TargetSid")},
                     "source_user": {"name": data.get("SubjectUserName")}})
