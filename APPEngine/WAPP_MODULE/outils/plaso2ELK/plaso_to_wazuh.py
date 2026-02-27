@@ -40,7 +40,7 @@ class PlasoPipeline:
         self.chunk_size = chunk_size
 
         # Wazuh index pattern convention (optional, but helps organization)
-        self.index_prefix = f"forensic_{self.case_name}_{self.machine_name}"
+        self.index_prefix = f"plaso_{self.case_name}_{self.machine_name}"
 
         # Initialize WazuhUploader instead of ElasticUploader
         self.uploader = WazuhUploader(es_hosts, es_user, es_pass, verify_ssl, es_timeout, thread_count, mode)

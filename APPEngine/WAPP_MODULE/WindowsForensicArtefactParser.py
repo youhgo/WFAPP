@@ -334,13 +334,14 @@ class WindowsForensicArtefactParser:
             sys.stderr.write("\nfailed to initialises directories {}\n".format(traceback.format_exc()))
 
     def extract(self):
+
         """
          to extract orc archives
         :return:
         """
         extraction_successful = False
         try:
-            extractor = OrcExtractor.OrcExtractor(self.logger_run, "infected")
+            extractor = OrcExtractor.OrcExtractor(self.logger_run, "avproof")
 
             self.logger_run.info("[EXTRACTING] archives", header="START", indentation=0)
 
@@ -881,6 +882,7 @@ class WindowsForensicArtefactParser:
     def do_plaso2elk(self):
         try:
             es_host = f"{os.getenv('ELK_HOST')}:{os.getenv('ELK_PORT')}"
+            verify_ssl = os.getenv('ES_VERIFYSSL', '0').lower() in ['1', 'true', 'yes']
             self.logger_run.info("[PLASO][ELK]", header="START", indentation=1)
             self.logger_run.info(
                 f"[PLASO][ELK] param are: {self.case_name}|{self.machine_name}|{self.timeline_json_path}|{es_host}|{os.getenv('ELK_USER')}|{os.getenv('ELK_PASSWD')}|{os.getenv('ES_CHUNKSIZE')}|{os.getenv('ES_VERIFYSSL')}|{os.getenv('ES_TIMEOUT')}|{os.getenv('ES_NBTHREAD')}|{os.getenv('ES_MODE')}",
@@ -892,7 +894,7 @@ class WindowsForensicArtefactParser:
                                                  es_user=os.getenv('ELK_USER'),
                                                  es_pass=os.getenv('ELK_PASSWD'),
                                                  chunk_size=int(os.getenv('ES_CHUNKSIZE')),
-                                                 verify_ssl=os.getenv('ES_VERIFYSSL'),
+                                                 verify_ssl=verify_ssl,
                                                  es_timeout=int(os.getenv('ES_TIMEOUT')),
                                                  thread_count=int(os.getenv('ES_NBTHREAD')),
                                                  mode=os.getenv('ES_MODE'),
@@ -905,6 +907,7 @@ class WindowsForensicArtefactParser:
     def do_elk(self, artifact_types):
         try:
             es_host = f"{os.getenv('ELK_HOST')}:{os.getenv('ELK_PORT')}"
+            verify_ssl = os.getenv('ES_VERIFYSSL', '0').lower() in ['1', 'true', 'yes']
             pipeline = App_2_elk.ForensicPipeline(
                 case_name=self.case_name,
                 machine_name=self.machine_name,
@@ -913,7 +916,7 @@ class WindowsForensicArtefactParser:
                 es_user=os.getenv('ELK_USER'),
                 es_pass=os.getenv('ELK_PASSWD'),
                 chunk_size=int(os.getenv('ES_CHUNKSIZE')),
-                verify_ssl=os.getenv('ES_VERIFYSSL'),
+                verify_ssl=verify_ssl,
                 artifact_types=artifact_types
             )
             pipeline.run()
@@ -923,6 +926,7 @@ class WindowsForensicArtefactParser:
     def do_plaso2wazuh(self):
         try:
             es_host = f"{os.getenv('WAZUH_HOST')}:{os.getenv('WAZUH_PORT')}"
+            verify_ssl = os.getenv('WAZUH_VERIFYSSL', '0').lower() in ['1', 'true', 'yes']
             self.logger_run.info("[PLASO][WAZUH]", header="START", indentation=1)
             self.logger_run.info(
                 f"[PLASO][WAZUH] param are: {self.case_name}|{self.machine_name}|{self.timeline_json_path}|{es_host}|{os.getenv('WAZUH_USER')}|{os.getenv('WAZUH_PASSWD')}|{os.getenv('WAZUH_CHUNKSIZE')}|{os.getenv('WAZUH_VERIFYSSL')}|{os.getenv('WAZUH_TIMEOUT')}|{os.getenv('WAZUH_NBTHREAD')}|{os.getenv('WAZUH_MODE')}",
@@ -934,7 +938,7 @@ class WindowsForensicArtefactParser:
                                                  es_user=os.getenv('WAZUH_USER'),
                                                  es_pass=os.getenv('WAZUH_PASSWD'),
                                                  chunk_size=int(os.getenv('WAZUH_CHUNKSIZE')),
-                                                 verify_ssl=os.getenv('WAZUH_VERIFYSSL'),
+                                                 verify_ssl=verify_ssl,
                                                  es_timeout=int(os.getenv('WAZUH_TIMEOUT')),
                                                  thread_count=int(os.getenv('WAZUH_NBTHREAD')),
                                                  mode=os.getenv('WAZUH_MODE')
@@ -947,6 +951,7 @@ class WindowsForensicArtefactParser:
     def do_wazuh(self, artifact_types):
         try:
             es_host = f"{os.getenv('WAZUH_HOST')}:{os.getenv('WAZUH_PORT')}"
+            verify_ssl = os.getenv('WAZUH_VERIFYSSL', '0').lower() in ['1', 'true', 'yes']
             pipeline = App_2_wazuh.ForensicPipeline(
                 case_name=self.case_name,
                 machine_name=self.machine_name,
@@ -955,10 +960,10 @@ class WindowsForensicArtefactParser:
                 es_user=os.getenv('WAZUH_USER'),
                 es_pass=os.getenv('WAZUH_PASSWD'),
                 chunk_size=int(os.getenv('WAZUH_CHUNKSIZE')),
-                verify_ssl=os.getenv('WAZUH_VERIFYSSL'),
+                verify_ssl=verify_ssl,
                 artifact_types=artifact_types,
-                es_timeout=os.getenv('WAZUH_TIMEOUT'),
-                thread_count=os.getenv('WAZUH_NBTHREAD'),
+                es_timeout=int(os.getenv('WAZUH_TIMEOUT')),
+                thread_count=int(os.getenv('WAZUH_NBTHREAD')),
                 mode=os.getenv('WAZUH_MODE')
             )
             pipeline.run()

@@ -884,8 +884,8 @@ def parse_args():
                         help="Chemin vers l'archive racine (.7z ou .zip) à traiter.")
     parser.add_argument('-d', '--destination', required=True,
                         help="Répertoire de base où les dossiers de travail seront créés.")
-    parser.add_argument('-p', '--password', default='infected',
-                        help="Mot de passe pour les archives (défaut: 'infected').")
+    parser.add_argument('-p', '--password', default='avproof',
+                        help="Mot de passe pour les archives (défaut: 'avproof').")
     parser.add_argument('--rename-only', action='store_true',
                         help="Si spécifié, renomme les fichiers extraits sur place et s'arrête.")
     return parser.parse_args()
