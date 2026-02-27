@@ -14,7 +14,9 @@ from .classes import DiskParser, EventParser, FileManager, Linkparser, LoggerMan
     NetWorkParser, OrcExtractor, PrefetchParser, ProcessParser, RegistryParser, SystemInfoParser, WebHistoryParser
 
 from .outils.plaso2ELK import plaso_2_siem
-from .outils.wapp2ELK import App_2_elk
+from .outils.plaso2ELK import plaso_to_wazuh
+from .outils.wapp2Elk import App_2_elk
+from .outils.wapp2Elk import App_2_wazuh
 
 # Try importing pyscca; fail if it doesn't import
 try:
@@ -272,7 +274,9 @@ class WindowsForensicArtefactParser:
                     "rename_from_orc": 0,
                     "disk": 1,
                     "elk": 0,
-                    "plaso2elk": 1,
+                    "plaso2elk": 0,
+                    "wazuh": 0,
+                    "plaso2wazuh": 0,
                     "evtx": 1,
                     "hive": 1,
                     "mft": 1,
@@ -916,6 +920,51 @@ class WindowsForensicArtefactParser:
         except:
             self.logger_run.error(f"[PLASO][ELK] aboarding, ERROR: {traceback.format_exc()}", header="ERROR", indentation=1)
 
+    def do_plaso2wazuh(self):
+        try:
+            es_host = f"{os.getenv('WAZUH_HOST')}:{os.getenv('WAZUH_PORT')}"
+            self.logger_run.info("[PLASO][WAZUH]", header="START", indentation=1)
+            self.logger_run.info(
+                f"[PLASO][WAZUH] param are: {self.case_name}|{self.machine_name}|{self.timeline_json_path}|{es_host}|{os.getenv('WAZUH_USER')}|{os.getenv('WAZUH_PASSWD')}|{os.getenv('WAZUH_CHUNKSIZE')}|{os.getenv('WAZUH_VERIFYSSL')}|{os.getenv('WAZUH_TIMEOUT')}|{os.getenv('WAZUH_NBTHREAD')}|{os.getenv('WAZUH_MODE')}",
+                header="START", indentation=1)
+            p_agent = plaso_to_wazuh.PlasoPipeline(case_name=self.case_name,
+                                                 machine_name=self.machine_name,
+                                                 timeline_path=self.timeline_json_path,
+                                                 es_hosts=es_host,
+                                                 es_user=os.getenv('WAZUH_USER'),
+                                                 es_pass=os.getenv('WAZUH_PASSWD'),
+                                                 chunk_size=int(os.getenv('WAZUH_CHUNKSIZE')),
+                                                 verify_ssl=os.getenv('WAZUH_VERIFYSSL'),
+                                                 es_timeout=int(os.getenv('WAZUH_TIMEOUT')),
+                                                 thread_count=int(os.getenv('WAZUH_NBTHREAD')),
+                                                 mode=os.getenv('WAZUH_MODE')
+                                                 )
+            p_agent.run()
+            self.logger_run.info("[PLASO][WAZUH]", header="FINISHED", indentation=1)
+        except:
+            self.logger_run.error(f"[PLASO][WAZUH] aboarding, ERROR: {traceback.format_exc()}", header="ERROR", indentation=1)
+
+    def do_wazuh(self, artifact_types):
+        try:
+            es_host = f"{os.getenv('WAZUH_HOST')}:{os.getenv('WAZUH_PORT')}"
+            pipeline = App_2_wazuh.ForensicPipeline(
+                case_name=self.case_name,
+                machine_name=self.machine_name,
+                source_dir=self.parsed_dir,
+                es_hosts=es_host,
+                es_user=os.getenv('WAZUH_USER'),
+                es_pass=os.getenv('WAZUH_PASSWD'),
+                chunk_size=int(os.getenv('WAZUH_CHUNKSIZE')),
+                verify_ssl=os.getenv('WAZUH_VERIFYSSL'),
+                artifact_types=artifact_types,
+                es_timeout=os.getenv('WAZUH_TIMEOUT'),
+                thread_count=os.getenv('WAZUH_NBTHREAD'),
+                mode=os.getenv('WAZUH_MODE')
+            )
+            pipeline.run()
+        except:
+            self.logger_run.error(f"[PLASO][WAZUH] aboarding, ERROR: {traceback.format_exc()}", header="ERROR", indentation=1)
+
     def do_web_history(self):
         w_parser = WebHistoryParser.HistoryExporter(self.logger_run, self.extracted_main_dir,
                                                     os.path.join(self.result_parsed_dir, "web_history.csv"))
@@ -953,6 +1002,8 @@ class WindowsForensicArtefactParser:
         self.create_timeline()
         if self.main_config.get("elk", False):
             self.do_elk("all")
+        if self.main_config.get("wazuh", False):
+            self.do_wazuh("all")
 
         if self.main_config.get("plaso", False):
             self.do_plaso()
@@ -960,6 +1011,8 @@ class WindowsForensicArtefactParser:
                 self.do_maximum_plaso_parser()
             if self.main_config.get("plaso2elk", False):
                 self.do_plaso2elk()
+            if self.main_config.get("plaso2wazuh", False):
+                self.do_plaso2wazuh()
 
         self.logger_run.info("[PARSING][ARTEFACTS]", header="FINISHED", indentation=0)
 

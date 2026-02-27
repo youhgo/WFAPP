@@ -5,14 +5,14 @@ import os
 import argparse
 import traceback
 
-from wazuh_uploader import WazuhUploader
-from processors.evtx_processor import EvtxJsonProcessor
-from processors.disk_processor import DiskProcessor
-from processors.lnk_processor import LnkJsonProcessor
-from processors.registry_processor import RegistryJsonProcessor
-from processors.network_processor import NetworkProcessor
-from processors.processes_processor import ProcessesProcessor
-from processors.prefetch_processor import PrefetchJsonProcessor
+from .wazuh_uploader import WazuhUploader
+from .processors.evtx_processor import EvtxJsonProcessor
+from .processors.disk_processor import DiskProcessor
+from .processors.lnk_processor import LnkJsonProcessor
+from .processors.registry_processor import RegistryJsonProcessor
+from .processors.network_processor import NetworkProcessor
+from .processors.processes_processor import ProcessesProcessor
+from .processors.prefetch_processor import PrefetchJsonProcessor
 
 
 class ForensicPipeline:

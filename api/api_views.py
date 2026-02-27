@@ -197,7 +197,6 @@ def get_parser_worker_name(all_nodes):
         if "parser" in node:
             return node
 
-
 @wapp_api.route('/api/get_parser_worker_name')
 @login_required
 def get_parser_worker_name_api():
@@ -237,18 +236,55 @@ def running_log(task_id):
         return jsonify({"ERROR": str(e), "TASKID": task_id}), 500
 
 
-@wapp_api.route('/api/download/dfir-orc')
+@wapp_api.route('/api/download/dfir-orc-full')
 @login_required
-def download_dfir_orc():
+def download_dfir_orc_classic():
     try:
-        print("Trying to send:", os.path.join(RESOURCES_FOLDER_PATH, 'DFIR-Orc.exe'), file=sys.stderr)
+        orc_classic_path = os.path.join(RESOURCES_FOLDER_PATH, "config_classic")
+        print("Trying to send:", os.path.join(orc_classic_path, 'DFIR-Orc.exe'), file=sys.stderr)
         return send_from_directory(
-            directory=RESOURCES_FOLDER_PATH,
+            directory=orc_classic_path,
             path="DFIR-Orc.exe",
             as_attachment=True
         )
     except FileNotFoundError:
         abort(404, description="DFIR-Orc.exe not found in resources folder.")
+    except Exception as e:
+        print(f"Error during download: {e}", file=sys.stderr)
+        abort(500, description="Internal Server Error during download.")
+
+
+@wapp_api.route('/api/download/dfir-orc-offlinemode')
+@login_required
+def download_dfir_orc_offline():
+    try:
+        orc_offline_path = os.path.join(RESOURCES_FOLDER_PATH, "config_offline")
+        print("Trying to send:", os.path.join(RESOURCES_FOLDER_PATH, 'DFIR-Orc_offline.exe'), file=sys.stderr)
+        return send_from_directory(
+            directory=orc_offline_path,
+            path="DFIR-Orc_offline.exe",
+            as_attachment=True
+        )
+    except FileNotFoundError:
+        abort(404, description="DFIR-Orc_offline.exe not found in resources folder.")
+    except Exception as e:
+        print(f"Error during download: {e}", file=sys.stderr)
+        abort(500, description="Internal Server Error during download.")
+
+
+@wapp_api.route('/api/download/dfir-orc-wmem')
+@login_required
+def download_dfir_orc_wmemory():
+    try:
+        orc_wmem_path = os.path.join(RESOURCES_FOLDER_PATH, "config_wmemory")
+        print("Trying to send:", os.path.join(orc_wmem_path, 'DFIR-Orc_wmem.exe'), file=sys.stderr)
+        return send_from_directory(
+            directory=orc_wmem_path,
+            path="DFIR-Orc_wmem.exe",
+            as_attachment=True
+        )
+    except FileNotFoundError:
+        abort(404, description="DFIR-Orc_wmem.exe not found in resources folder.")
     except Exception as e:
         print(f"Error during download: {e}", file=sys.stderr)
         abort(500, description="Internal Server Error during download.")

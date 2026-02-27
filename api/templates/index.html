@@ -61,115 +61,206 @@
         input:checked + .slider:before {
             transform: translateX(1.5rem);
         }
+
+        /* Custom Scrollbar for Module List - Always Visible */
+        .custom-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: #94a3b8 #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px; /* Élargi légèrement pour être plus visible */
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0; /* Ajout d'une bordure subtile pour toujours voir le rail */
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #94a3b8; /* Couleur plus foncée par défaut */
+            border-radius: 8px;
+            border: 2px solid #f8fafc; /* Crée un petit espacement avec le rail */
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
-    <!-- Le reste de votre contenu HTML reste inchangé -->
-    <div class="relative min-h-screen md:flex">
-        <!-- Mobile menu button -->
-        <div class="md:hidden flex justify-between items-center bg-white p-4 shadow-md">
+    <div class="relative min-h-screen md:flex flex-col md:flex-row">
+
+        <!-- Mobile Header (Sticky) -->
+        <div class="md:hidden flex justify-between items-center bg-white p-4 shadow-md sticky top-0 z-30 w-full">
             <h1 class="text-xl font-bold text-gray-800">APP Web Portal</h1>
-            <button id="mobile-menu-button" class="text-gray-500 focus:outline-none">
+            <button id="mobile-menu-button" class="text-gray-500 hover:text-gray-700 focus:outline-none p-2 rounded-md transition-colors">
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
                 </svg>
             </button>
         </div>
 
+        <!-- Mobile Overlay -->
+        <div id="mobile-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-40 hidden md:hidden transition-opacity"></div>
+
         <!-- Sidebar -->
-        <aside id="sidebar" class="bg-gray-800 text-gray-100 w-64 py-7 px-2 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out z-20 flex flex-col">
+        <aside id="sidebar" class="bg-gray-800 text-gray-100 w-64 py-7 px-2 fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-300 ease-in-out z-50 flex flex-col h-screen overflow-y-auto shadow-2xl md:shadow-none">
             <div class="flex-grow">
-                <a href="#" class="text-white flex items-center space-x-2 px-4">
-                    <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <a href="#" class="text-white flex items-center space-x-2 px-4 mb-8">
+                    <svg class="w-8 h-8 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M12 6V3m0 18v-3" />
                     </svg>
-                    <span class="text-2xl font-extrabold">APP Portal</span>
+                    <span class="text-2xl font-extrabold truncate">APP Portal</span>
                 </a>
-                <nav id="nav-menu" class="mt-10">
-                    <a href="#upload-content" class="nav-link block py-2.5 px-4 rounded transition duration-200 bg-gray-700 text-white">File Uploader</a>
-                    <a href="#logs-content" class="nav-link block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white">Log Viewer</a>
-                    <a href="#status-content" class="nav-link block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white">Task Status</a>
-                    <a href="#running-tasks-content" class="nav-link block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white">Running Tasks</a>
-                    <a href="#download-content" class="nav-link block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white">Download DFIR-ORC</a>
+                <nav id="nav-menu" class="space-y-1">
+                    <a href="#upload-content" class="nav-link block py-3 px-4 rounded-lg transition duration-200 bg-gray-700 text-white font-medium">File Uploader</a>
+                    <a href="#logs-content" class="nav-link block py-3 px-4 rounded-lg transition duration-200 hover:bg-gray-700 hover:text-white font-medium">Log Viewer</a>
+                    <a href="#status-content" class="nav-link block py-3 px-4 rounded-lg transition duration-200 hover:bg-gray-700 hover:text-white font-medium">Task Status</a>
+                    <a href="#running-tasks-content" class="nav-link block py-3 px-4 rounded-lg transition duration-200 hover:bg-gray-700 hover:text-white font-medium">Running Tasks</a>
+                    <a href="#download-content" class="nav-link block py-3 px-4 rounded-lg transition duration-200 hover:bg-gray-700 hover:text-white font-medium">Download DFIR-ORC</a>
                 </nav>
             </div>
-            <div class="px-2">
-                <a href="/admin/users" class="block text-center py-2.5 px-4 rounded transition duration-200 bg-gray-700 hover:bg-gray-600 font-semibold">
-                    Users Managements
+            <div class="px-2 mt-6 pb-4 border-t border-gray-700 pt-4">
+                <a href="/admin/users" class="block text-center py-2.5 px-4 rounded-lg transition duration-200 bg-gray-700 hover:bg-gray-600 font-semibold mb-2">
+                    Users Management
                 </a>
-                <button id="logoutButton" class="w-full mt-2 py-2.5 px-4 rounded transition duration-200 bg-red-600 hover:bg-red-700 font-semibold">
+                <button id="logoutButton" class="w-full py-2.5 px-4 rounded-lg transition duration-200 bg-red-600 hover:bg-red-700 font-semibold text-white">
                     Disconnect
                 </button>
             </div>
         </aside>
 
         <!-- Main content -->
-        <main class="flex-1 p-4 md:p-10">
-            <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-5xl mx-auto mt-10 md:mt-0">
+        <main class="flex-1 p-3 sm:p-6 md:p-10 w-full overflow-x-hidden">
+            <div class="bg-white p-5 sm:p-8 rounded-2xl shadow-xl w-full max-w-7xl mx-auto md:mt-0">
+
                 <!-- Content sections -->
                 <div id="upload-content" class="content-section">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">File Uploader</h2>
-                    <p class="text-gray-500 mb-6">
-                        Select the forensic archive you wish to analyze and provide the case details.
-                        <br>
-                        Do not forget to select the Correct archive type
-                        <br>
-                        The index for Elastic ingestion will be caseName_machineName.
-                    </p>
-                    <form id="uploadForm">
-                        <div class="flex flex-col lg:flex-row lg:space-x-8">
-                            <div class="flex-1 space-y-6">
-                                <div>
+                    <div class="mb-6">
+                        <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">File Uploader</h2>
+                        <p class="text-gray-500 text-sm sm:text-base leading-relaxed">
+                            Select the forensic archive you wish to analyze and provide the case details.<br>
+                            <span class="inline-block mt-1">The index for Elastic ingestion will be <code class="bg-gray-100 px-1.5 py-0.5 rounded text-gray-700">caseName_machineName</code>.</span>
+                        </p>
+                    </div>
+
+                    <form id="uploadForm" class="space-y-6 sm:space-y-8">
+
+                        <!-- Informations du Cas (Top Section) -->
+                        <div class="bg-gray-50 p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm">
+                            <h3 class="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Informations du cas</h3>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                                <div class="md:col-span-2 lg:col-span-2">
                                     <label for="fileInput" class="block text-sm font-medium text-gray-700 mb-1">Select Archive File</label>
-                                    <input type="file" id="fileInput" name="file" required class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <input type="file" id="fileInput" name="file" required class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-white p-2 sm:p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow">
+                                </div>
+                                <div>
+                                    <label for="jsonConfigInput" class="block text-sm font-medium text-gray-700 mb-1">JSON Config (optional)</label>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="file" id="jsonConfigInput" name="jsonConfig" accept=".json" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-white p-2 sm:p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow">
+                                        <button type="button" id="clearJsonFileBtn" class="py-2 sm:py-2.5 px-3 sm:px-4 bg-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-400 transition-colors shrink-0">Clear</button>
+                                    </div>
                                 </div>
                                 <div>
                                     <label for="caseName" class="block text-sm font-medium text-gray-700 mb-1">Case Name</label>
-                                    <input type="text" id="caseName" name="caseName" required placeholder="ex: MyAwesomeCaseName" class="shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <input type="text" id="caseName" name="caseName" required placeholder="ex: MyAwesomeCase" class="shadow-sm block w-full rounded-lg border-gray-300 border p-2 sm:p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow">
                                 </div>
                                 <div>
                                     <label for="machineName" class="block text-sm font-medium text-gray-700 mb-1">Machine Name</label>
-                                    <input type="text" id="machineName" name="machineName" required placeholder="ex: MyMachine" class="shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <input type="text" id="machineName" name="machineName" required placeholder="ex: MyMachine" class="shadow-sm block w-full rounded-lg border-gray-300 border p-2 sm:p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow">
                                 </div>
                                 <div>
                                     <label for="archiveType" class="block text-sm font-medium text-gray-700 mb-1">Type d'archive</label>
-                                    <select id="archiveType" name="archiveType" class="shadow-sm block w-full rounded-md border-gray-300 border p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <select id="archiveType" name="archiveType" class="shadow-sm block w-full rounded-lg border-gray-300 border p-2 sm:p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow">
                                         <option value="ORC">ORC</option>
                                         <option value="KAPE">KAPE</option>
                                         <option value="UAC">UAC</option>
-                                        <option value="autre">Autre</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label for="jsonConfigInput" class="block text-sm font-medium text-gray-700 mb-1">JSON Configuration File (optional)</label>
-                                    <div class="flex items-center space-x-2">
-                                        <input type="file" id="jsonConfigInput" name="jsonConfig" accept=".json" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <button type="button" id="clearJsonFileBtn" class="py-2.5 px-4 bg-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-400">Clear</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="lg:w-1/3 mt-6 lg:mt-0">
-                                <div class="flex justify-between items-center mb-2">
-                                    <label class="block text-sm font-medium text-gray-700">Modules to analyze</label>
-                                    <div class="flex items-center space-x-2">
-                                        <button type="button" id="selectAllModulesBtn" title="Tout sélectionner" class="p-1.5 bg-gray-200 text-gray-600 rounded-md hover:bg-gray-300 transition-colors">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                        </button>
-                                        <button type="button" id="deselectAllModulesBtn" title="Tout désélectionner" class="p-1.5 bg-gray-200 text-gray-600 rounded-md hover:bg-gray-300 transition-colors">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div id="moduleChecklist" class="bg-gray-50 p-4 rounded-lg border border-gray-200 max-h-80 overflow-y-auto space-y-2"></div>
                             </div>
                         </div>
-                        <button type="submit" id="submitButton" class="w-full flex justify-center py-3 px-4 mt-8 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700">
-                            <span id="buttonText">Upload File</span>
-                            <span id="loadingIndicator" class="hidden ml-2">
+
+                        <!-- Sélection des modules (Grille globale) -->
+                        <div>
+                            <h3 class="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Modules to analyze</h3>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 items-stretch">
+
+                                <!-- Box 1: Pré-traitement -->
+                                <div class="bg-white p-3 sm:p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col h-full">
+                                    <div class="flex justify-between items-center mb-2 sm:mb-3 pb-2 border-b border-gray-100">
+                                        <h3 class="text-xs font-bold text-gray-600 uppercase tracking-wider pr-2">Pré-traitement</h3>
+                                        <div class="flex items-center space-x-1 bg-gray-50 p-1 rounded-md border border-gray-200 shrink-0">
+                                            <button type="button" id="selectAllPreProcBtn" title="Tout sélectionner" class="p-1 text-gray-500 hover:text-blue-600 transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            </button>
+                                            <button type="button" id="deselectAllPreProcBtn" title="Tout désélectionner" class="p-1 text-gray-500 hover:text-red-600 transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- Use overflow-y-scroll to ALWAYS show the scrollbar track -->
+                                    <div id="preProcChecklist" class="space-y-1 sm:space-y-2 overflow-y-scroll custom-scrollbar pr-1 sm:pr-2 h-40"></div>
+                                </div>
+
+                                <!-- Box 2: Analyse & Traitement -->
+                                <div class="bg-white p-3 sm:p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col h-full">
+                                    <div class="flex justify-between items-center mb-2 sm:mb-3 pb-2 border-b border-gray-100">
+                                        <h3 class="text-xs font-bold text-gray-600 uppercase tracking-wider pr-2">Analyse</h3>
+                                        <div class="flex items-center space-x-1 bg-gray-50 p-1 rounded-md border border-gray-200 shrink-0">
+                                            <button type="button" id="selectAllAnalyzeBtn" title="Tout sélectionner" class="p-1 text-gray-500 hover:text-blue-600 transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            </button>
+                                            <button type="button" id="deselectAllAnalyzeBtn" title="Tout désélectionner" class="p-1 text-gray-500 hover:text-red-600 transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- Use overflow-y-scroll to ALWAYS show the scrollbar track -->
+                                    <div id="analyzeChecklist" class="space-y-1 sm:space-y-2 overflow-y-scroll custom-scrollbar pr-1 sm:pr-2 h-40"></div>
+                                </div>
+
+                                <!-- Box 3: Plaso & Dérivés -->
+                                <div class="bg-white p-3 sm:p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col h-full">
+                                    <div class="flex justify-between items-center mb-2 sm:mb-3 pb-2 border-b border-gray-100">
+                                        <h3 class="text-xs font-bold text-gray-600 uppercase tracking-wider pr-2">Plaso & Dérivés</h3>
+                                        <div class="flex items-center space-x-1 bg-gray-50 p-1 rounded-md border border-gray-200 shrink-0">
+                                            <button type="button" id="selectAllPlasoBtn" title="Tout sélectionner" class="p-1 text-gray-500 hover:text-blue-600 transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            </button>
+                                            <button type="button" id="deselectAllPlasoBtn" title="Tout désélectionner" class="p-1 text-gray-500 hover:text-red-600 transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- Use overflow-y-scroll to ALWAYS show the scrollbar track -->
+                                    <div id="plasoChecklist" class="space-y-1 sm:space-y-2 overflow-y-scroll custom-scrollbar pr-1 sm:pr-2 h-40"></div>
+                                </div>
+
+                                <!-- Box 4: Exportations SIEM -->
+                                <div class="bg-white p-3 sm:p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col h-full">
+                                    <div class="flex justify-between items-center mb-2 sm:mb-3 pb-2 border-b border-gray-100">
+                                        <h3 class="text-xs font-bold text-gray-600 uppercase tracking-wider pr-2">Exports SIEM</h3>
+                                        <div class="flex items-center space-x-1 bg-gray-50 p-1 rounded-md border border-gray-200 shrink-0">
+                                            <button type="button" id="selectAllExportBtn" title="Tout sélectionner" class="p-1 text-gray-500 hover:text-blue-600 transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            </button>
+                                            <button type="button" id="deselectAllExportBtn" title="Tout désélectionner" class="p-1 text-gray-500 hover:text-red-600 transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- Use overflow-y-scroll to ALWAYS show the scrollbar track -->
+                                    <div id="exportChecklist" class="space-y-1 sm:space-y-2 overflow-y-scroll custom-scrollbar pr-1 sm:pr-2 h-40"></div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- Bouton de soumission -->
+                        <button type="submit" id="submitButton" class="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-xl shadow-md text-base sm:text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition-all">
+                            <span id="buttonText">Upload & Start Analysis</span>
+                            <span id="loadingIndicator" class="hidden ml-3">
                                 <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -180,75 +271,123 @@
                 </div>
 
                 <div id="logs-content" class="content-section">
-                     <h2 class="text-2xl font-bold text-gray-800 mb-4">Log Viewer</h2>
-                    <form id="logForm">
-                        <input type="text" id="logTaskIdInput" placeholder="Enter Task ID" required class="w-full p-2 border rounded">
-                        <button type="submit" id="fetchButton" class="w-full mt-2 py-2 px-4 bg-blue-600 text-white rounded">Fetch Logs</button>
+                     <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Log Viewer</h2>
+                    <form id="logForm" class="flex flex-col sm:flex-row gap-3">
+                        <input type="text" id="logTaskIdInput" placeholder="Enter Task ID" required class="flex-1 p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                        <button type="submit" id="fetchButton" class="py-2.5 sm:py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors sm:w-auto w-full">Fetch Logs</button>
                     </form>
-                    <pre id="logOutput" class="mt-4 p-4 bg-gray-800 text-white rounded-lg h-96 overflow-y-auto"></pre>
+                    <pre id="logOutput" class="mt-6 p-4 sm:p-5 bg-gray-900 text-gray-100 rounded-xl h-96 overflow-auto text-xs sm:text-sm shadow-inner whitespace-pre-wrap word-break"></pre>
                 </div>
 
                 <div id="status-content" class="content-section">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Task Status</h2>
-                    <form id="statusForm">
-                        <input type="text" id="statusTaskIdInput" placeholder="Enter Task ID" required class="w-full p-2 border rounded">
-                        <button type="submit" id="statusButton" class="w-full mt-2 py-2 px-4 bg-blue-600 text-white rounded">Check Status</button>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Task Status</h2>
+                    <form id="statusForm" class="flex flex-col sm:flex-row gap-3">
+                        <input type="text" id="statusTaskIdInput" placeholder="Enter Task ID" required class="flex-1 p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                        <button type="submit" id="statusButton" class="py-2.5 sm:py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors sm:w-auto w-full">Check Status</button>
                     </form>
-                    <pre id="statusOutput" class="mt-4 p-4 bg-gray-50 rounded-lg"></pre>
+                    <pre id="statusOutput" class="mt-6 p-4 sm:p-5 bg-gray-50 border border-gray-200 rounded-xl overflow-auto text-xs sm:text-sm shadow-inner word-break whitespace-pre-wrap"></pre>
                 </div>
 
                 <div id="running-tasks-content" class="content-section">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Running Tasks</h2>
-                    <button id="getRunningTasksButton" class="w-full py-2 px-4 bg-blue-600 text-white rounded">Get Running Tasks</button>
-                    <div id="runningTasksList" class="mt-4 space-y-2"></div>
-                    <div id="noTasksMessage" class="hidden mt-4 text-center">No running tasks found.</div>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Running Tasks</h2>
+                    <button id="getRunningTasksButton" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-sm transition-colors mb-6">Get Running Tasks</button>
+                    <div id="runningTasksList" class="space-y-3"></div>
+                    <div id="noTasksMessage" class="hidden text-center py-8 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-300">No running tasks found.</div>
                 </div>
 
                 <div id="download-content" class="content-section">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Download DFIR-ORC</h2>
-                    <button id="downloadButton" class="w-full py-3 px-4 bg-blue-600 text-white rounded-lg flex items-center justify-center">
-                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                        </svg>
-                        Download DFIR-ORC.exe
-                    </button>
+                    <div class="mb-6">
+                        <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Download DFIR-ORC</h2>
+                        <p class="text-gray-500 text-sm sm:text-base">Select the specific configuration of DFIR-ORC you wish to download.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                        <!-- Classic / Full -->
+                        <div class="bg-gray-50 p-5 sm:p-6 rounded-xl border border-gray-200 flex flex-col items-center text-center hover:shadow-md transition-shadow">
+                            <h3 class="font-semibold text-lg text-gray-800 mb-1 sm:mb-2">Classic Config</h3>
+                            <p class="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6 flex-1">Standard collection profile.</p>
+                            <button id="downloadClassicBtn" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center transition-colors text-sm font-medium">
+                                <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                Download (.exe)
+                            </button>
+                        </div>
+
+                        <!-- Offline Mode -->
+                        <div class="bg-gray-50 p-5 sm:p-6 rounded-xl border border-gray-200 flex flex-col items-center text-center hover:shadow-md transition-shadow">
+                            <h3 class="font-semibold text-lg text-gray-800 mb-1 sm:mb-2">Offline Mode</h3>
+                            <p class="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6 flex-1">Optimized for offline collection.</p>
+                            <button id="downloadOfflineBtn" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center justify-center transition-colors text-sm font-medium">
+                                <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                Download Offline
+                            </button>
+                        </div>
+
+                        <!-- WMemory -->
+                        <div class="bg-gray-50 p-5 sm:p-6 rounded-xl border border-gray-200 flex flex-col items-center text-center hover:shadow-md transition-shadow">
+                            <h3 class="font-semibold text-lg text-gray-800 mb-1 sm:mb-2">WMemory</h3>
+                            <p class="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6 flex-1">Memory acquisition configuration.</p>
+                            <button id="downloadWmemBtn" class="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center justify-center transition-colors text-sm font-medium">
+                                <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M12 6V3m0 18v-3" /></svg>
+                                Download WMem
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                 <div id="statusMessage" class="mt-6 p-4 rounded-lg text-center" style="display: none;"></div>
+                 <div id="statusMessage" class="mt-6 p-4 rounded-xl text-center" style="display: none;"></div>
             </div>
         </main>
     </div>
 
-    <div id="killModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-2xl bg-white">
-            <div class="mt-3 text-center">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Task Deletion</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500" id="modalMessage"></p>
+    <!-- Modal Responsif -->
+    <div id="killModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full hidden z-[100] flex items-center justify-center p-4">
+        <div class="relative w-full max-w-md shadow-2xl rounded-2xl bg-white scale-100 transform transition-all">
+            <div class="mt-4 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
                 </div>
-                <div class="items-center px-4 py-3">
-                    <button id="confirmKillBtn" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-lg shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-150 ease-in-out mr-2">
+                <h3 class="text-lg sm:text-xl leading-6 font-bold text-gray-900">Confirm Task Deletion</h3>
+                <div class="mt-2 px-4 sm:px-7 py-3">
+                    <p class="text-sm text-gray-500 break-words" id="modalMessage"></p>
+                </div>
+                <div class="flex flex-col sm:flex-row items-center justify-center px-4 py-4 sm:py-5 gap-3">
+                    <button id="confirmKillBtn" class="w-full sm:w-auto px-6 py-2.5 bg-red-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
                         Delete
                     </button>
-                    <button id="cancelKillBtn" class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-lg shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition duration-150 ease-in-out">
+                    <button id="cancelKillBtn" class="w-full sm:w-auto px-6 py-2.5 bg-gray-200 text-gray-800 text-sm font-medium rounded-lg shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors">
                         Cancel
                     </button>
                 </div>
             </div>
         </div>
     </div>
-    <!-- Le script reste inchangé -->
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
         const sidebar = document.getElementById('sidebar');
         const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileOverlay = document.getElementById('mobile-overlay');
         const navLinks = document.querySelectorAll('.nav-link');
         const contentSections = document.querySelectorAll('.content-section');
         const statusMessage = document.getElementById('statusMessage');
 
         // --- Sidebar and Navigation Logic ---
-        mobileMenuButton.addEventListener('click', () => {
+        const toggleSidebar = () => {
             sidebar.classList.toggle('-translate-x-full');
-        });
+            mobileOverlay.classList.toggle('hidden');
+            document.body.classList.toggle('overflow-hidden'); // Empêche le scroll du fond
+        };
+
+        mobileMenuButton.addEventListener('click', toggleSidebar);
+
+        if (mobileOverlay) {
+            mobileOverlay.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+                mobileOverlay.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+            });
+        }
 
         const switchContent = (targetId) => {
             const target = targetId.startsWith('#') ? targetId : '#' + targetId;
@@ -269,6 +408,8 @@
 
             if (window.innerWidth < 768) {
                 sidebar.classList.add('-translate-x-full');
+                if (mobileOverlay) mobileOverlay.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
             }
         };
 
@@ -285,40 +426,203 @@
 
         // --- Module Selection Logic ---
         const moduleConfig = {
-            "restore": 0, "rename_from_orc": 0, "disk": 1, "elk": 0, "evtx": 1, "hive": 1, "mft": 1,
-            "network": 1, "lnk": 1, "plaso": 1, "mpp": 1, "plaso2elk": 1, "prefetch": 1,
+            "restore": 0, "rename_from_orc": 0, "disk": 1, "elk": 0, "wazuh": 0, "evtx": 1, "hive": 1, "mft": 1,
+            "network": 1, "lnk": 1, "plaso": 1, "mpp": 1, "plaso2elk": 1, "plaso2wazuh": 0, "prefetch": 1,
             "process": 1, "system_info": 1, "webHistory": 1
         };
 
-        const moduleChecklist = document.getElementById('moduleChecklist');
+        // Groupes de modules
+        const preProcModules = ["restore", "rename_from_orc"];
+        const exportModules = ["elk", "wazuh"];
+        const plasoModules = ["plaso", "mpp", "plaso2elk", "plaso2wazuh"];
+
+        const preProcChecklist = document.getElementById('preProcChecklist');
+        const analyzeChecklist = document.getElementById('analyzeChecklist');
+        const plasoChecklist = document.getElementById('plasoChecklist');
+        const exportChecklist = document.getElementById('exportChecklist');
+
         Object.keys(moduleConfig).forEach(moduleName => {
             const isChecked = moduleConfig[moduleName] === 1;
+
+            // Format name : Transforme "rename_from_orc" en "Rename From Orc"
+            const formattedName = moduleName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
             const switchHtml = `
-                <div class="flex items-center justify-between py-1">
-                    <label for="module-${moduleName}" class="text-sm text-gray-900 cursor-pointer">${moduleName}</label>
-                    <label class="switch">
+                <div class="group flex items-center justify-between p-2 sm:p-2.5 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-100 transition-colors duration-200">
+                    <label for="module-${moduleName}" class="text-xs sm:text-sm font-medium text-gray-700 cursor-pointer flex-1 select-none group-hover:text-blue-700 transition-colors truncate pr-2">
+                        ${formattedName}
+                    </label>
+                    <label class="switch shrink-0">
                         <input type="checkbox" id="module-${moduleName}" name="modules" value="${moduleName}" ${isChecked ? 'checked' : ''}>
                         <span class="slider"></span>
                     </label>
                 </div>
             `;
-            moduleChecklist.insertAdjacentHTML('beforeend', switchHtml);
+
+            // Dispatch into the correct category box
+            if (preProcModules.includes(moduleName)) {
+                preProcChecklist.insertAdjacentHTML('beforeend', switchHtml);
+            } else if (exportModules.includes(moduleName)) {
+                exportChecklist.insertAdjacentHTML('beforeend', switchHtml);
+            } else if (plasoModules.includes(moduleName)) {
+                plasoChecklist.insertAdjacentHTML('beforeend', switchHtml);
+            } else {
+                analyzeChecklist.insertAdjacentHTML('beforeend', switchHtml);
+            }
         });
 
-        document.getElementById('selectAllModulesBtn').addEventListener('click', () => {
-            document.querySelectorAll('input[name="modules"]').forEach(checkbox => checkbox.checked = true);
+        // --- Helper Function for Visual States ---
+        const setVisualState = (cb, isDisabled, forceUncheck = false) => {
+            if (!cb) return;
+            cb.disabled = isDisabled;
+            if (forceUncheck && isDisabled) cb.checked = false;
+
+            const slider = cb.nextElementSibling;
+            const label = cb.parentElement.previousElementSibling;
+            if (isDisabled) {
+                slider.style.opacity = '0.5';
+                slider.style.cursor = 'not-allowed';
+                label.style.opacity = '0.5';
+            } else {
+                slider.style.opacity = '1';
+                slider.style.cursor = 'pointer';
+                label.style.opacity = '1';
+            }
+        };
+
+        // --- NEW LOGIC: Plaso Dependencies ---
+        const enforcePlasoDependencies = () => {
+            const plasoCb = document.getElementById('module-plaso');
+            const plaso2elkCb = document.getElementById('module-plaso2elk');
+            const plaso2wazuhCb = document.getElementById('module-plaso2wazuh');
+            const mppCb = document.getElementById('module-mpp');
+            const archiveType = document.getElementById('archiveType').value;
+
+            if (plasoCb) {
+                const isPlasoChecked = plasoCb.checked;
+                const isUAC = archiveType === 'UAC';
+
+                // On applique la règle à plaso2elk, plaso2wazuh ET mpp
+                [plaso2elkCb, plaso2wazuhCb, mppCb].forEach(cb => {
+                    if (cb) {
+                        const shouldDisable = isUAC || !isPlasoChecked;
+                        setVisualState(cb, shouldDisable, true);
+                    }
+                });
+            }
+        };
+
+        // --- NEW LOGIC: Archive Type Dependencies ---
+        const enforceArchiveDependencies = () => {
+            const type = document.getElementById('archiveType').value;
+            const allCheckboxes = document.querySelectorAll('input[name="modules"]');
+            const preProcCheckboxes = document.querySelectorAll('#preProcChecklist input[name="modules"]');
+
+            const allControlBtns = document.querySelectorAll('[id^="selectAll"], [id^="deselectAll"]');
+            const preProcBtns = document.querySelectorAll('#selectAllPreProcBtn, #deselectAllPreProcBtn');
+
+            // 1. Reset all states to enabled
+            allCheckboxes.forEach(cb => setVisualState(cb, false));
+            allControlBtns.forEach(btn => {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            });
+
+            // 2. Apply rules based on selected archive type
+            if (type === 'UAC') {
+                allCheckboxes.forEach(cb => setVisualState(cb, true, true));
+                allControlBtns.forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'not-allowed';
+                });
+            } else if (type === 'KAPE') {
+                preProcCheckboxes.forEach(cb => setVisualState(cb, true, true));
+                preProcBtns.forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'not-allowed';
+                });
+            }
+
+            // 3. Toujours réévaluer Plaso par dessus pour conserver les sous-dépendances
+            enforcePlasoDependencies();
+        };
+
+        // Listen to changes on the Plaso checkbox
+        const plasoCheckbox = document.getElementById('module-plaso');
+        if (plasoCheckbox) {
+            plasoCheckbox.addEventListener('change', enforcePlasoDependencies);
+        }
+
+        // Listen to changes on the Archive Type Select
+        const archiveTypeSelect = document.getElementById('archiveType');
+        if (archiveTypeSelect) {
+            archiveTypeSelect.addEventListener('change', enforceArchiveDependencies);
+        }
+
+        // Call initially to set correct state on page load
+        enforceArchiveDependencies();
+
+
+        // --- Category Specific Select / Deselect Logic ---
+
+        // Pré-traitement Select/Deselect
+        document.getElementById('selectAllPreProcBtn').addEventListener('click', function() {
+            if (this.disabled) return;
+            document.querySelectorAll('#preProcChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = true; });
+            enforcePlasoDependencies();
         });
-        document.getElementById('deselectAllModulesBtn').addEventListener('click', () => {
-            document.querySelectorAll('input[name="modules"]').forEach(checkbox => checkbox.checked = false);
+        document.getElementById('deselectAllPreProcBtn').addEventListener('click', function() {
+            if (this.disabled) return;
+            document.querySelectorAll('#preProcChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = false; });
+            enforcePlasoDependencies();
+        });
+
+        // Analyse & Traitement Select/Deselect
+        document.getElementById('selectAllAnalyzeBtn').addEventListener('click', function() {
+            if (this.disabled) return;
+            document.querySelectorAll('#analyzeChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = true; });
+            enforcePlasoDependencies();
+        });
+        document.getElementById('deselectAllAnalyzeBtn').addEventListener('click', function() {
+            if (this.disabled) return;
+            document.querySelectorAll('#analyzeChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = false; });
+            enforcePlasoDependencies();
+        });
+
+        // Plaso & Dérivés Select/Deselect
+        document.getElementById('selectAllPlasoBtn').addEventListener('click', function() {
+            if (this.disabled) return;
+            document.querySelectorAll('#plasoChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = true; });
+            enforcePlasoDependencies();
+        });
+        document.getElementById('deselectAllPlasoBtn').addEventListener('click', function() {
+            if (this.disabled) return;
+            document.querySelectorAll('#plasoChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = false; });
+            enforcePlasoDependencies();
+        });
+
+        // Exportations SIEM Select/Deselect
+        document.getElementById('selectAllExportBtn').addEventListener('click', function() {
+            if (this.disabled) return;
+            document.querySelectorAll('#exportChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = true; });
+            enforcePlasoDependencies();
+        });
+        document.getElementById('deselectAllExportBtn').addEventListener('click', function() {
+            if (this.disabled) return;
+            document.querySelectorAll('#exportChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = false; });
+            enforcePlasoDependencies();
         });
 
         function displayStatus(message, type) {
             statusMessage.textContent = message;
             statusMessage.style.display = 'block';
-            statusMessage.className = 'mt-6 p-4 rounded-lg text-center font-medium transition-colors duration-200';
-            if (type === 'success') statusMessage.classList.add('bg-green-100', 'text-green-700');
-            else if (type === 'error') statusMessage.classList.add('bg-red-100', 'text-red-700');
-            else statusMessage.classList.add('bg-blue-100', 'text-blue-700');
+            statusMessage.className = 'mt-6 p-4 rounded-xl text-center text-sm sm:text-base font-medium transition-colors duration-200 shadow-sm';
+            if (type === 'success') statusMessage.classList.add('bg-green-50', 'text-green-700', 'border', 'border-green-200');
+            else if (type === 'error') statusMessage.classList.add('bg-red-50', 'text-red-700', 'border', 'border-red-200');
+            else statusMessage.classList.add('bg-blue-50', 'text-blue-700', 'border', 'border-blue-200');
         }
 
         // --- File Uploader Logic ---
@@ -400,8 +704,7 @@
             }
         }
 
-        // --- Log Viewer, Status, Running Tasks, etc. Logic follows ---
-        // (This is the full logic restored)
+        // --- Log Viewer, Status, Running Tasks Logic ---
 
         const logForm = document.getElementById('logForm');
         const logOutput = document.getElementById('logOutput');
@@ -457,11 +760,11 @@
                     Object.values(data.active).flat().forEach(task => {
                         tasksFound = true;
                         const item = document.createElement('div');
-                        item.className = 'flex justify-between items-center bg-gray-50 p-3 rounded-lg';
-                        item.innerHTML = `<div><p class="font-semibold">${task.name}</p><p class="text-sm text-gray-600">${task.id}</p></div>`;
+                        item.className = 'flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gray-50 p-4 rounded-xl gap-3 sm:gap-0 border border-gray-100 shadow-sm';
+                        item.innerHTML = `<div class="w-full sm:w-auto overflow-hidden"><p class="font-semibold text-gray-800 truncate">${task.name}</p><p class="text-xs text-gray-500 break-all mt-1">${task.id}</p></div>`;
                         const killButton = document.createElement('button');
                         killButton.textContent = 'Delete';
-                        killButton.className = 'py-1 px-3 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700';
+                        killButton.className = 'w-full sm:w-auto mt-2 sm:mt-0 py-2 sm:py-1.5 px-5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors font-medium';
                         killButton.onclick = () => showModal(`Delete task ${task.id}?`, () => killTask(task.id));
                         item.appendChild(killButton);
                         runningTasksList.appendChild(item);
@@ -477,26 +780,56 @@
             }
         }
 
-        document.getElementById('downloadButton').addEventListener('click', async () => {
-            displayStatus('Preparing download...', 'info');
+        // --- Download Logic Updated ---
+
+        // Reusable function to handle file downloads
+        const handleDownload = async (url, filename) => {
+            displayStatus(`Preparing download for ${filename}...`, 'info');
             try {
-                const response = await fetch('/api/download/dfir-orc');
+                const response = await fetch(url);
                 if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
+
                 const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
+                const downloadUrl = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.style.display = 'none';
-                a.href = url;
-                a.download = 'DFIR-ORC.exe';
+                a.href = downloadUrl;
+                a.download = filename;
                 document.body.appendChild(a);
                 a.click();
-                window.URL.revokeObjectURL(url);
+
+                // Cleanup
+                window.URL.revokeObjectURL(downloadUrl);
                 a.remove();
-                displayStatus('Download started!', 'success');
+                displayStatus(`${filename} download started successfully!`, 'success');
             } catch (error) {
                 displayStatus(`Download failed: ${error.message}`, 'error');
             }
-        });
+        };
+
+        // Event listener for Classic DFIR-ORC
+        const downloadClassicBtn = document.getElementById('downloadClassicBtn');
+        if (downloadClassicBtn) {
+            downloadClassicBtn.addEventListener('click', () => {
+                handleDownload('/api/download/dfir-orc-full', 'DFIR-Orc.exe');
+            });
+        }
+
+        // Event listener for Offline DFIR-ORC
+        const downloadOfflineBtn = document.getElementById('downloadOfflineBtn');
+        if (downloadOfflineBtn) {
+            downloadOfflineBtn.addEventListener('click', () => {
+                handleDownload('/api/download/dfir-orc-offlinemode', 'DFIR-Orc_offline.exe');
+            });
+        }
+
+        // Event listener for WMemory DFIR-ORC
+        const downloadWmemBtn = document.getElementById('downloadWmemBtn');
+        if (downloadWmemBtn) {
+            downloadWmemBtn.addEventListener('click', () => {
+                handleDownload('/api/download/dfir-orc-wmem', 'DFIR-Orc_wmem.exe');
+            });
+        }
 
         const modal = document.getElementById('killModal');
         const confirmKillBtn = document.getElementById('confirmKillBtn');
@@ -539,4 +872,3 @@
     </script>
 </body>
 </html>
-

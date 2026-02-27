@@ -11,24 +11,24 @@ from datetime import timedelta
 from types import GeneratorType
 
 # Import the adapted uploader
-from wazuh_uploader import WazuhUploader
+from .wazuh_uploader import WazuhUploader
 
 # --- PROCESSOR IMPORTS KEEP SAME ---
-# Assumes these files exist in your "plaso_processors" folder
-from plaso_processors.evtx_processor import PlasoEvtxProcessor
-from plaso_processors.registry_processor import PlasoRegistryProcessor
-from plaso_processors.mft_processor import PlasoMftProcessor
-from plaso_processors.lnk_processor import PlasoLnkProcessor
-from plaso_processors.prefetch_processor import PlasoPrefetchProcessor
-from plaso_processors.srum_processor import PlasoSrumProcessor
-from plaso_processors.browser_history_processor import PlasoBrowserHistoryProcessor
-from plaso_processors.amcache_processor import PlasoAmcacheProcessor
-from plaso_processors.generic_processor import PlasoGenericProcessor
-from plaso_processors.appcompatcache_processor import PlasoAppCompatCacheProcessor
-from plaso_processors.userassist_processor import PlasoUserAssistProcessor
-from plaso_processors.runkey_processor import PlasoRunKeyProcessor
-from plaso_processors.usb_processor import PlasoUsbProcessor
-from plaso_processors.mru_processor import PlasoMruProcessor
+from .plaso_processors.base_processor import BaseEventProcessor
+from .plaso_processors.evtx_processor import PlasoEvtxProcessor
+from .plaso_processors.registry_processor import PlasoRegistryProcessor
+from .plaso_processors.mft_processor import PlasoMftProcessor
+from .plaso_processors.lnk_processor import PlasoLnkProcessor
+from .plaso_processors.prefetch_processor import PlasoPrefetchProcessor
+from .plaso_processors.srum_processor import PlasoSrumProcessor
+from .plaso_processors.browser_history_processor import PlasoBrowserHistoryProcessor
+from .plaso_processors.amcache_processor import PlasoAmcacheProcessor
+from .plaso_processors.generic_processor import PlasoGenericProcessor
+from .plaso_processors.appcompatcache_processor import PlasoAppCompatCacheProcessor
+from .plaso_processors.userassist_processor import PlasoUserAssistProcessor
+from .plaso_processors.runkey_processor import PlasoRunKeyProcessor
+from .plaso_processors.usb_processor import PlasoUsbProcessor
+from .plaso_processors.mru_processor import PlasoMruProcessor
 
 
 class PlasoPipeline:
