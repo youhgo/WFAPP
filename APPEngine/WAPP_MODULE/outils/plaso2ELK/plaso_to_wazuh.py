@@ -1,173 +1,235 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import argparse
 import json
-import traceback
-import warnings
-import time
+import re
 import os
+import traceback
+import time
+from datetime import timedelta
+from types import GeneratorType
 
-# We use opensearchpy for Wazuh Indexer compatibility
-from opensearchpy import OpenSearch
-from opensearchpy.helpers import streaming_bulk, parallel_bulk
-from opensearchpy.exceptions import OpenSearchException, TransportError
+# Import the adapted uploader
+from .wazuh_uploader import WazuhUploader
+
+# --- PROCESSOR IMPORTS KEEP SAME ---
+# Assumes these files exist in your "plaso_processors" folder
+from .plaso_processors.evtx_processor import PlasoEvtxProcessor
+from .plaso_processors.registry_processor import PlasoRegistryProcessor
+from .plaso_processors.mft_processor import PlasoMftProcessor
+from .plaso_processors.lnk_processor import PlasoLnkProcessor
+from .plaso_processors.prefetch_processor import PlasoPrefetchProcessor
+from .plaso_processors.srum_processor import PlasoSrumProcessor
+from .plaso_processors.browser_history_processor import PlasoBrowserHistoryProcessor
+from .plaso_processors.amcache_processor import PlasoAmcacheProcessor
+from .plaso_processors.generic_processor import PlasoGenericProcessor
+from .plaso_processors.appcompatcache_processor import PlasoAppCompatCacheProcessor
+from .plaso_processors.userassist_processor import PlasoUserAssistProcessor
+from .plaso_processors.runkey_processor import PlasoRunKeyProcessor
+from .plaso_processors.usb_processor import PlasoUsbProcessor
+from .plaso_processors.mru_processor import PlasoMruProcessor
 
 
-def json_default_serializer(obj):
-    """Overrides JSON serializer to handle non-serializable error objects."""
-    if isinstance(obj, (OpenSearchException, TransportError)):
-        return str(obj)
+class PlasoPipeline:
+    def __init__(self, case_name, machine_name, timeline_path, es_hosts, es_user, es_pass, chunk_size, verify_ssl,
+                 es_timeout, thread_count, mode):
+        self.case_name = self._sanitize_for_index(case_name)
+        self.machine_name = machine_name.lower().replace(" ", "_")
+        self.timeline_path = timeline_path
+        self.chunk_size = chunk_size
+
+        # Wazuh index pattern convention (optional, but helps organization)
+        self.index_prefix = f"plaso_{self.case_name}_{self.machine_name}"
+
+        # Initialize WazuhUploader instead of ElasticUploader
+        self.uploader = WazuhUploader(es_hosts, es_user, es_pass, verify_ssl, es_timeout, thread_count, mode)
+
+        self.parser_regex_map = {
+            "amcache": re.compile(r'winreg/amcache'),
+            "userassist": re.compile(r'userassist'),
+            "appcompatcache": re.compile(r'appcompatcache'),
+            "srum": re.compile(r'esedb/srum'),
+            "prefetch": re.compile(r'prefetch'),
+            "runkey": re.compile(r'winreg/windows_run'),
+            "usb": re.compile(r'winreg/windows_usb_devices'),
+            "mru": re.compile(r'winreg/(bagmru|mrulistex)'),
+            "hive": re.compile(r'winreg'),
+            "evtx": re.compile(r'winevtx'),
+            "browser_history": re.compile(r'(sqlite/((chrome|firefox|edge).*history))'),
+            "lnk": re.compile(r'lnk'),
+            "mft": re.compile(r'(filestat)|(usnjrnl)|(mft)'),
+            "other": re.compile(r'.*')
+        }
+
+        self.index_category_map = {
+            "evtx": "evtx",
+            "runkey": "hive",
+            "usb": "hive",
+            "mru": "hive",
+            "hive": "hive",
+            "srum": "process",
+            "amcache": "process",
+            "appcompatcache": "process",
+            "prefetch": "process",
+            "userassist": "process",
+            "browser_history": "browser_artefacts",
+            "lnk": "files",
+            "mft": "files",
+            "other": "others"
+        }
+
+        self.processors = {
+            "srum": PlasoSrumProcessor(),
+            "amcache": PlasoAmcacheProcessor(),
+            "appcompatcache": PlasoAppCompatCacheProcessor(),
+            "runkey": PlasoRunKeyProcessor(),
+            "usb": PlasoUsbProcessor(),
+            "mru": PlasoMruProcessor(),
+            "userassist": PlasoUserAssistProcessor(),
+            "browser_history": PlasoBrowserHistoryProcessor(),
+            "evtx": PlasoEvtxProcessor(),
+            "hive": PlasoRegistryProcessor(),
+            "mft": PlasoMftProcessor(),
+            "lnk": PlasoLnkProcessor(),
+            "prefetch": PlasoPrefetchProcessor(),
+            "other": PlasoGenericProcessor()
+        }
+        print("[*] Processeurs initialisés.")
+
+    def _sanitize_for_index(self, name: str) -> str:
+        return ''.join(c if c.isalnum() or c in '-_' else '_' for c in name).lower()
+
+    def identify_artefact_type(self, event: dict) -> str:
+        parser = event.get("parser", "")
+        for key, value_regex in self.parser_regex_map.items():
+            if re.search(value_regex, parser):
+                return key
+        return "other"
+
+    def run(self):
+        print("\n--- CONFIGURATION WAZUH ---")
+        print(f"  Fichier Timeline : {self.timeline_path}")
+        print(f"  Index Prefix     : {self.index_prefix}")
+        print(f"  Taille des Lots  : {self.chunk_size}")
+        print("---------------------------\n")
+
+        actions_generator = self._process_timeline_file()
+
+        # Creates Index Templates in Wazuh
+        self.uploader.setup_templates(
+            priority=400,
+            evtx=f"{self.index_prefix}_evtx*",
+            hive=f"{self.index_prefix}_hive*",
+            process=f"{self.index_prefix}_process*",
+            files=f"{self.index_prefix}_files*",
+            browser_artefacts=f"{self.index_prefix}_browser_artefacts*",
+            others=f"{self.index_prefix}_others*"
+        )
+
+        self.uploader.bulk_upload(actions_generator, self.chunk_size)
+
+    def _process_timeline_file(self):
+        # ... [Keep exact same logic as original script] ...
+        print(f"[*] Début de la lecture du fichier timeline : {self.timeline_path}")
+        it = 0
+        try:
+            with open(self.timeline_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    it += 1
+                    if it % (self.chunk_size * 10) == 0:
+                        print(f"    ... Ligne {it} atteinte")
+                    stripped_line = line.strip()
+                    if not stripped_line:
+                        continue
+                    try:
+                        event = json.loads(stripped_line)
+                        event["event_raw_string"] = stripped_line
+
+                        artefact_type_key = self.identify_artefact_type(event)
+                        processor = self.processors.get(artefact_type_key, self.processors["other"])
+                        processor_result = processor.process_event(event)
+
+                        if isinstance(processor_result, GeneratorType):
+                            events_to_yield = processor_result
+                        elif isinstance(processor_result, tuple) and len(processor_result) == 2:
+                            events_to_yield = [processor_result]
+                        else:
+                            processed_doc = {"message": f"Processor error", "raw": event.get("event_raw_string")}
+                            events_to_yield = [(processed_doc, "other")]
+
+                        for item in events_to_yield:
+                            try:
+                                processed_doc, specific_index_key = item
+                            except Exception:
+                                processed_doc = {"error": "unpacking"}
+                                specific_index_key = "other"
+
+                            processed_doc["artefact_type"] = specific_index_key
+                            index_category_key = self.index_category_map.get(specific_index_key, "others")
+                            index_name = f"{self.index_prefix}_{index_category_key}"
+
+                            yield {
+                                "_index": index_name,
+                                "_source": processed_doc
+                            }
+                    except json.JSONDecodeError:
+                        continue
+                    except Exception as e:
+                        traceback.print_exc()
+        except Exception as e:
+            print(f"[ERREUR FATALE] {e}")
+            exit(1)
+        print(f"[*] Lecture terminée. {it} lignes.")
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(
+        description="Injecteur Plaso vers Wazuh Indexer.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument("-t", "--timeline", required=True,
+                        help="Chemin vers le fichier timeline Plaso (jsonl).")
+    parser.add_argument("-c", "--case-name", required=True, help="Nom du dossier.")
+    parser.add_argument("-m", "--machine-name", required=True, help="Nom de la machine.")
+
+    # Wazuh Default Settings
+    parser.add_argument("--es-hosts", default="https://localhost:9200",
+                        help="URL du Wazuh Indexer (ex: https://192.168.1.50:9200).")
+    parser.add_argument("--es-user", default="admin", help="Utilisateur Wazuh Indexer.")
+    parser.add_argument("--es-pass", default="SecretPassword", help="Mot de passe Wazuh Indexer.")
+
+    parser.add_argument("--chunk-size", type=int, default=500, help="Taille des lots.")
+    parser.add_argument("--verify-ssl", action="store_true", default=False,
+                        help="Vérifier le certificat SSL (Généralement False pour Wazuh self-signed).")
+    parser.add_argument("--es-timeout", type=int, default=60, help="Timeout.")
+    parser.add_argument("--thread-count", type=int, default=4, help="Threads.")
+    parser.add_argument("--mode", choices=['streaming', 'parallel'], default='parallel',
+                        help="Mode d'envoi.")
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = parse_arguments()
+    start_time = time.time()
+
     try:
-        return obj.to_dict()
-    except AttributeError:
-        raise TypeError(f'Object of type {obj.__class__.__name__} is not JSON serializable')
-
-
-class WazuhUploader:
-    """Manages connection and bulk upload to Wazuh Indexer with Forensic Robustness."""
-
-    def __init__(self, es_hosts: list, es_user: str, es_pass: str, verify_ssl: bool, es_timeout: int, thread_count: int,
-                 mode: str):
-        self.es_timeout = es_timeout
-        self.thread_count = thread_count
-        self.mode = mode
-        self.failed_log_file = "failed_uploads.json"
-
-        try:
-            # Wazuh / OpenSearch Connection Configuration
-            es_options = {
-                "hosts": es_hosts,
-                "http_auth": (es_user, es_pass),
-                "verify_certs": verify_ssl,
-                "timeout": es_timeout,
-                "max_retries": 10,
-                "retry_on_timeout": True,
-                "ssl_show_warn": False
-            }
-
-            if not verify_ssl:
-                from urllib3.exceptions import InsecureRequestWarning
-                warnings.filterwarnings('ignore', category=InsecureRequestWarning)
-                es_options["ssl_assert_hostname"] = False
-
-            self.client = OpenSearch(**es_options)
-
-            if not self.client.ping():
-                raise ConnectionError("Connection to Wazuh Indexer failed.")
-            print("Connection to Wazuh Indexer successful.")
-
-            # Initialize failure log
-            with open(self.failed_log_file, 'w', encoding='utf-8') as f:
-                f.write("")  # Clear previous run failures
-
-        except Exception as e:
-            raise ConnectionError(f"Cannot initialize Wazuh/OpenSearch client: {e}")
-
-    def _create_index_template(self, template_name: str, index_pattern: str, priority: int):
-        """Creates or updates an index template."""
-        template_body = {
-            "index_patterns": [index_pattern],
-            "priority": priority,
-            "template": {
-                "settings": {
-                    "index.mapping.total_fields.limit": 10000,
-                    "index.refresh_interval": "5s"  # Slows down refresh to save CPU during ingest
-                },
-                "mappings": {
-                    "properties": {
-                        "estimestamp": {"type": "date", "format": "strict_date_optional_time||epoch_millis"}
-                    }
-                }
-            }
-        }
-        try:
-            self.client.indices.put_index_template(
-                name=template_name,
-                body=template_body
-            )
-            print(f"Template '{template_name}' for '{index_pattern}' created/updated.")
-        except Exception as e:
-            print(f"[Warning] Cannot create template '{template_name}'. Error: {e}")
-
-    def setup_templates(self, priority: int = 400, **kwargs):
-        for name, pattern in kwargs.items():
-            self._create_index_template(f"forensic_{name}_template", pattern, priority)
-
-    def _log_failure(self, doc, error):
-        """Saves failed documents to disk to ensure no data loss."""
-        with open(self.failed_log_file, 'a', encoding='utf-8') as f:
-            entry = {"error": str(error), "document": doc}
-            f.write(json.dumps(entry, default=json_default_serializer) + "\n")
-
-    def bulk_upload(self, actions_generator, chunk_size: int):
-        # ROBUSTNESS CONFIGURATION
-        # 1. max_chunk_bytes: Limits batch to 10MB prevents 'rejected_execution_exception'
-        # 2. max_retries: Retries 15 times before failing
-        # 3. max_backoff: Waits up to 60 seconds if server is busy (429)
-
-        bulk_params = {
-            "chunk_size": chunk_size,
-            "max_chunk_bytes": 50 * 1024 * 1024,  # 10 MB Hard Limit
-            "max_retries": 15,
-            "initial_backoff": 2,
-            "max_backoff": 60,
-            "request_timeout": self.es_timeout,
-            "raise_on_error": False,
-            "raise_on_exception": False
-        }
-
-        if self.mode == 'parallel':
-            bulk_func = parallel_bulk
-            print(f"\nSending in PARALLEL mode ({self.thread_count} threads). Limit: 10MB/batch...")
-            bulk_params["thread_count"] = self.thread_count
-            # Parallel bulk requires queue_size to prevent memory explosion
-            bulk_params["queue_size"] = 4
-        else:
-            bulk_func = streaming_bulk
-            print(f"\nSending in STREAMING mode (Sequential). Limit: 10MB/batch...")
-
-        success_count = 0
-        fail_count = 0
-
-        try:
-            for ok, result in bulk_func(client=self.client, actions=actions_generator, **bulk_params):
-                if ok:
-                    success_count += 1
-                else:
-                    fail_count += 1
-                    # Extract error details
-                    if self.mode == 'parallel':
-                        # parallel_bulk returns (success, item)
-                        # The item structure is usually { "index": { ...error... } }
-                        action, info = result.popitem() if result else ("unknown", {})
-                        error_reason = info.get("error", "Unknown error")
-                        doc_id = info.get("_id", "unknown")
-                    else:
-                        # streaming_bulk returns (success, result)
-                        action, info = result.popitem() if result else ("unknown", {})
-                        error_reason = info.get("error", "Unknown error")
-                        doc_id = info.get("_id", "unknown")
-
-                    # Log to console briefly
-                    if fail_count % 100 == 0:
-                        print(f"   [!] {fail_count} failures so far. Latest: {error_reason}")
-
-                    # Log to file for forensic recovery
-                    self._log_failure({"id": doc_id, "info": info}, error_reason)
-
-            print("\n" + "=" * 30)
-            print("UPLOAD COMPLETE")
-            print("=" * 30)
-            print(f"[-] Successful Documents : {success_count}")
-            print(f"[-] Failed Documents     : {fail_count}")
-
-            if fail_count > 0:
-                print(f"[CRITICAL] {fail_count} documents failed to upload.")
-                print(f"           Review '{self.failed_log_file}' to recover data.")
-            else:
-                print("[OK] Integrity check passed: No errors reported.")
-                if os.path.exists(self.failed_log_file):
-                    os.remove(self.failed_log_file)  # Clean up empty log
-
-        except Exception as e:
-            print(f"CRITICAL PIPELINE ERROR: {traceback.format_exc()}")
+        pipeline = PlasoPipeline(
+            case_name=args.case_name,
+            machine_name=args.machine_name,
+            timeline_path=args.timeline,
+            es_hosts=args.es_hosts.split(','),
+            es_user=args.es_user,
+            es_pass=args.es_pass,
+            chunk_size=args.chunk_size,
+            verify_ssl=args.verify_ssl,
+            es_timeout=args.es_timeout,
+            thread_count=args.thread_count,
+            mode=args.mode
+        )
+        pipeline.run()
+    except Exception as e:
+        print(f"\n[ERREUR] {e}")
+        traceback.print_exc()
+    finally:
+        print(f"\n[*] Durée : {str(timedelta(seconds=int(time.time() - start_time)))}")

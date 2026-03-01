@@ -84,6 +84,7 @@ class WazuhUploader:
             print(f"[Attention] Impossible de créer le template '{template_name}'. Erreur: {e}")
 
     def setup_templates(self, priority: int = 400, **kwargs):
+
         for name, pattern in kwargs.items():
             self._create_index_template(f"forensic_{name}_template", pattern, priority)
 
