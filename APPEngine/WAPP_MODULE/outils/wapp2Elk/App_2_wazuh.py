@@ -40,13 +40,13 @@ class ForensicPipeline:
         }
 
         self.ARTEFACT_PATTERNS = {
-            r'^Amcache\.hve_regpy\.json$': "amcache_regpy",
-            r'^Amcache\.hve_yarp\.jsonl$': "amcache_yarp",
-            r'^SECURITY_yarp\.jsonl$': "registry_security",
-            r'^SOFTWARE_yarp\.jsonl$': "registry_software",
-            r'^SYSTEM_yarp\.jsonl$': "registry_system",
-            r'^NTUSER\.DAT_yarp\.jsonl$': "registry_ntuser",
-            r'^SAM_yarp.jsonl$': "registry_sam",
+            r'^.*Amcache\.hve_regpy\.json$': "amcache_regpy",
+            r'^.*Amcache\.hve_yarp\.jsonl$': "amcache_yarp",
+            r'^.*SECURITY_yarp\.jsonl$': "registry_security",
+            r'^.*SOFTWARE_yarp\.jsonl$': "registry_software",
+            r'^.*SYSTEM_yarp\.jsonl$': "registry_system",
+            r'^.*NTUSER\.DAT_yarp\.jsonl$': "registry_ntuser",
+            r'^.*SAM_yarp.jsonl$': "registry_sam",
             r'.*\.evtx\.json$': "evtx",
             r'^mft\.json$': "mft",
             r'^mft\.timeline$': "mft_timeline",
@@ -91,8 +91,13 @@ class ForensicPipeline:
             return {"all"}
 
         mapping = {
-            "process": "processes", "processes": "processes", "pf": "processes", "prefetch": "processes",
-            "hive": "registry", "registry": "registry", "reg": "registry",
+            "process": "processes",
+            "processes": "processes",
+            "pf": "processes",
+            "prefetch": "processes",
+            "hive": "registry",
+            "registry": "registry",
+            "reg": "registry",
             "network": "network", "net": "network",
             "disk": "disk", "fs": "disk", "mft": "disk",
             "evtx": "evtx", "event": "evtx", "logs": "evtx",
