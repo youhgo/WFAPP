@@ -38,7 +38,8 @@ class SystemInfoParser:
         for element in os.listdir(dir_in):
             full_path = os.path.join(dir_in, element)
             if os.path.isfile(full_path):
-                if re.search(reg_ex, element):  # ,  re.IGNORECASE):
+                #self.logger_run.info("[PARSING][SYSTEMINFO] {}".format(full_path), header="INFO", indentation=4)
+                if re.search(reg_ex, element, re.IGNORECASE):
                     if full_path not in files:
                         files.append(full_path)
             elif os.path.isdir(full_path):
@@ -99,14 +100,14 @@ class SystemInfoParser:
 
             file_patterns = self.artefact_config.get("artefacts", {}).get("system", {}).get("system_info", [])
             if not file_patterns:
-                self.logger_run.info("[PARSING][SYSTEMINFO] No file patterns configured for systeminfo.", header="FAILED",
+                self.logger_run.info("[PARSING][SYSTEMINFO] No file patterns configured for systeminfo. using default : Systeminfo.csv", header="FAILED",
                                      indentation=2)
-                return system_info
+                file_patterns = ["Systeminfo.csv"]
 
             for file_pattern in file_patterns:
                 l_file = self.recursive_file_search(input_dir, file_pattern)
                 if not l_file:
-                    self.logger_run.info("[PARSING][SYSTEMINFO] No file matching pattern'{}' found.".format(file_pattern), header="FAILED",
+                    self.logger_run.info("[PARSING][SYSTEMINFO] No file matching pattern'{}' found in {}.".format(file_pattern, input_dir), header="FAILED",
                                          indentation=2)
                     continue  # Continue to the next pattern if a file is not found
 

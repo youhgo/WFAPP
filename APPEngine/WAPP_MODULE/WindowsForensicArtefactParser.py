@@ -693,8 +693,8 @@ class WindowsForensicArtefactParser:
     def do_system_info(self):
         try:
             self.logger_run.info("[PARSING][SYSTEMINFO]", header="START", indentation=1)
-            s_parser = SystemInfoParser.SystemInfoParser(self.logger_run)
-            self.system_info = s_parser.parse_all(self.extracted_main_dir, self.result_parsed_dir)
+            s_parser = SystemInfoParser.SystemInfoParser(self.logger_run, self.artefact_config)
+            self.system_info = s_parser.parse_all(self.parsed_dir, self.result_parsed_dir)
             self.logger_run.info("[PARSING][SYSTEMINFO]", header="FINISHED", indentation=1)
 
             if self.system_info and self.system_info[0].get("Nom d'hôte", ""):
