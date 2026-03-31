@@ -81,29 +81,35 @@
                     "usn_journal": ["USNInfo.*.csv"],
                     "VSS_List": ["VSS_list.csv"]
                 },
+                "lnk" : {
+                    "lnk": [".*.lnk"]
+                },
                 "files": {
+                    "Wmi": ["OBJECTS.DATA", "INDEX.BTR", "MAPPING*.MAP"],
+                    "recent_file": [".*-ms"]
+                },
+                "prefetch": {
+                    "super_fetch": ["ag.*.db"],
+                    "prefetch": [".*.pf"]
+                },
+                "database": {
                     "Activity_cache": ["ActivitiesCache.db"],
                     "sdb": [".*.sdb"],
-                    "SRUM": ["SRUDB.dat", "SRU.*.log"],
-                    "super_fetch": ["ag.*.db"],
-                    "Wmi": ["OBJECTS.DATA", "INDEX.BTR", "MAPPING*.MAP"],
-                    "prefetch": [".*.pf"],
-                    "lnk": [".*.lnk"],
-                    "recent_file": [".*-ms"]
+                    "SRUM": ["SRUDB.dat", "SRU.*.log"]
                 },
                 "browsers": {
                     "browser_history": [".*.sqlite"]
                 },
-                "others_text": {
+                "others": {
                     "event_consumer": ["EventConsumer.txt"],
-                    "ad_computer": ["AD_computers.csv"]
-                },
-                "others_bin": {
+                    "ad_computer": ["AD_computers.csv"],
                     "setup_api": ["setupapi"],
                     "mrt": ["mrt"]
                 },
-              "scripts": {
-                "bat": [".*.bat"]
-              }
+                "scripts": {
+                    "bat": [
+                        ".*.bat"
+                    ]
+                }
             }
         }

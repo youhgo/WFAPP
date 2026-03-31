@@ -115,8 +115,11 @@ services:
       - redis
     networks:
       - wappNet
+      - shared_sec_net
 
 networks:
   wappNet:
+  shared_sec_net:
+    external: true
 volumes:
   shared_files:

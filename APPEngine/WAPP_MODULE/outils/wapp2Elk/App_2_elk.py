@@ -14,7 +14,7 @@ from .processors.processes_processor import ProcessesProcessor
 from .processors.prefetch_processor import PrefetchJsonProcessor
 
 
-class ForensicPipeline:
+class ElkForensicPipeline:
     """
     Classe principale pour orchestrer le parsing d'artefacts forensiques et leur envoi à Elasticsearch.
     """
@@ -230,7 +230,7 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     try:
-        pipeline = ForensicPipeline(
+        pipeline = ElkForensicPipeline(
             case_name=args.case_name,
             machine_name=args.machine_name,
             source_dir=args.source_dir,
