@@ -108,12 +108,19 @@ class RegistryJsonProcessor(BaseFileProcessor):
             return
 
         print(f"  -> Traitement du fichier de registre : {filepath}")
-        if dataset == 'amcache_regpy':
+
+        # 1. Normalisation en minuscules pour gérer 'registry_SAM', 'registry_NTUSER.DAT', etc.
+        ds_lower = dataset.lower()
+
+        if ds_lower == 'amcache_regpy':
             yield from self._process_regipy_amcache_file(filepath)
-        # Ajout de 'registry_sam' à la liste d'ingestion générique
-        elif dataset in ['amcache_yarp', 'registry_security', 'registry_software', 'registry_system',
-                         'registry_ntuser', 'registry_sam']:
-            yield from self._process_generic_reg_file(filepath, dataset)
+        elif ds_lower in [
+            'amcache_yarp', 'registry_security', 'registry_software',
+            'registry_system', 'registry_ntuser', 'registry_ntuser.dat', 'registry_sam'
+        ]:
+            # Conserver la logique de routage spécifique pour SAM
+            internal_ds = 'registry_sam' if 'sam' in ds_lower else dataset
+            yield from self._process_generic_reg_file(filepath, internal_ds)
         else:
             print(f"  [Attention] Dataset '{dataset}' non reconnu pour le processeur de registre. Fichier ignoré.")
 

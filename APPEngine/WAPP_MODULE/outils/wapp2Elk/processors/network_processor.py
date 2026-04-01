@@ -117,6 +117,120 @@ class NetworkProcessor(BaseFileProcessor):
             except Exception as e:
                 print(f"\n[Attention] Impossible de traiter la ligne DNS #{line_num}. Erreur: {e}\n")
 
+    def _parse_bits_timestamp(self, ts_str: str) -> str:
+        """Parse les dates BITS (ex: 30/03/2026 09:37:27)"""
+        if not ts_str or ts_str == "UNKNOWN":
+            return datetime.utcnow().isoformat() + "Z"
+        try:
+            dt = datetime.strptime(ts_str.strip(), "%d/%m/%Y %H:%M:%S")
+            return dt.isoformat() + "Z"
+        except ValueError:
+            return datetime.utcnow().isoformat() + "Z"
+
+    def _process_bits_jobs_file(self, lines: list, machine_name: str, dataset: str):
+        print(f"  -> Lecture du fichier BITS Jobs : {dataset}")
+
+        current_job = {}
+
+        def yield_job(job):
+            if "guid" not in job: return None
+
+            timestamp = self._parse_bits_timestamp(job.get("creation_time"))
+            owner = job.get("owner", "")
+
+            doc = {
+                "@timestamp": timestamp,
+                "host": {"name": machine_name},
+                "event": {
+                    "kind": "state",
+                    "category": "network",
+                    "dataset": dataset
+                },
+                "user": {"name": owner.split('\\')[-1] if '\\' in owner else owner},
+                "bits": job
+            }
+            return doc
+
+        for line_num, line in enumerate(lines, 1):
+            clean_line = line.strip()
+
+            # Ignorer en-têtes et pieds de page
+            if not clean_line or clean_line.startswith("BITSADMIN") or clean_line.startswith(
+                    "(C)") or clean_line.startswith("Listed"):
+                continue
+
+            # Nouveau Job détecté
+            if line.startswith("GUID:"):
+                if current_job:
+                    doc = yield_job(current_job)
+                    if doc: yield doc, "network"
+
+                current_job = {}
+                # Extraction du GUID et du DISPLAY via regex simple
+                import re
+                m = re.search(r"GUID:\s*(\{.*?\})\s*DISPLAY:\s*'(.*?)'", line)
+                if m:
+                    current_job["guid"] = m.group(1)
+                    current_job["display_name"] = m.group(2)
+                continue
+
+            if not current_job:
+                continue
+
+            # --- Parsing des blocs de données ---
+            try:
+                if line.startswith("TYPE:"):
+                    m = re.search(r"TYPE:\s*(.*?)\s+STATE:\s*(.*?)\s+OWNER:\s*(.*)", line)
+                    if m: current_job["type"], current_job["state"], current_job["owner"] = [g.strip() for g in
+                                                                                             m.groups()]
+
+                elif line.startswith("PRIORITY:"):
+                    m = re.search(r"PRIORITY:\s*(.*?)\s+FILES:\s*(.*?)\s+BYTES:\s*(.*)", line)
+                    if m: current_job["priority"], current_job["files"], current_job["bytes"] = [g.strip() for g in
+                                                                                                 m.groups()]
+
+                elif line.startswith("CREATION TIME:"):
+                    m = re.search(r"CREATION TIME:\s*(.*?)\s+MODIFICATION TIME:\s*(.*)", line)
+                    if m: current_job["creation_time"], current_job["modification_time"] = [g.strip() for g in
+                                                                                            m.groups()]
+
+                elif line.startswith("ERROR CODE:"):
+                    current_job["error_code"] = line.split("ERROR CODE:")[1].strip()
+
+                elif line.startswith("ERROR CONTEXT:"):
+                    current_job["error_context"] = line.split("ERROR CONTEXT:")[1].strip()
+
+                elif line.startswith("owner MIC integrity level:"):
+                    current_job["integrity_level"] = line.split("owner MIC integrity level:")[1].strip()
+
+                # Détection des lignes de fichiers (qui contiennent " -> ")
+                elif " -> " in line:
+                    parts = line.split(" -> ", 1)
+                    url_part = parts[0].strip()
+                    path_part = parts[1].strip()
+
+                    # On nettoie tout ce qui est avant l'URL (statuts BITS: WORKING, ERROR FILE, SUSPENDED, etc.)
+                    prefixes_to_strip = ["WORKING", "ERROR FILE:", "TRANSIENT_ERROR", "SUSPENDED", "ACKNOWLEDGED",
+                                         "TRANSFERRED"]
+                    for prefix in prefixes_to_strip:
+                        if prefix in url_part:
+                            url_part = url_part.split(prefix)[-1].strip()
+                            break
+
+                    # S'assure que job_files est une liste pour gérer les multi-téléchargements
+                    current_job.setdefault("job_files", []).append({
+                        "url": url_part,
+                        "target_path": path_part
+                    })
+
+            except Exception as e:
+                print(f"\n[Attention] Erreur de parsing BITS ligne #{line_num}: {e}\n")
+
+        # Sauvegarde du dernier Job du fichier
+        if current_job:
+            doc = yield_job(current_job)
+            if doc: yield doc, "network"
+
     def process_file(self, filepath: str, **kwargs):
         dataset = kwargs.get("dataset")
         machine_name = kwargs.get("machine_name")
@@ -125,14 +239,28 @@ class NetworkProcessor(BaseFileProcessor):
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
             lines = f.readlines()
 
-        if dataset == "netstat":
+        ds_lower = dataset.lower()
+
+        if ds_lower in ["netstat", "network_netstat"]:
             yield from self._process_netstat_file(lines, machine_name, dataset)
-        elif dataset == "tcpvcon":
+        elif ds_lower in ["tcpvcon", "network_tcpvcon"]:
             yield from self._process_tcpvcon_file(lines, machine_name, dataset)
-        elif dataset == "arp":
+        elif ds_lower in ["arp", "network_arp_cache"]:
             yield from self._process_arp_file(lines, machine_name, dataset)
-        elif dataset == "dns":
+        elif ds_lower in ["dns", "network_dns_cache"]:
             yield from self._process_dns_file(lines, machine_name, dataset)
+        elif ds_lower in ["routes", "network_routes"]:
+            yield from self._process_routes_file(lines, machine_name, dataset)
+
+        # NOUVEAU : Ajout de BITS
+        elif ds_lower in ["bits_jobs", "network_bits_jobs"]:
+            yield from self._process_bits_jobs_file(lines, machine_name, dataset)
+
+        # Datasets restants à développer
+        elif ds_lower in ["network_services", "network_lmhosts", "network_hosts", "network_networks",
+                          "network_protocol"]:
+            print(f"  [Info] Un parseur spécifique doit être développé pour : {dataset}")
+
         else:
             print(f"  [Attention] Dataset réseau non supporté '{dataset}'. Fichier ignoré.")
 

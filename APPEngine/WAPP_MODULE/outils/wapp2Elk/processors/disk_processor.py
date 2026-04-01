@@ -148,15 +148,53 @@ class DiskProcessor(BaseFileProcessor):
                 except Exception as e:
                     print(f"\n[Attention] Erreur ligne #{i + 1} dans {filepath}: {e}\n")
 
+    def _process_vss_file(self, filepath: str, dataset: str):
+        print(f"  -> Lecture du fichier VSS (CSV) : {filepath}")
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+            # DictReader va automatiquement utiliser la première ligne comme en-têtes
+            # (SnapshotID, DeviceInstance, VolumeName, CreationTime, Attributes)
+            reader = csv.DictReader(f)
+
+            for i, row in enumerate(reader):
+                try:
+                    # On cible directement 'CreationTime'
+                    creation_time_str = row.get("CreationTime")
+
+                    # On réutilise votre parseur USN qui gère bien les formats standards
+                    timestamp = self._parse_usn_timestamp(
+                        creation_time_str) if creation_time_str else datetime.utcnow().isoformat() + "Z"
+
+                    doc = {
+                        "@timestamp": timestamp,
+                        "event": {
+                            "kind": "state",
+                            "category": "host",
+                            "dataset": dataset,
+                            "original": ",".join(str(v) for v in row.values())
+                        },
+                        "vss": {
+                            "snapshot_id": row.get("SnapshotID"),
+                            "device_instance": row.get("DeviceInstance"),
+                            "volume_name": row.get("VolumeName"),
+                            "attributes": row.get("Attributes")
+                        }
+                    }
+                    yield doc, "disk"
+                except Exception as e:
+                    print(f"\n[Attention] Impossible de traiter la ligne VSS #{i + 2}. Erreur: {e}\n")
+
     def process_file(self, filepath: str, **kwargs):
         dataset = kwargs.get("dataset")
+        ds_lower = dataset.lower()
         print(f"  -> Traitement du fichier Disque : {filepath} (dataset: {dataset})")
 
-        if dataset == "mft":
+        if ds_lower == "mft":
             yield from self._process_mft_file(filepath, dataset)
-        elif dataset == "usnjrnl":
+        elif ds_lower == "usnjrnl":
             yield from self._process_usn_file(filepath, dataset)
-        elif dataset == "mft_timeline":
+        elif ds_lower == "mft_timeline":
             yield from self._process_timeline_file(filepath, dataset)
+        elif ds_lower == "disk" and "vss_list" in filepath.lower():
+            yield from self._process_vss_file(filepath, dataset)
         else:
             print(f"  [Attention] Dataset disque non supporté '{dataset}' pour {filepath}. Ignoré.")

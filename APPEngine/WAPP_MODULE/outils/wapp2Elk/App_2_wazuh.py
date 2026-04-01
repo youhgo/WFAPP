@@ -169,11 +169,24 @@ class ForensicPipeline:
             print(f"  [Attention] Aucun processeur trouvé pour le dataset '{dataset}'. Fichier ignoré.")
 
     def _process_from_config(self):
-        print(f"[*] Lecture de la configuration depuis : {self.config_file}")
-        try:
-            with open(self.config_file, 'r', encoding='utf-8') as f:
-                config = json.load(f)
+        # Pour éviter d'afficher un dictionnaire géant dans les logs, on adapte le message
+        source_name = "un dictionnaire en mémoire" if isinstance(self.config_file, dict) else self.config_file
+        print(f"[*] Lecture de la configuration depuis : {source_name}")
 
+        try:
+            # 1. Vérifie si on a déjà un dictionnaire (cas du WAPP Worker)
+            if isinstance(self.config_file, dict):
+                config = self.config_file
+
+            # 2. Sinon, on considère que c'est un chemin de fichier (cas de la Ligne de Commande)
+            elif isinstance(self.config_file, (str, bytes, os.PathLike)):
+                with open(self.config_file, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+            else:
+                print(f"[ERREUR] Format de configuration non supporté : {type(self.config_file)}")
+                return
+
+            # La suite du code reste identique
             for item in config.get("files", []):
                 filepath = item.get("path")
                 dataset = item.get("type")
@@ -191,6 +204,7 @@ class ForensicPipeline:
 
         except Exception as e:
             print(f"[ERREUR] Impossible de lire ou analyser le fichier de configuration : {e}")
+            traceback.print_exc()
 
     def _find_and_process_files(self):
         print(f"[*] Recherche récursive des artefacts dans : {self.source_dir}")
