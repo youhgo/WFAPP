@@ -40,7 +40,7 @@ class ForensicPipeline:
             "network": f"{self.index_prefix}_{self.case_name}_{self.machine_name}_network",
             "processes": f"{self.index_prefix}_{self.case_name}_{self.machine_name}_process",
             "prefetch": f"{self.index_prefix}_{self.case_name}_{self.machine_name}_prefetch",
-            "system_info": f"{self.index_prefix}_{self.case_name}_{self.machine_name}systeminfo"
+            "system_info": f"{self.index_prefix}_{self.case_name}_{self.machine_name}_systeminfo"
         }
 
         self.ARTEFACT_PATTERNS = {

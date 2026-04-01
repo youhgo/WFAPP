@@ -31,11 +31,11 @@ class HivePipeline(BaseArtefactPipeline):
 
             if self._matches_category(file_path.name, "AMCACHE"):
                 res_file = self.parser.export_amcache_to_jsonl(str(file_path), str(self.context.result_parsed_dir))
-                res_file1 = self.parser.parse_amcache_regpy(str(file_path), str(self.context.result_parsed_dir))
                 if res_file:
                     self.context.wazuh_importer_file_config["files"].append({"path": str(res_file), "type": "amcache_yarp"})
-                    if res_file1:
-                        self.context.wazuh_importer_file_config["files"].append(
+                res_file1 = self.parser.parse_amcache_regpy(str(file_path), str(self.context.result_parsed_dir))
+                if res_file1:
+                    self.context.wazuh_importer_file_config["files"].append(
                             {"path": str(res_file1), "type": "amcache_regpy"})
             else:
                 res_file, hv_name = self.parser.export_hive_to_jsonl(str(file_path), str(self.context.result_parsed_dir))

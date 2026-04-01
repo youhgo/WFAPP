@@ -34,9 +34,9 @@ class NetworkPipeline(BaseArtefactPipeline):
                 if re.search(reg_pattern, file_path.name, re.IGNORECASE):
                     self.copy_raw_artefact(file_path, self.out_network_dir)
                     self.context.wazuh_importer_file_config["files"].append({"path": str(file_path), "type": f"network_{file_path.stem}"})
-            if self._matches_category(file_path.name, "network_tcpvcon"):
+            if self._matches_category(file_path.name, "tcpvcon"):
                 self.parser.parse_tcpvcon(str(file_path), str(self.out_dir / f"{file_path.name}_parsed.csv"))
-            elif self._matches_category(file_path.name, "network_netstat"):
+            elif self._matches_category(file_path.name, "netstat"):
                 self.parser.parse_netstat(str(file_path), str(self.out_dir / f"{file_path.name}_parsed.csv"))
 
         except Exception as e:
