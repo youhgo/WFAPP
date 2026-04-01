@@ -32,7 +32,7 @@ class MftPipeline(BaseArtefactPipeline):
         try:
             clean_mft_name = file_path.name.replace("$", "")
             mft_result_file = self.mft_dir / f"{clean_mft_name}.timeline"
-            #self.context.wazuh_importer_file_config["files"].append({"path": str(mft_result_file), "type": "mft_timeline"})
+            self.context.wazuh_importer_file_config["files"].append({"path": str(mft_result_file), "type": "mft_timeline"})
 
             # Utilisation de l'outil externe analyzeMFT
             my_cmd = ["python3", str(self.context.analyze_mft_tool_path), "-f", str(file_path), "-o",
@@ -41,8 +41,6 @@ class MftPipeline(BaseArtefactPipeline):
 
             # Parsing final en CSV
             res_file = self.parser.parse_plaso_csv(str(mft_result_file), str(self.context.result_parsed_dir))
-            if res_file:
-                self.context.wazuh_importer_file_config["files"].append({"path": str(res_file), "type": "mft"})
             self.logger.info(f"[PIPELINE][MFT] Succès", header="FINISHED", indentation=1)
         except Exception as e:
             self.logger.error(f"[PIPELINE][MFT] Erreur sur {file_path.name}: {e}", header="ERROR", indentation=1)

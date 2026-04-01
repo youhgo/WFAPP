@@ -32,7 +32,7 @@ class DiskProcessor(BaseFileProcessor):
                          "timestamps": {"si": raw_log.get("si_times"), "fn": raw_log.get("fn_times")},
                          "flags": raw_log.get("flags")}}
 
-    def _process_mft_file(self, filepath: str, dataset):
+    def _process_mft_file_json(self, filepath: str, dataset):
         print(f"  -> Lecture du fichier MFT (JSON complet) : {filepath}")
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
             try:
@@ -78,8 +78,6 @@ class DiskProcessor(BaseFileProcessor):
                 except Exception as e:
                     print(
                         f"\n[Attention] Impossible de traiter la ligne CSV #{i + 2} du fichier {filepath}. Erreur: {e}\n")
-
-    # --- NOUVELLES MÉTHODES POUR MFT.timeline (MISE À JOUR DE LA GESTION D'ERREUR) ---
 
     def _parse_timeline_timestamp(self, timestamp_str: str) -> str:
         """Convertit un timestamp Unix epoch (float string) en ISO8601, gère les Overflow."""
@@ -188,8 +186,8 @@ class DiskProcessor(BaseFileProcessor):
         ds_lower = dataset.lower()
         print(f"  -> Traitement du fichier Disque : {filepath} (dataset: {dataset})")
 
-        if ds_lower == "mft":
-            yield from self._process_mft_file(filepath, dataset)
+        if ds_lower == "mft_json":
+            yield from self._process_mft_file_json(filepath, dataset)
         elif ds_lower == "usnjrnl":
             yield from self._process_usn_file(filepath, dataset)
         elif ds_lower == "mft_timeline":
