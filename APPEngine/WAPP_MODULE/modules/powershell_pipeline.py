@@ -7,9 +7,12 @@ import re
 class PowerShellPipeline(BaseArtefactPipeline):
     def __init__(self, context: WappContext):
         super().__init__(context)
-        self.out_powershell_dir = self.context.parsed_dir / "Script" / "Powershell"
-        self.out_dir = self.context.result_parsed_dir
+        self.out_powershell_script_dir = self.context.parsed_dir / "script" / "powershell"
+        self.out_powershell_script_dir.mkdir(parents=True, exist_ok=True)
+
+        self.out_powershell_dir = self.context.parsed_dir / "powershell"
         self.out_powershell_dir.mkdir(parents=True, exist_ok=True)
+
         self.config_process = self.context.artefact_config.get("artefacts", {}).get("powershell", {})
 
     def get_regex_patterns(self):
@@ -28,9 +31,20 @@ class PowerShellPipeline(BaseArtefactPipeline):
     def process(self, file_path: Path):
         self.logger.info(f"[PIPELINE][POWERSHELL] Traitement de {file_path.name}", header="START", indentation=1)
         try:
-            for reg_pattern in self.get_regex_patterns():
-                if re.search(reg_pattern, file_path.name, re.IGNORECASE):
-                    self.copy_raw_artefact(file_path, self.out_powershell_dir)
+            if self._matches_category(file_path.name, "consol_history"):
+                self.copy_raw_artefact(file_path, self.result_parsed_dir)
+                self.context.wazuh_importer_file_config["files"].append({"path": str(file_path),
+                                                                         "type": f"process_consolehost_history"})
+
+            if self._matches_category(file_path.name, "scripts"):
+                self.copy_raw_artefact(file_path, self.out_powershell_script_dir)
+
+            if self._matches_category(file_path.name, "powerview"):
+                self.copy_raw_artefact(file_path, self.out_powershell_dir)
+
+            if self._matches_category(file_path.name, "Module_Analysis_Cache"):
+                self.copy_raw_artefact(file_path, self.out_powershell_dir)
+
 
         except Exception as e:
             self.logger.error(f"[PIPELINE][POWERSHELL] Erreur sur {file_path.name}: {e}", header="ERROR", indentation=1)

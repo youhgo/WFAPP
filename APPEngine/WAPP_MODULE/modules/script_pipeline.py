@@ -31,6 +31,6 @@ class ScriptPipeline(BaseArtefactPipeline):
             out_bat_dir = self.out_script_dir / "bat"
             out_bat_dir.mkdir(parents=True, exist_ok=True)
             if self._matches_category(file_path.name, "bat"):
-                self.copy_raw_artefact(file_path, self.out_script_dir)
+                self.copy_raw_artefact(file_path, out_bat_dir)
         except Exception as e:
             self.logger.error(f"[PIPELINE][SCRIPT] Erreur sur {file_path.name}: {e}", header="ERROR", indentation=1)

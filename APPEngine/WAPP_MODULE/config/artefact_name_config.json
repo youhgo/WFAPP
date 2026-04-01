@@ -69,7 +69,7 @@
                     "evtx": [".*.evtx"]
                 },
                 "powershell": {
-                    "consol_history": ["ConsoleHost_history.txt"],
+                    "consol_history": ["ConsoleHost_history"],
                     "Module_Analysis_Cache": ["ModuleAnalysisCache"],
                     "powerview": ["PowerView"],
                     "scripts" : [".*.ps1"]

@@ -9,7 +9,7 @@ import re
 class MftPipeline(BaseArtefactPipeline):
     def __init__(self, context: WappContext):
         super().__init__(context)
-        self.mft_dir = self.context.parsed_dir / "disks_info" / "mft"
+        self.mft_dir = self.context.parsed_dir / "disks"
         self.mft_dir.mkdir(parents=True, exist_ok=True)
         self.parser = DiskParser.DiskParser(self.logger, separator=self.context.separator)
         self.config_process = self.context.artefact_config.get("artefacts", {}).get("master_file_table", {})
@@ -30,7 +30,8 @@ class MftPipeline(BaseArtefactPipeline):
     def process(self, file_path: Path):
         self.logger.info(f"[PIPELINE][MFT] Traitement de {file_path.name}", header="START", indentation=1)
         try:
-            mft_result_file = self.mft_dir / f"{file_path.name}.timeline"
+            clean_mft_name = file_path.name.replace("$", "")
+            mft_result_file = self.mft_dir / f"{clean_mft_name}.timeline"
             #self.context.wazuh_importer_file_config["files"].append({"path": str(mft_result_file), "type": "mft_timeline"})
 
             # Utilisation de l'outil externe analyzeMFT
