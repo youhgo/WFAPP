@@ -170,7 +170,7 @@ class WindowsForensicArtefactParser:
             self.logger.info("[MAXIMUMPLASOPARSER]", header="START", indentation=1)
             # Correction: Retrait du mp.parse_timeline(), on instancie et on appelle proprement
             parser = MaximumPlasoParserJson.MaximumPlasoParser(
-                path_to_timeline=str(self.ctx.timeline_json_path),
+                path_to_timeline=str(self.timeline_json_path),
                 output_directory=str(self.ctx.parsed_dir),
                 separator=self.ctx.separator,
                 machine_name=self.ctx.machine_name
@@ -244,7 +244,7 @@ class WindowsForensicArtefactParser:
             p_agent = plaso_to_wazuh.PlasoPipeline(
                 case_name=self.ctx.case_name,
                 machine_name=self.ctx.machine_name,
-                timeline_path=str(self.ctx.timeline_json_path),
+                timeline_path=str(self.timeline_json_path),
                 es_hosts=wazuh_host,
                 es_user=os.getenv('WAZUH_USER', ''),
                 es_pass=os.getenv('WAZUH_PASSWD', ''),
