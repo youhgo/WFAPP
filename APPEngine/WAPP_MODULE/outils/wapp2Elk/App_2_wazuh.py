@@ -162,9 +162,20 @@ class ForensicPipeline:
             try:
                 for doc, doc_type in processor_method.process_file(filepath, dataset=dataset,
                                                                    filename=filename, **kwargs):
+
+                    # SÉCURITÉ : Vérifie si le processeur a renvoyé un type d'index valide
+                    if doc_type not in self.target_indices:
+                        print(
+                            f"  [ERREUR CRITIQUE] Le processeur a renvoyé '{doc_type}', mais l'orchestrateur ne connaît que : {list(self.target_indices.keys())}")
+                        continue
+
                     yield {"_index": self.target_indices[doc_type], "_source": doc}
+
             except Exception as e:
-                print(f"  [ERREUR] Echec traitement fichier {filename}: {e}")
+                # GESTION D'ERREUR VERBEUSE : Affiche le type d'erreur et la trace complète
+                print(
+                    f"  [ERREUR CRITIQUE] Echec lors du traitement du fichier {filename}: {type(e).__name__} - {str(e)}")
+                print(traceback.format_exc())
         else:
             print(f"  [Attention] Aucun processeur trouvé pour le dataset '{dataset}'. Fichier ignoré.")
 

@@ -9,7 +9,7 @@ import re
 class MftPipeline(BaseArtefactPipeline):
     def __init__(self, context: WappContext):
         super().__init__(context)
-        self.mft_dir = self.context.parsed_dir / "disks"
+        self.mft_dir = self.context.parsed_dir / "disk"
         self.mft_dir.mkdir(parents=True, exist_ok=True)
         self.parser = DiskParser.DiskParser(self.logger, separator=self.context.separator)
         self.config_process = self.context.artefact_config.get("artefacts", {}).get("master_file_table", {})
