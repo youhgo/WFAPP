@@ -21,14 +21,31 @@ def json_default_serializer(obj):
         raise TypeError(f'Object of type {obj.__class__.__name__} is not JSON serializable')
 
 
+def inject_wapp_metadata(actions_generator, case_name, machine_name):
+    """
+    Générateur qui intercepte le flux de documents destiné à Wazuh/OpenSearch
+    pour y injecter le case_name et le machine_name.
+    """
+    for action in actions_generator:
+        if "_source" in action:
+            # Création d'un sous-objet pour garder les logs propres et filtrables
+            action["_source"]["general_info"] = {
+                "case_name": case_name,
+                "machine_name": machine_name
+            }
+        yield action
+
+
 class WazuhUploader:
     """Gère la connexion et l'envoi en masse des documents au Wazuh Indexer."""
 
     def __init__(self, es_hosts: list, es_user: str, es_pass: str, verify_ssl: bool, es_timeout: int, thread_count: int,
-                 mode: str):
+                 mode: str, case_name: str = "unknown", machine_name: str = "unknown"):
         self.es_timeout = es_timeout
         self.thread_count = thread_count
         self.mode = mode
+        self.case_name = case_name
+        self.machine_name = machine_name
 
         try:
             # Configuration de la connexion Wazuh / OpenSearch
@@ -84,11 +101,14 @@ class WazuhUploader:
             print(f"[Attention] Impossible de créer le template '{template_name}'. Erreur: {e}")
 
     def setup_templates(self, priority: int = 400, **kwargs):
-
         for name, pattern in kwargs.items():
             self._create_index_template(f"forensic_{name}_template", pattern, priority)
 
     def bulk_upload(self, actions_generator, chunk_size: int):
+
+        # ---> INJECTION À LA VOLÉE DES MÉTADONNÉES <---
+        modified_actions_generator = inject_wapp_metadata(actions_generator, self.case_name, self.machine_name)
+
         if self.mode == 'parallel':
             bulk_func = parallel_bulk
             print(f"\nEnvoi en mode PARALLÈLE ({self.thread_count} threads) par lots de {chunk_size}...")
@@ -102,7 +122,7 @@ class WazuhUploader:
         try:
             for ok, result in bulk_func(
                     client=self.client,
-                    actions=actions_generator,
+                    actions=modified_actions_generator,  # Utilisation du générateur modifié
                     chunk_size=chunk_size,
                     request_timeout=self.es_timeout,
                     raise_on_error=False,

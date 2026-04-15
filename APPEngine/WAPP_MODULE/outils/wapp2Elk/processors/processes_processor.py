@@ -42,40 +42,65 @@ class ProcessesProcessor(BaseFileProcessor):
             return datetime.utcnow().isoformat() + "Z"
 
     def _process_win32_process_row(self, row: dict, dataset) -> dict:
-        return {"@timestamp": self._parse_wmi_timestamp(row.get("CreationDate")),
-                "host": {"name": row.get("PSComputerName")},
-                "event": {"kind": "event", "category": "process", "dataset": dataset,
-                          "original": ",".join(str(v) for v in row.values())},
-                "process": {"name": row.get("ProcessName"), "executable": row.get("ExecutablePath"),
-                            "pid": row.get("ProcessId"), "parent": {"pid": row.get("ParentProcessId")},
-                            "command_line": row.get("CommandLine")}}
+
+        base_doc = {"@timestamp": self._parse_wmi_timestamp(row.get("CreationDate")),
+                    "host": {"name": row.get("PSComputerName")},
+                    "event": {"kind": "event", "category": "process", "dataset": dataset,
+                              "original": ",".join(str(v) for v in row.values())},
+                    "process": {"name": row.get("ProcessName"), "executable": row.get("ExecutablePath"),
+                                "pid": row.get("ProcessId"), "parent": {"pid": row.get("ParentProcessId")},
+                                "command_line": row.get("CommandLine")}}
+
+        if hasattr(self, 'inject_wapp_info'):
+            doc = self.inject_wapp_info(base_doc)
+            return doc
+        else:
+            return base_doc
 
     def _process_get_process_row(self, row: dict, dataset) -> dict:
-        return {"@timestamp": self._parse_ps_timestamp(row.get("StartTime")), "host": {"name": row.get("MachineName")},
-                "event": {"kind": "event", "category": "process", "dataset": dataset,
-                          "original": ",".join(str(v) for v in row.values())},
-                "process": {"name": row.get("ProcessName"), "executable": row.get("Path"), "pid": row.get("Id"),
-                            "session_id": row.get("SI")}}
+        base_doc = {"@timestamp": self._parse_ps_timestamp(row.get("StartTime")),
+                    "host": {"name": row.get("MachineName")},
+                    "event": {"kind": "event", "category": "process", "dataset": dataset,
+                              "original": ",".join(str(v) for v in row.values())},
+                    "process": {"name": row.get("ProcessName"), "executable": row.get("Path"), "pid": row.get("Id"),
+                                "session_id": row.get("SI")}}
+        if hasattr(self, 'inject_wapp_info'):
+            doc = self.inject_wapp_info(base_doc)
+            return doc
+        else:
+            return base_doc
 
     def _process_sampleinfo_row(self, row: dict, dataset) -> dict:
-        return {"@timestamp": datetime.utcnow().isoformat() + "Z", "host": {"name": row.get("ComputerName")},
-                "event": {"kind": "event", "category": "process", "dataset": dataset,
-                          "original": ",".join(str(v) for v in row.values())},
-                "file": {"path": row.get("FullPath"), "name": row.get("FileName")},
-                "process": {"code_signature": {"status": row.get("Authenticode")}}, "status": row.get("Running")}
+        base_doc = {"@timestamp": datetime.utcnow().isoformat() + "Z", "host": {"name": row.get("ComputerName")},
+                    "event": {"kind": "event", "category": "process", "dataset": dataset,
+                              "original": ",".join(str(v) for v in row.values())},
+                    "file": {"path": row.get("FullPath"), "name": row.get("FileName")},
+                    "process": {"code_signature": {"status": row.get("Authenticode")}}, "status": row.get("Running")}
+
+        if hasattr(self, 'inject_wapp_info'):
+            doc = self.inject_wapp_info(base_doc)
+            return doc
+        else:
+            return base_doc
 
     def _process_timeline_row(self, row: dict, dataset) -> dict:
-        return {"@timestamp": self._parse_timeline_timestamp(row.get("Time")),
-                "host": {"name": row.get("ComputerName")},
-                "event": {"kind": "event", "category": "process", "dataset": dataset,
-                          "action": row.get("Type"), "original": ",".join(str(v) for v in row.values())},
-                "process": {"pid": row.get("ProcessID"), "parent": {"pid": row.get("ParentID")}},
-                "dll": {"path": row.get("FullPath")}}
+        base_doc = {"@timestamp": self._parse_timeline_timestamp(row.get("Time")),
+                    "host": {"name": row.get("ComputerName")},
+                    "event": {"kind": "event", "category": "process", "dataset": dataset,
+                              "action": row.get("Type"), "original": ",".join(str(v) for v in row.values())},
+                    "process": {"pid": row.get("ProcessID"), "parent": {"pid": row.get("ParentID")}},
+                    "dll": {"path": row.get("FullPath")}}
+
+        if hasattr(self, 'inject_wapp_info'):
+            doc = self.inject_wapp_info(base_doc)
+            return doc
+        else:
+            return base_doc
 
     def _process_autoruns_csv_row(self, row: dict, dataset) -> dict:
         # Renommer les clés pour éviter les espaces, au cas où.
         processed_row = {k.replace(' ', ''): v for k, v in row.items() if k}
-        return {
+        base_doc = {
             "@timestamp": self._parse_autoruns_timestamp(processed_row.get("Time")),
             "event": {"kind": "event", "category": "process", "dataset": dataset,
                       "original": ",".join(str(v) for v in row.values())},
@@ -93,8 +118,14 @@ class ProcessesProcessor(BaseFileProcessor):
             "status": processed_row.get("Enabled")
         }
 
+        if hasattr(self, 'inject_wapp_info'):
+            doc = self.inject_wapp_info(base_doc)
+            return doc
+        else:
+            return base_doc
+
     def _process_autoruns_xml_item(self, item: dict, dataset) -> dict:
-        return {
+        base_doc =  {
             "@timestamp": self._parse_autoruns_timestamp(item.get("time")),
             "event": {"kind": "event", "category": "process", "dataset": dataset, "original": json.dumps(item)},
             "rule": {"name": item.get("itemname"), "category": item.get("category")},
@@ -109,11 +140,15 @@ class ProcessesProcessor(BaseFileProcessor):
             "user": {"name": item.get("profile")},
             "status": item.get("enabled")
         }
+        if hasattr(self, 'inject_wapp_info'):
+            doc = self.inject_wapp_info(base_doc)
+            return doc
+        else:
+            return base_doc
 
     def _process_csv_file(self, filepath: str, dataset: str):
         print(f"  -> Lecture du fichier de Processus (CSV) : {filepath}")
         file_encoding = 'utf-8'
-        file_encoding2 =  'utf-8-sig'
         with open(filepath, 'rb') as raw_file:
             if b'\x00' in raw_file.read(100):
                 file_encoding = 'utf-16'
@@ -140,7 +175,7 @@ class ProcessesProcessor(BaseFileProcessor):
             print(f"  [Attention] En-tête CSV non reconnu pour {filepath}. Fichier ignoré.")
             return
 
-            # Remplacer l'ancien parser_map par celui-ci :
+        # Remplacer l'ancien parser_map par celui-ci :
         parser_map = {
             "processes_win32": (self._process_win32_process_row, "Win32_Process"),
             "process_processes1": (self._process_win32_process_row, "Win32_Process"),
@@ -258,6 +293,8 @@ class ProcessesProcessor(BaseFileProcessor):
                                     "size": size
                                 }
                             }
+                            if hasattr(self, 'inject_wapp_info'):
+                                doc = self.inject_wapp_info(doc)
                             yield doc, "processes"
                         except Exception as e:
                             print(f"\n[Attention] Impossible de traiter la ligne Listdlls #{line_num}. Erreur: {e}\n")
@@ -299,6 +336,8 @@ class ProcessesProcessor(BaseFileProcessor):
                         "state_flags": svc.get("state_flags")
                     }
                 }
+                if hasattr(self, 'inject_wapp_info'):
+                    doc = self.inject_wapp_info(doc)
                 # Nettoyage des valeurs vides
                 doc["psservice"] = {k: v for k, v in doc["psservice"].items() if v}
                 return doc
@@ -481,7 +520,8 @@ class ProcessesProcessor(BaseFileProcessor):
             },
             "enumlocs": doc_data
         }
-
+        if hasattr(self, 'inject_wapp_info'):
+            doc = self.inject_wapp_info(doc)
         if host_name:
             doc["host"] = {"name": host_name}
 
@@ -516,7 +556,8 @@ class ProcessesProcessor(BaseFileProcessor):
                         "command_line": clean_line
                     }
                 }
-
+                if hasattr(self, 'inject_wapp_info'):
+                    doc = self.inject_wapp_info(doc)
                 try:
                     yield doc, "processes"
                 except Exception as e:
@@ -562,4 +603,3 @@ class ProcessesProcessor(BaseFileProcessor):
 
         else:
             print(f"  [Attention] Dataset de processus non supporté '{dataset}'. Fichier ignoré.")
-

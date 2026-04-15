@@ -30,7 +30,7 @@ class SystemInfoProcessor(BaseFileProcessor):
         os_name = raw_log.get("Nom du système d'exploitation", "Unknown")
         os_version = raw_log.get("Version du système", "Unknown")
 
-        return {
+        base_doc = {
             "@timestamp": timestamp,
             "event": {
                 "kind": "state",
@@ -63,6 +63,10 @@ class SystemInfoProcessor(BaseFileProcessor):
                 "hotfixes": raw_log.get("Correctif(s)")
             }
         }
+        if hasattr(self, 'inject_wapp_info'):
+            doc = self.inject_wapp_info(base_doc)
+            return doc
+        return base_doc
 
     def process_file(self, filepath: str, **kwargs):
         print(f"  -> Lecture du fichier SystemInfo : {filepath}")

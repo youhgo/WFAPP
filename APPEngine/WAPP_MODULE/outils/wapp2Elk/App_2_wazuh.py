@@ -76,13 +76,20 @@ class ForensicPipeline:
             verify_ssl=verify_ssl,
             es_timeout=es_timeout,
             thread_count=thread_count,
-            mode=mode
+            mode=mode,
+            case_name = self.case_name,
+            machine_name = self.machine_name
         )
 
         self.processors = {
-            "evtx": EvtxJsonProcessor(), "disk": DiskProcessor(), "lnk": LnkJsonProcessor(),
-            "registry": RegistryJsonProcessor(), "network": NetworkProcessor(), "processes": ProcessesProcessor(),
-            "prefetch": PrefetchJsonProcessor(), "system_info": SystemInfoProcessor()
+            "evtx": EvtxJsonProcessor(case_name=self.case_name, machine_name=self.machine_name),
+            "disk": DiskProcessor(case_name=self.case_name, machine_name=self.machine_name),
+            "lnk": LnkJsonProcessor(case_name=self.case_name, machine_name=self.machine_name),
+            "registry": RegistryJsonProcessor(case_name=self.case_name, machine_name=self.machine_name),
+            "network": NetworkProcessor(case_name=self.case_name, machine_name=self.machine_name),
+            "processes": ProcessesProcessor(case_name=self.case_name, machine_name=self.machine_name),
+            "prefetch": PrefetchJsonProcessor(case_name=self.case_name, machine_name=self.machine_name),
+            "system_info": SystemInfoProcessor(case_name=self.case_name, machine_name=self.machine_name)
         }
 
     def _sanitize_for_index(self, name: str) -> str:

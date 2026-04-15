@@ -43,7 +43,9 @@ class PlasoPipeline:
         self.index_prefix = f"plaso_{self.case_name}_{self.machine_name}"
 
         # Initialize WazuhUploader instead of ElasticUploader
-        self.uploader = WazuhUploader(es_hosts, es_user, es_pass, verify_ssl, es_timeout, thread_count, mode)
+        self.uploader = WazuhUploader(es_hosts=es_hosts, es_user=es_user, es_pass=es_pass, verify_ssl=verify_ssl,
+                                      es_timeout=es_timeout, thread_count=thread_count, mode=mode,
+                                      case_name=self.case_name, machine_name=self.machine_name)
 
         self.parser_regex_map = {
             "amcache": re.compile(r'winreg/amcache'),

@@ -75,6 +75,9 @@ class NetworkProcessor(BaseFileProcessor):
             if line.strip() and (line.strip().lower().startswith('tcp') or line.strip().lower().startswith('udp')):
                 try:
                     doc = self._process_netstat_line(line, machine_name, dataset)
+                    if hasattr(self, 'inject_wapp_info'):
+                        doc = self.inject_wapp_info(doc)
+
                     if doc: yield doc, "network"
                 except Exception as e:
                     print(f"\n[Attention] Impossible de traiter la ligne Netstat #{line_num}. Erreur: {e}\n")
@@ -84,6 +87,8 @@ class NetworkProcessor(BaseFileProcessor):
             if line.strip() and (line.strip().lower().startswith('tcp') or line.strip().lower().startswith('udp')):
                 try:
                     doc = self._process_tcpvcon_line(line, machine_name, dataset)
+                    if hasattr(self, 'inject_wapp_info'):
+                        doc = self.inject_wapp_info(doc)
                     if doc: yield doc, "network"
                 except Exception as e:
                     print(f"\n[Attention] Impossible de traiter la ligne Tcpvcon #{line_num}. Erreur: {e}\n")
@@ -99,6 +104,8 @@ class NetworkProcessor(BaseFileProcessor):
             try:
                 if len(re.split(r'\s+', line)) >= 3:
                     doc = self._process_arp_line(line, machine_name, current_interface, dataset)
+                    if hasattr(self, 'inject_wapp_info'):
+                        doc = self.inject_wapp_info(doc)
                     if doc: yield doc, "network"
             except Exception as e:
                 print(f"\n[Attention] Impossible de traiter la ligne ARP #{line_num}. Erreur: {e}\n")
@@ -113,6 +120,8 @@ class NetworkProcessor(BaseFileProcessor):
                 continue
             try:
                 doc = self._process_dns_line(line, current_zone, machine_name, dataset)
+                if hasattr(self, 'inject_wapp_info'):
+                    doc = self.inject_wapp_info(doc)
                 if doc: yield doc, "network"
             except Exception as e:
                 print(f"\n[Attention] Impossible de traiter la ligne DNS #{line_num}. Erreur: {e}\n")
@@ -163,11 +172,12 @@ class NetworkProcessor(BaseFileProcessor):
             if line.startswith("GUID:"):
                 if current_job:
                     doc = yield_job(current_job)
+                    if hasattr(self, 'inject_wapp_info'):
+                        doc = self.inject_wapp_info(doc)
                     if doc: yield doc, "network"
 
                 current_job = {}
                 # Extraction du GUID et du DISPLAY via regex simple
-                import re
                 m = re.search(r"GUID:\s*(\{.*?\})\s*DISPLAY:\s*'(.*?)'", line)
                 if m:
                     current_job["guid"] = m.group(1)
@@ -233,7 +243,12 @@ class NetworkProcessor(BaseFileProcessor):
 
     def process_file(self, filepath: str, **kwargs):
         dataset = kwargs.get("dataset")
-        machine_name = kwargs.get("machine_name")
+
+        # Lecture sécurisée : on essaie de lire self.machine_name, sinon on lit kwargs, sinon on met "unknown"
+        machine_name_val = getattr(self, 'machine_name', None)
+        if not machine_name_val or machine_name_val == "unknown":
+            machine_name_val = kwargs.get("machine_name", "unknown")
+
         print(f"  -> Traitement du fichier Réseau : {filepath} (dataset: {dataset})")
 
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
@@ -242,20 +257,17 @@ class NetworkProcessor(BaseFileProcessor):
         ds_lower = dataset.lower()
 
         if ds_lower in ["netstat", "network_netstat"]:
-            yield from self._process_netstat_file(lines, machine_name, dataset)
+            yield from self._process_netstat_file(lines, machine_name_val, dataset)
         elif ds_lower in ["tcpvcon", "network_tcpvcon"]:
-            yield from self._process_tcpvcon_file(lines, machine_name, dataset)
+            yield from self._process_tcpvcon_file(lines, machine_name_val, dataset)
         elif ds_lower in ["arp", "network_arp_cache"]:
-            yield from self._process_arp_file(lines, machine_name, dataset)
+            yield from self._process_arp_file(lines, machine_name_val, dataset)
         elif ds_lower in ["dns", "network_dns_cache"]:
-            yield from self._process_dns_file(lines, machine_name, dataset)
+            yield from self._process_dns_file(lines, machine_name_val, dataset)
         elif ds_lower in ["routes", "network_routes"]:
-            yield from self._process_routes_file(lines, machine_name, dataset)
-
-        # NOUVEAU : Ajout de BITS
+            yield from self._process_routes_file(lines, machine_name_val, dataset)
         elif ds_lower in ["bits_jobs", "network_bits_jobs"]:
-            yield from self._process_bits_jobs_file(lines, machine_name, dataset)
-
+            yield from self._process_bits_jobs_file(lines, machine_name_val, dataset)
         # Datasets restants à développer
         elif ds_lower in ["network_services", "network_lmhosts", "network_hosts", "network_networks",
                           "network_protocol"]:

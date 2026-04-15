@@ -59,6 +59,8 @@ class PrefetchJsonProcessor(BaseFileProcessor):
                         "run_key": run_key
                     }
                 }
+                if hasattr(self, 'inject_wapp_info'):
+                    doc = self.inject_wapp_info(doc)
                 yield doc
 
     def process_file(self, filepath: str, **kwargs):
@@ -73,6 +75,7 @@ class PrefetchJsonProcessor(BaseFileProcessor):
                     if "Executable Name" in record and "Run Times" in record:
                         try:
                             for doc in self._process_prefetch_record(record, dataset):
+
                                 yield doc, "processes"
                         except Exception as e:
                             print(

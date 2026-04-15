@@ -83,11 +83,21 @@ class EvtxHandler:
                 final_event_id = int(event_id_value)
             except (ValueError, TypeError):
                 pass
-        return {"@timestamp": self._format_timestamp(time_created), "host": {"name": system_data.get("Computer")},
-                "winlog": {"provider_name": system_data.get("Provider", {}).get("Name"), "event_id": final_event_id,
-                           "channel": system_data.get("Channel")},
-                "event": {"kind": "event", "dataset": "evtx", "category": "host", "original": json.dumps(raw_log)}}
-
+        base_doc = {"@timestamp": self._format_timestamp(time_created),
+                    "host": {"name": system_data.get("Computer")},
+                    "winlog": {"provider_name": system_data.get("Provider", {}).get("Name"),
+                               "event_id": final_event_id,
+                               "channel": system_data.get("Channel")},
+                    "event": {"kind": "event",
+                              "dataset": "evtx",
+                              "category": "host",
+                              "original": json.dumps(raw_log)}
+                    }
+        if hasattr(self, 'inject_wapp_info'):
+            doc = self.inject_wapp_info(base_doc)
+            return doc
+        else:
+            return base_doc
     def handle_generic_evtx(self, raw_log: dict) -> dict:
         """Handler générique pour les EventID non spécifiquement traités."""
         doc = self._create_base_document(raw_log)
@@ -318,7 +328,8 @@ class EvtxHandler:
 class EvtxJsonProcessor(BaseFileProcessor):
     """Processeur pour les fichiers EVTX (format JSON ou JSON Lines)."""
 
-    def __init__(self):
+    def __init__(self, case_name="unknown", machine_name="unknown"):
+        super().__init__(case_name=case_name, machine_name=machine_name)
         self.handler = EvtxHandler()
         self.LOG_TYPE_PROCESSORS = {
             'security': self._process_security_log,

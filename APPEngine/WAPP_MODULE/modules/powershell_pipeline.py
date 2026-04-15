@@ -32,7 +32,7 @@ class PowerShellPipeline(BaseArtefactPipeline):
         self.logger.info(f"[PIPELINE][POWERSHELL] Traitement de {file_path.name}", header="START", indentation=1)
         try:
             if self._matches_category(file_path.name, "consol_history"):
-                self.copy_raw_artefact(file_path, self.result_parsed_dir)
+                self.copy_raw_artefact(file_path, self.context.result_parsed_dir)
                 self.context.wazuh_importer_file_config["files"].append({"path": str(file_path),
                                                                          "type": f"process_consolehost_history"})
 

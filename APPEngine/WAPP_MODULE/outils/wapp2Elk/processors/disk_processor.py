@@ -186,13 +186,21 @@ class DiskProcessor(BaseFileProcessor):
         ds_lower = dataset.lower()
         print(f"  -> Traitement du fichier Disque : {filepath} (dataset: {dataset})")
 
+        generator = []
         if ds_lower == "mft_json":
-            yield from self._process_mft_file_json(filepath, dataset)
+            generator = self._process_mft_file_json(filepath, dataset)
         elif ds_lower == "usnjrnl":
-            yield from self._process_usn_file(filepath, dataset)
+            generator = self._process_usn_file(filepath, dataset)
         elif ds_lower == "mft_timeline":
-            yield from self._process_timeline_file(filepath, dataset)
+            generator = self._process_timeline_file(filepath, dataset)
         elif ds_lower == "disk" and "vss_list" in filepath.lower():
-            yield from self._process_vss_file(filepath, dataset)
+            generator = self._process_vss_file(filepath, dataset)
         else:
             print(f"  [Attention] Dataset disque non supporté '{dataset}' pour {filepath}. Ignoré.")
+            return
+
+
+        for doc, doc_type in generator:
+            if hasattr(self, 'inject_wapp_info'):
+                doc = self.inject_wapp_info(doc)
+            yield doc, doc_type
