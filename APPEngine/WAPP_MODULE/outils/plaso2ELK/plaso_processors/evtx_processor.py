@@ -51,6 +51,10 @@ class EvtxHandler:
                                          40: self.handle_rdp_local_session}
         self.BITS_EVENT_HANDLERS = {3: self.handle_bits_client, 4: self.handle_bits_client, 59: self.handle_bits_client,
                                     60: self.handle_bits_client, 61: self.handle_bits_client}
+        self.APP_EXP_EVENT_HANDLERS = {
+            504: self.handle_app_experience,
+            505: self.handle_app_experience
+        }
 
     def _get_system_data(self, raw_log: dict) -> dict:
         return raw_log.get("Event", {}).get("System", {})
@@ -291,19 +295,24 @@ class EvtxHandler:
         data = self._get_event_data(raw_log)
 
         ps_details = {}
-        # data['Data'] est maintenant disponible grâce au correctif dans _get_event_data
         data_block = data.get("Data")
 
-        if data_block:
-            # Dans l'Event 400, le dernier élément contient souvent les détails clé=valeur
-            # data_block peut être une liste de strings (ex: ['Available', 'None', '...details...']) ou une string unique
-            text_block = data_block[-1] if isinstance(data_block, list) else data_block
-
-            if isinstance(text_block, str):
-                for line in text_block.splitlines():
-                    if '=' in line:
-                        # Split sur le premier '=' uniquement
-                        key, val = line.split('=', 1)
+        # Recherche robuste pour les Event 400 et 600
+        if isinstance(data_block, list):
+            for block in data_block:
+                if isinstance(block, str) and "=" in block and "\n" in block:
+                    for line in block.splitlines():
+                        line = line.strip()
+                        if '=' in line:
+                            key, val = line.split('=', 1)
+                            if val.strip():
+                                ps_details[key.strip()] = val.strip()
+        elif isinstance(data_block, str):  # Cas où il n'y a qu'une seule balise Data
+            for line in data_block.splitlines():
+                line = line.strip()
+                if '=' in line:
+                    key, val = line.split('=', 1)
+                    if val.strip():
                         ps_details[key.strip()] = val.strip()
 
         doc.update({
@@ -344,14 +353,22 @@ class EvtxHandler:
         ps_details = {}
         data_block = data.get("Data")
 
-        if data_block:
-            # Comme pour 400, le dernier élément contient les détails
-            text_block = data_block[-1] if isinstance(data_block, list) else data_block
-
-            if isinstance(text_block, str):
-                for line in text_block.splitlines():
-                    if '=' in line:
-                        key, val = line.split('=', 1)
+        # Recherche robuste pour les Event 400 et 600
+        if isinstance(data_block, list):
+            for block in data_block:
+                if isinstance(block, str) and "=" in block and "\n" in block:
+                    for line in block.splitlines():
+                        line = line.strip()
+                        if '=' in line:
+                            key, val = line.split('=', 1)
+                            if val.strip():
+                                ps_details[key.strip()] = val.strip()
+        elif isinstance(data_block, str):  # Cas où il n'y a qu'une seule balise Data
+            for line in data_block.splitlines():
+                line = line.strip()
+                if '=' in line:
+                    key, val = line.split('=', 1)
+                    if val.strip():
                         ps_details[key.strip()] = val.strip()
 
         doc.update({
@@ -535,6 +552,50 @@ class EvtxHandler:
         })
         return doc
 
+    def handle_app_experience(self, raw_log: dict) -> dict:
+        doc = self._create_base_document(raw_log)
+        user_data = self._get_user_data(raw_log)
+        sys_data = self._get_system_data(raw_log)
+
+        # Les évènements 504/505 utilisent souvent CompatibilityFixEvent
+        event_details = user_data.get("CompatibilityFixEvent") or user_data.get("CompatibilityAppraiserEvent") or {}
+
+        exe_path = event_details.get("ExePath", "")
+
+        security_data = sys_data.get("Security", {})
+        user_sid = security_data.get("@UserID") or security_data.get("UserID")
+
+        process_info = {
+            "executable": exe_path,
+            "name": os.path.basename(exe_path.replace("\\", "/")) if exe_path else None,
+        }
+
+        if "ProcessId" in event_details:
+            try:
+                process_info["pid"] = int(event_details["ProcessId"])
+            except (ValueError, TypeError):
+                pass
+
+        doc.update({
+            "event": {**doc["event"], "action": "application_execution", "category": "process"},
+            "process": process_info,
+            "user": {"id": user_sid},
+            "windows_telemetry": {
+                "fix_name": event_details.get("FixName"),
+                "fix_id": event_details.get("FixID"),
+                "flags": event_details.get("Flags")
+            }
+        })
+
+        # Nettoyage des dictionnaires pour retirer les clés vides
+        doc["process"] = {k: v for k, v in doc["process"].items() if v}
+        doc["windows_telemetry"] = {k: v for k, v in doc["windows_telemetry"].items() if v}
+        if not doc["windows_telemetry"]:
+            del doc["windows_telemetry"]
+        if not user_sid:
+            del doc["user"]
+
+        return doc
 
 # --- FIN DE LA CLASSE EVTXHANDLER ---
 
@@ -558,6 +619,7 @@ class PlasoEvtxProcessor(BaseEventProcessor):
             r'Windows PowerShell\.evtx': "windows_powershell",
             r'Microsoft-Windows-WMI-Activity.*Operational\.evtx': "wmi",
             r'Microsoft-Windows-Windows Defender.*Operational\.evtx': "windefender",
+            r'Microsoft-Windows-Application-Experience.*\.evtx\.json?': "app_experience"
         }
 
         # Copié de plaso_2_siem.py
@@ -572,6 +634,7 @@ class PlasoEvtxProcessor(BaseEventProcessor):
             "rdp_remote": self.evtx_handler.RDP_REMOTE_EVENT_HANDLERS,
             "rdp_local": self.evtx_handler.RDP_LOCAL_EVENT_HANDLERS,
             "bits": self.evtx_handler.BITS_EVENT_HANDLERS,
+            "app_experience": self.evtx_handler.APP_EXP_EVENT_HANDLERS
         }
 
     def get_specific_evtx_type(self, original_filename):

@@ -50,6 +50,11 @@ class EvtxHandler:
         self.BITS_EVENT_HANDLERS = {3: self.handle_bits_client, 4: self.handle_bits_client, 59: self.handle_bits_client,
                                     60: self.handle_bits_client, 61: self.handle_bits_client}
 
+        self.APP_EXP_EVENT_HANDLERS = {
+            504: self.handle_app_experience,
+            505: self.handle_app_experience
+        }
+
     def _get_system_data(self, raw_log: dict) -> dict:
         return raw_log.get("Event", {}).get("System", {})
 
@@ -98,6 +103,7 @@ class EvtxHandler:
             return doc
         else:
             return base_doc
+
     def handle_generic_evtx(self, raw_log: dict) -> dict:
         """Handler générique pour les EventID non spécifiquement traités."""
         doc = self._create_base_document(raw_log)
@@ -198,19 +204,62 @@ class EvtxHandler:
 
         ps_details = {}
         data_block = data.get("Data")
-        if isinstance(data_block, list) and len(data_block) > 0:
-            for line in data_block[-1].splitlines():
-                if '=' in line:
-                    key, val = line.split('=', 1)
-                    ps_details[key.strip()] = val.strip()
+
+        # Recherche robuste des paires clé=valeur dans tous les éléments de Data
+        if isinstance(data_block, list):
+            for block in data_block:
+                # On cherche le bloc qui contient les paramètres séparés par des retours à la ligne
+                if isinstance(block, str) and "=" in block and "\n" in block:
+                    for line in block.splitlines():
+                        line = line.strip()  # Enlève les \t et espaces
+                        if '=' in line:
+                            key, val = line.split('=', 1)
+                            if val.strip():  # On ne stocke que si la valeur n'est pas vide
+                                ps_details[key.strip()] = val.strip()
+
+        # HostApplication contient le binaire appelant (powershell.exe -Bypass ...),
+        # CommandLine ou CommandName peuvent contenir le script directement
+        cmd_line = ps_details.get("HostApplication") or ps_details.get("CommandLine")
+
+        # Structuration des détails PowerShell
+        ps_enrichment = {
+            "engine_state": ps_details.get("NewEngineState"),
+            "previous_engine_state": ps_details.get("PreviousEngineState"),
+            "host": {
+                "name": ps_details.get("HostName"),
+                "version": ps_details.get("HostVersion"),
+                "id": ps_details.get("HostId"),
+                "application": ps_details.get("HostApplication")
+            },
+            "runspace_id": ps_details.get("RunspaceId"),
+            "pipeline_id": ps_details.get("PipelineId"),
+            "sequence_number": ps_details.get("SequenceNumber"),
+            "command": {
+                "name": ps_details.get("CommandName"),
+                "type": ps_details.get("CommandType"),
+                "path": ps_details.get("CommandPath"),
+                "line": ps_details.get("CommandLine")
+            },
+            "script": {
+                "name": ps_details.get("ScriptName")
+            }
+        }
+
+        # Nettoyage des dictionnaires pour retirer les sous-groupes vides
+        ps_enrichment["host"] = {k: v for k, v in ps_enrichment["host"].items() if v}
+        ps_enrichment["command"] = {k: v for k, v in ps_enrichment["command"].items() if v}
+        ps_enrichment["script"] = {k: v for k, v in ps_enrichment["script"].items() if v}
+        ps_enrichment = {k: v for k, v in ps_enrichment.items() if v}
 
         doc.update({
             "event": {**doc["event"], "action": "powershell_engine_state_change"},
-            "powershell": {"engine_state": ps_details.get("NewEngineState", data.get("NewEngineState")),
-                           "host": {"name": ps_details.get("HostName"), "version": ps_details.get("HostVersion"),
-                                    "id": ps_details.get("HostId")}, "runspace_id": ps_details.get("RunspaceId")},
-            "process": {"command_line": ps_details.get("HostApplication")}
+            "powershell": ps_enrichment,
         })
+
+        # On garde process.command_line pour un mapping ECS standardisé sur Wazuh
+        if cmd_line:
+            doc["process"] = {"command_line": cmd_line}
+
         return doc
 
     def handle_wmi_activity(self, raw_log: dict) -> dict:
@@ -324,6 +373,50 @@ class EvtxHandler:
         })
         return doc
 
+    def handle_app_experience(self, raw_log: dict) -> dict:
+        doc = self._create_base_document(raw_log)
+        user_data = self._get_user_data(raw_log)
+        sys_data = self._get_system_data(raw_log)
+
+        # Les évènements 504/505 utilisent souvent CompatibilityFixEvent
+        event_details = user_data.get("CompatibilityFixEvent") or user_data.get("CompatibilityAppraiserEvent") or {}
+
+        exe_path = event_details.get("ExePath", "")
+
+        # Le SID utilisateur est crucial en forensic, on le récupère dans System -> Security
+        user_sid = sys_data.get("Security", {}).get("UserID")
+
+        process_info = {
+            "executable": exe_path,
+            "name": os.path.basename(exe_path.replace("\\", "/")) if exe_path else None,
+        }
+
+        if "ProcessId" in event_details:
+            try:
+                process_info["pid"] = int(event_details["ProcessId"])
+            except (ValueError, TypeError):
+                pass
+
+        doc.update({
+            "event": {**doc["event"], "action": "application_execution", "category": "process"},
+            "process": process_info,
+            "user": {"id": user_sid},
+            "windows_telemetry": {
+                "fix_name": event_details.get("FixName"),
+                "fix_id": event_details.get("FixID"),
+                "flags": event_details.get("Flags")
+            }
+        })
+
+        # Nettoyage des dictionnaires pour retirer les clés vides
+        doc["process"] = {k: v for k, v in doc["process"].items() if v}
+        doc["windows_telemetry"] = {k: v for k, v in doc["windows_telemetry"].items() if v}
+        if not doc["windows_telemetry"]:
+            del doc["windows_telemetry"]
+        if not user_sid:
+            del doc["user"]
+
+        return doc
 
 class EvtxJsonProcessor(BaseFileProcessor):
     """Processeur pour les fichiers EVTX (format JSON ou JSON Lines)."""
@@ -342,6 +435,7 @@ class EvtxJsonProcessor(BaseFileProcessor):
             'rdp_remote': self._process_rdp_remote_log,
             'rdp_local': self._process_rdp_local_log,
             'bits': self._process_bits_log,
+            'app_experience': self._process_app_exp_log
         }
         self.LOG_FILE_MAP = {
             r'(\d+_)?Security\.evtx\.json?': "security",
@@ -356,6 +450,7 @@ class EvtxJsonProcessor(BaseFileProcessor):
             r'.*Windows PowerShell\.evtx\.json?': "windows_powershell",
             r'.*Microsoft-Windows-WMI-Activity.*Operational\.evtx\.json': "wmi",
             r'.*Microsoft-Windows-Windows Defender.*Operational\.evtx\.json?': "windefender",
+            r'.*Microsoft-Windows-Application-Experience.*\.evtx\.json?': "app_experience"
         }
 
     def _get_event_id(self, raw_log: dict) -> int:
@@ -412,6 +507,11 @@ class EvtxJsonProcessor(BaseFileProcessor):
     def _process_bits_log(self, raw_log: dict) -> dict:
         event_id = self._get_event_id(raw_log)
         handler_method = self.handler.BITS_EVENT_HANDLERS.get(event_id, self.handler.handle_generic_evtx)
+        return handler_method(raw_log)
+
+    def _process_app_exp_log(self, raw_log: dict) -> dict:
+        event_id = self._get_event_id(raw_log)
+        handler_method = self.handler.APP_EXP_EVENT_HANDLERS.get(event_id, self.handler.handle_generic_evtx)
         return handler_method(raw_log)
 
     def _process_generic_evtx(self, raw_log: dict) -> dict:
