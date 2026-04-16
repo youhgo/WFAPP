@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import re
+
+from peepdf.JSAnalysis import isJavascript
 from .base_processor import BaseEventProcessor
 
 
@@ -20,7 +22,8 @@ class PlasoRegistryProcessor(BaseEventProcessor):
             r'SECURITY': "security",
             r'SAM': "sam",
             r'NTUSER\.DAT': "ntuser",
-            r'UsrClass\.dat': "usrclass"
+            r'UsrClass\.dat': "usrclass",
+            r"MuiCache": "muicache"
         }
         # Regex pour parser la chaîne de configuration TimeZone (Clé: Valeur)
         self.tz_config_regex = re.compile(r'([a-zA-Z0-9]+):\s*([^:]+)(?=\s+[a-zA-Z0-9]+:|$)')
@@ -49,6 +52,9 @@ class PlasoRegistryProcessor(BaseEventProcessor):
             filename = event.get("filename", "")
             specific_type = self.get_specific_hive_type(filename)
 
+            if not specific_type and isInstance(event.get("key_path")):
+                if "muicache" in event.get("key_path").lower():
+                    specific_type = "muicache"
             base_doc = {
                 "estimestamp": es_timestamp,
                 "key_path": event.get("key_path"),

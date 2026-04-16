@@ -28,6 +28,7 @@ def parse_archive():
     try:
         rand = randint(1000, 5000)
         file = request.files['file']
+        sys.stderr.write(f"\nDEBUG : trying to get file {file}\n")
         file_name = file.filename + "__{}".format(rand)
         file_path = os.path.join(DEPOT_FOLDER_PATH, file_name)
         file.save(file_path)
