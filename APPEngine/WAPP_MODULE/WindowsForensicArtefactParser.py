@@ -36,7 +36,7 @@ class WindowsForensicArtefactParser:
 
     def __init__(self, path_to_archive, output_directory, case_name, is_orc=True, machine_name="", separator='|',
                  main_id="", artefact_config=None, main_config=None) -> None:
-        self.ascii_art_wapp = r"""
+        self.ascii_art_dopp = r"""
         ███████╗    ██████═╗ ██████╗ ██████╗ 
         ██╔════██╗██╔═════██╗██╔══██╗██╔══██
         ██║    ██║██║     ██║██║███ ║██║███
@@ -44,8 +44,19 @@ class WindowsForensicArtefactParser:
         ███████╔╝╚║═╝██████╔████╗══╗████║
         ╚══════╝  ╚═════╝  ╚════╝  ╚════╝ 
 
+        DFIR ORC Parser Project
+        """
+        self.ascii_art_wapp = r"""
+        ██╗    ██╗  █████╗  ██████╗ ██████╗ 
+        ██║    ██║ ██╔══██╗ ██╔══██╗██╔══██╗
+        ██║ █╗ ██║ ███████║ ██████╔╝██████╔╝
+        ██║███╗██║ ██╔══██║ ██╔═══╝ ██╔═══╝ 
+        ╚███╔███╔╝ ██║  ██║ ██║     ██║     
+         ╚══╝╚══╝  ╚═╝  ╚═╝ ╚═╝     ╚═╝     
+
         Windows Forensic Artefact Parser Project
         """
+
         print(self.ascii_art_wapp)
         self.is_orc = is_orc
 
