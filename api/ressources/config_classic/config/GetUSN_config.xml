@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<getthis nolimits="">
+ <output compression="fast" />
+  <location>%SystemDrive%</location>
+  <samples>
+    <sample name="USNJ">
+      <ntfs_find path="\$Extend\$UsnJrnl:$J" />
+      <ntfs_find path="\$Extend\$UsnJrnl:$Max" />
+    </sample>
+  </samples>
+</getthis>

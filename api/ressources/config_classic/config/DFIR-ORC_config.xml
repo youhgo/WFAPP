@@ -75,7 +75,14 @@
             <output  name="MFT.7z" source="File" argument="/out={FileName}" />
             <output  name="MFT.log" source="StdOutErr" />
         </command>
-        
+
+        <command keyword="GetUSNJ" optional="no">
+            <execute name="Orc.exe" run="self:#GetThis" />
+            <argument>/config=res:#GetUSN_config.xml</argument>
+            <output  name="USNJ.7z" source="File" argument="/out={FileName}" />
+            <output  name="USNJ.log" source="StdOutErr" />
+        </command>
+
         <command keyword="USNInfo_systemdrive" queue="flush" optional="no">
             <execute name="Orc.exe" run="self:#USNInfo" />
             <argument>%SystemDrive%\</argument>
