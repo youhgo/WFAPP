@@ -65,7 +65,7 @@
 	<file name="FastFind_config.xml" path=".\%ORC_CONFIG_FOLDER%\FastFind_config.xml" />
 
 	<file name="GetMFT_config.xml" path=".\%ORC_CONFIG_FOLDER%\GetMFT_config.xml" />
-
+	<file name="GetUSN_config.xml" path=".\%ORC_CONFIG_FOLDER%\GetUSN_config.xml" />
 	<file name="yara_rules" path=".\%ORC_CONFIG_FOLDER%\ruleset.yara" />
 
 	<pair name="AUTORUNS"  value="7z:#Tools|autorunsc.exe" />
