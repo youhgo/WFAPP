@@ -7,7 +7,7 @@ import re
 import xmltodict
 from datetime import datetime
 from .base_processor import BaseEventProcessor
-
+import sys
 
 # --- DÉBUT DE LA CLASSE EVTXHANDLER (IMPORTÉE DE evtx_processor.py) ---
 # (Intégrée ici pour garder le fichier autonome)
@@ -29,7 +29,7 @@ class EvtxHandler:
         }
         self.POWERSHELL_EVENT_HANDLERS = {
             400: self.handle_ps_engine_state,
-            600: self.handle_ps_provider_lifecycle,  # NOUVEAU: Gestion de l'event 600
+            600: self.handle_ps_provider_lifecycle,
             4103: self.handle_ps_module_logging, 4104: self.handle_ps_script_block,
         }
         self.SYSTEM_EVENT_HANDLERS = {7045: self.handle_system_service_install}

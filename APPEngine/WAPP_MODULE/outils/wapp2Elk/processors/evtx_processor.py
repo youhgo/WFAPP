@@ -6,7 +6,7 @@ from datetime import datetime
 import os
 import re
 from .base_processor import BaseFileProcessor
-
+import sys
 
 class EvtxHandler:
     """
@@ -259,7 +259,6 @@ class EvtxHandler:
         # On garde process.command_line pour un mapping ECS standardisé sur Wazuh
         if cmd_line:
             doc["process"] = {"command_line": cmd_line}
-
         return doc
 
     def handle_wmi_activity(self, raw_log: dict) -> dict:

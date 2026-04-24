@@ -7,7 +7,7 @@ import re
 import traceback
 from datetime import datetime
 from .base_processor import BaseFileProcessor
-
+import sys
 
 class RegistryJsonProcessor(BaseFileProcessor):
     """Processeur pour les fichiers de logs Registre, Amcache et AppCompatCache générés au format JSON."""
@@ -98,7 +98,6 @@ class RegistryJsonProcessor(BaseFileProcessor):
                         })
                 except Exception:
                     continue
-
         return parsed_entries
 
     def _process_generic_reg_file(self, filepath: str, dataset):
