@@ -426,15 +426,15 @@
 
         // --- Module Selection Logic ---
         const moduleConfig = {
-            "restore": 0, "rename_from_orc": 0, "disk": 1, "elk": 0, "wazuh": 0, "evtx": 1, "hive": 1, "mft": 1,
-            "network": 1, "lnk": 1, "plaso": 1, "mpp": 1, "plaso2elk": 0, "plaso2wazuh": 0, "prefetch": 1,
+            "restore": 0, "rename_from_orc": 0, "disk": 1, "wazuh": 1, "evtx": 1, "hive": 1, "mft": 1,
+            "network": 1, "lnk": 1, "plaso": 1, "mpp": 1,  "plaso2wazuh": 1, "prefetch": 1,
             "process": 1, "system_info": 1, "webHistory": 1
         };
 
         // Groupes de modules
         const preProcModules = ["restore", "rename_from_orc"];
-        const exportModules = ["elk", "wazuh"];
-        const plasoModules = ["plaso", "mpp", "plaso2elk", "plaso2wazuh"];
+        const exportModules = ["wazuh"];
+        const plasoModules = ["plaso", "mpp",  "plaso2wazuh"];
 
         const preProcChecklist = document.getElementById('preProcChecklist');
         const analyzeChecklist = document.getElementById('analyzeChecklist');
@@ -493,7 +493,7 @@
         // --- NEW LOGIC: Plaso Dependencies ---
         const enforcePlasoDependencies = () => {
             const plasoCb = document.getElementById('module-plaso');
-            const plaso2elkCb = document.getElementById('module-plaso2elk');
+
             const plaso2wazuhCb = document.getElementById('module-plaso2wazuh');
             const mppCb = document.getElementById('module-mpp');
             const archiveType = document.getElementById('archiveType').value;
@@ -502,8 +502,8 @@
                 const isPlasoChecked = plasoCb.checked;
                 const isUAC = archiveType === 'UAC';
 
-                // On applique la règle à plaso2elk, plaso2wazuh ET mpp
-                [plaso2elkCb, plaso2wazuhCb, mppCb].forEach(cb => {
+                // On applique la règle à plaso2wazuh ET mpp
+                [plaso2wazuhCb, mppCb].forEach(cb => {
                     if (cb) {
                         const shouldDisable = isUAC || !isPlasoChecked;
                         setVisualState(cb, shouldDisable, true);

@@ -17,17 +17,12 @@
 * **Documentation:** [Installation Guide](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_install.md) | [Usage Guide](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/how_to_use.md) | [Results Architecture](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/Explaining_the_results.md)
 * **DFIR-ORC Configuration:** [Tutorial](https://github.com/youhgo/WFAPP/blob/master/ressources/documentation/configure_orc.md)
 
-### Ongoing
-* **Testing Splunk ingestion**
-
 ---
 
 **Disclamer**: I'm not a professional dev and this tool is not secure by design.
 Therefore, it is **ABSOLUTLY NOT** recommended to expose the API or Web UI to the internet.
 
 ### Working on :
-- Configure credential + address to send data directly from app worker to ELK + Splunk
-- improving ORC config
 - Translating + comment everything
 
 ## 🧐 What is A.P.P?
@@ -54,13 +49,19 @@ APP automates the forensic parsing workflow in a seamless pipeline:
 2. **Parsing:** Parses all the collected evidence using a suite of powerful internal and external tools.
 3. **Output:** Creates ultra-readable CSV files for quick analysis.
 4. **Timeline Creation:** Ingests all evidence with Plaso to create a comprehensive timeline.
-5. **Integration:** The timeline can be sent to Elastic using the integrated pipeline (On going). 
+5. **WAZUH Integration:** All the artifacts and Plaso timeline can be sent to Wazuh using the integrated pipeline.
 
 ---
 
 ## 📈 Example Results
 
-APP produces clear, actionable results by focusing on the most relevant information.
+APP can send all the data to Wazuh/openSearch with builded in pipelines.
+Some usefull Dashboard are provided.
+
+<img src="./ressources/images/dashboard.png" width="800" alt="APP System Architecture">
+
+
+For the PowerUser that want to investigate using command line: APP produces clear, actionable results by focusing on the most relevant information.
 
 In this example, we can quickly identify key events like:
 * Mimikatz and Cobalt Strike beacon usage.
@@ -102,9 +103,6 @@ APP's architecture is built for simplicity and teamwork:
 * **API-Driven:** The built-in web server provides an API for sending archives and checking the status of processing tasks.
 * **Shared Results:** All results are stored in a shared folder, allowing any analyst with access to the share to review and analyze the data independently.
 * **No bullSh*t:** No shitty GUI to interact with the results, only CSV/Json, so you can investigate the way you want.
-
-<img src="./ressources/images/wfapp.png" width="800" alt="APP System Architecture">
-
 
 The tool also includes a simple Web GUI for common tasks:
 * Upload archives.
