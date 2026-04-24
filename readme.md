@@ -56,7 +56,12 @@ APP automates the forensic parsing workflow in a seamless pipeline:
 ## 📈 Example Results
 
 APP can send all the data to Wazuh/openSearch with builded in pipelines.
-Some usefull Dashboard are provided.
+Some usefulls Dashboard are provided :
+- Connexion
+- Process execution
+- Persistences
+- Timeline
+- A Lot more
 
 <img src="./ressources/images/dashboard.png" width="800" alt="APP System Architecture">
 
