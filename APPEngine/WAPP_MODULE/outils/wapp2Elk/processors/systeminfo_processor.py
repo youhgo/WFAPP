@@ -1,34 +1,41 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import csv
 import json
 from datetime import datetime
 from .base_processor import BaseFileProcessor
 
 
 class SystemInfoProcessor(BaseFileProcessor):
-    """Processeur pour les fichiers systeminfo (format JSON)."""
+    """Processeur pour les fichiers systeminfo (format CSV)."""
 
     def _format_sysinfo_timestamp(self, time_str: str) -> str:
-        """Convertit les dates au format '30/03/2026, 09:33:22' en format ISO 8601."""
+        """
+        Convertit les dates type '9/18/2019, 10:07:59 AM' en format ISO 8601.
+        """
         if not time_str or time_str == "N/A":
             return None
         try:
-            # Parsing du format français généré par systeminfo
-            dt = datetime.strptime(time_str, "%d/%m/%Y, %H:%M:%S")
+            # Adaptation au format CSV Windows (M/D/Y, H:M:S AM/PM)
+            dt = datetime.strptime(time_str, "%m/%d/%Y, %I:%M:%S %p")
             return dt.isoformat() + "Z"
         except (ValueError, TypeError):
-            return None
+            try:
+                # Fallback si jamais le format change (ex: format FR)
+                dt = datetime.strptime(time_str, "%d/%m/%Y, %H:%M:%S")
+                return dt.isoformat() + "Z"
+            except:
+                return None
 
     def _process_log(self, raw_log: dict) -> dict:
-        # Puisqu'il s'agit d'un instantané de l'état du système (et pas d'un log avec une ligne de temps continue),
-        # on utilise le moment de l'ingestion comme timestamp de l'événement.
         timestamp = datetime.utcnow().isoformat() + "Z"
 
-        # Mapping vers le standard ECS (Elastic Common Schema) pour WAZUH
-        host_name = raw_log.get("Nom de l'hôte", "Unknown")
-        os_name = raw_log.get("Nom du système d'exploitation", "Unknown")
-        os_version = raw_log.get("Version du système", "Unknown")
+        # Mapping des colonnes CSV vers le standard ECS (Elastic Common Schema)
+        # Note : On utilise les noms exacts des colonnes de ton CSV
+        host_name = raw_log.get("Host Name", "Unknown")
+        os_name = raw_log.get("OS Name", "Unknown")
+        os_version = raw_log.get("OS Version", "Unknown")
 
         base_doc = {
             "@timestamp": timestamp,
@@ -41,47 +48,49 @@ class SystemInfoProcessor(BaseFileProcessor):
             "host": {
                 "hostname": host_name,
                 "name": host_name,
-                "domain": raw_log.get("Domaine"),
+                "domain": raw_log.get("Domain"),
                 "os": {
                     "name": os_name,
                     "version": os_version,
                     "full": f"{os_name} {os_version}"
                 }
             },
-            # Regroupement des données WAPP spécifiques sous une racine system_info
             "system_info": {
-                "manufacturer": raw_log.get("Fabricant du système"),
-                "model": raw_log.get("Modèle du système"),
-                "system_type": raw_log.get("Type du système"),
-                "bios_version": raw_log.get("Version du BIOS"),
-                "boot_time": self._format_sysinfo_timestamp(raw_log.get("Heure de démarrage du système")),
-                "install_date": self._format_sysinfo_timestamp(raw_log.get("Date d'installation originale")),
-                "timezone": raw_log.get("Fuseau horaire"),
-                "processors": raw_log.get("Processeur(s)"),
-                "total_physical_memory": raw_log.get("Mémoire physique totale"),
-                "network_cards": raw_log.get("Carte(s) réseau"),
-                "hotfixes": raw_log.get("Correctif(s)")
+                "manufacturer": raw_log.get("System Manufacturer"),
+                "model": raw_log.get("System Model"),
+                "system_type": raw_log.get("System Type"),
+                "bios_version": raw_log.get("BIOS Version"),
+                "boot_time": self._format_sysinfo_timestamp(raw_log.get("System Boot Time")),
+                "install_date": self._format_sysinfo_timestamp(raw_log.get("Original Install Date")),
+                "timezone": raw_log.get("Time Zone"),
+                "processors": raw_log.get("Processor(s)"),
+                "memory": {
+                    "total": raw_log.get("Total Physical Memory"),
+                    "available": raw_log.get("Available Physical Memory")
+                },
+                "network_cards": raw_log.get("Network Card(s)"),
+                "hotfixes": raw_log.get("Hotfix(s)")
             }
         }
+
         if hasattr(self, 'inject_wapp_info'):
-            doc = self.inject_wapp_info(base_doc)
-            return doc
+            return self.inject_wapp_info(base_doc)
         return base_doc
 
     def process_file(self, filepath: str, **kwargs):
-        print(f"  -> Lecture du fichier SystemInfo : {filepath}")
-        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-            try:
-                all_data = json.load(f)
-                # S'assurer qu'on itère bien sur une liste (le JSON fourni commence par `[`)
-                records = all_data if isinstance(all_data, list) else [all_data]
+        print(f"  -> Lecture du fichier SystemInfo (CSV) : {filepath}")
 
-                for i, record in enumerate(records):
+        # Utilisation de utf-8-sig pour gérer d'éventuels BOM Windows en début de fichier
+        with open(filepath, 'r', encoding='utf-8-sig', errors='ignore') as f:
+            try:
+                # DictReader transforme chaque ligne en dictionnaire basé sur les headers
+                reader = csv.DictReader(f)
+
+                for i, record in enumerate(reader):
                     try:
                         yield self._process_log(record), "system_info"
                     except Exception as e:
-                        print(
-                            f"\n[Attention] Impossible de traiter l'enregistrement SystemInfo #{i + 1} du fichier {filepath}. Erreur: {e}\n")
+                        print(f"[Attention] Erreur ligne {i + 1} dans {filepath}: {e}")
 
-            except json.JSONDecodeError as e:
-                print(f"[ERREUR] Le fichier {filepath} n'est pas un JSON valide. Erreur: {e}")
+            except Exception as e:
+                print(f"[ERREUR] Impossible de lire le CSV {filepath}. Erreur: {e}")

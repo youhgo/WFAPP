@@ -30,7 +30,7 @@ class SystemInfoPipeline(BaseArtefactPipeline):
         try:
             res_file = self.parser.parse_system_info(str(file_path), str(self.context.result_parsed_dir))
             if res_file:
-                self.context.wazuh_importer_file_config["files"].append( {"path": str(res_file), "type": f"systemInfo"})
+                self.context.wazuh_importer_file_config["files"].append( {"path": str(file_path), "type": f"systemInfo"})
                 self.logger.info(f"[PIPELINE][SYSINFO] Traitement de {file_path.name}", header="SUCCESS",
                                  indentation=2)
 

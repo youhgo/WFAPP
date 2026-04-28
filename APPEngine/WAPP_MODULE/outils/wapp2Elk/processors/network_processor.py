@@ -136,6 +136,9 @@ class NetworkProcessor(BaseFileProcessor):
         except ValueError:
             return datetime.utcnow().isoformat() + "Z"
 
+    def _process_routes_file(self,lines, machine_name_val, dataset):
+        pass
+
     def _process_bits_jobs_file(self, lines: list, machine_name: str, dataset: str):
         print(f"  -> Lecture du fichier BITS Jobs : {dataset}")
 
