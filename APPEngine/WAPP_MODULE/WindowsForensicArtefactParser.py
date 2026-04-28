@@ -72,33 +72,47 @@ class WindowsForensicArtefactParser:
         self.timeline_json_path = self.ctx.timeline_dir / "timeline.json"
         self.timeline_csv_path = self.ctx.timeline_dir / "timeline.csv"
 
+
     def extract(self):
         extraction_successful = False
         try:
             extractor = OrcExtractor(self.logger, "avproof")
             self.logger.info("[EXTRACTING] archives", header="START")
-            cleaned_name_archive = re.sub(r'__\d+$', '', str(self.ctx.path_to_archive))
-            file_ext = os.path.splitext(cleaned_name_archive)[1]
+
+
+            archive_path = str(self.ctx.path_to_archive)
+            archive_filename = os.path.basename(archive_path)
+            cleaned_filename = re.sub(r'^[a-f0-9]+__', '', archive_filename)
+            file_ext = os.path.splitext(cleaned_filename)[1].lower()  # .lower() est une bonne pratique
+
+            self.logger.info(f"[EXTRACTING] cleaning archive name to {cleaned_filename}", header="INFO")
+            self.logger.info(f"[EXTRACTING] found extension {file_ext}", header="INFO")
 
             if file_ext in [".7z", ".zip"]:
-                extraction_successful = extractor.extract_recursively(file_ext, str(self.ctx.path_to_archive),
+                # Note importante : on garde `archive_path` d'origine pour l'extraction car
+                # le fichier sur le disque dur possède toujours le préfixe numérique !
+                extraction_successful = extractor.extract_recursively(file_ext,
+                                                                      archive_path,
                                                                       str(self.ctx.extracted_dir))
             self.logger.info("[EXTRACTING] archives", header="FINISHED")
         except Exception as e:
             self.logger.error(f"[EXTRACTING] Error: {e}", header="ERROR")
 
-        if extraction_successful and self.is_orc:
-            try:
-                # Si restauration de l'arborescence (Virtual FileSystem) demandée
-                if self.ctx.main_config.get("restore", False):
-                    restorer = ArtefactRestorer(str(self.ctx.extracted_dir), str(self.ctx.restored_path), self.logger)
-                    restorer.run()
-                else:
-                    # NOUVELLE LOGIQUE : Renommage intelligent via GetThis.csv
-                    renamer = OrcRenamer(self.ctx)
-                    renamer.rename_files(self.ctx.extracted_dir)
-            except Exception as e:
-                self.logger.error(f"Critical error while post-processing extraction : {e}", header="CRITICAL")
+        if extraction_successful:
+            if self.is_orc:
+                try:
+                    # Si restauration de l'arborescence (Virtual FileSystem) demandée
+                    if self.ctx.main_config.get("restore", False):
+                        restorer = ArtefactRestorer(str(self.ctx.extracted_dir), str(self.ctx.restored_path), self.logger)
+                        restorer.run()
+                    else:
+                        # NOUVELLE LOGIQUE : Renommage intelligent via GetThis.csv
+                        renamer = OrcRenamer(self.ctx)
+                        renamer.rename_files(self.ctx.extracted_dir)
+                except Exception as e:
+                    self.logger.error(f"Critical error while post-processing extraction : {e}", header="CRITICAL")
+        else :
+            exit(1)
 
     def clean_duplicates(self, dir_to_clean):
         self.logger.info("[CLEAN DUPLICATE] Démarrage", header="START")
