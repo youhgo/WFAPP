@@ -448,7 +448,7 @@ class EvtxJsonProcessor(BaseFileProcessor):
             r'.*Microsoft-Windows-PowerShell.*Operational\.evtx\.json': "powershell_operational",
             r'.*Windows PowerShell\.evtx\.json?': "windows_powershell",
             r'.*Microsoft-Windows-WMI-Activity.*Operational\.evtx\.json': "wmi",
-            r'.*Microsoft-Windows-Windows Defender.*Operational\.evtx\.json?': "windefender",
+            r'.*Microsoft-Windows-Windows.Defender.*Operational\.evtx\.json?': "windefender",
             r'.*Microsoft-Windows-Application-Experience.*\.evtx\.json?': "app_experience"
         }
 
