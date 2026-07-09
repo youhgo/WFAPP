@@ -24,16 +24,7 @@ class ArtefactDispatcher:
 
         # Mapping : Relie le nom du fichier Python à la clé de ta configuration JSON
         config_mapping: Dict[str, str] = {
-            "evtx_pipeline": "evtx",
-            "mft_pipeline": "mft",
-            "prefetch_pipeline": "prefetch",
-            "hive_pipeline": "hive",
-            "lnk_pipeline": "lnk",
-            "system_info_pipeline": "system_info",
-            "disk_pipeline": "disk",
-            "process_pipeline": "process",
-            "network_pipeline": "network",
-            "web_history_pipeline": "webHistory"
+            "bodyfile_pipeline": "bodyfile"
         }
 
         self.context.logger.info("[DISPATCHER] Chargement dynamique des modules en cours...", header="INFO")
