@@ -1,161 +1,121 @@
 #!/usr/bin/python3
 import argparse
-from datetime import datetime
+import time
+from datetime import datetime, timedelta
 import os
 import sys
 import traceback
-from .classes import LoggerManager, Extractor
-import re
+
+# Imports des classes métiers
+from .classes.LappContext import LappContext
+from .classes.Extractor import ArchiveExtractor
+from .modules.dispatcher import ArtefactDispatcher
 
 class LinuxForensicArtefactParser:
-    """
-       Class WindowsForensicArtefactParser
-       MPP or WindowsForensicArtefactParser is a python script that will parse a plaso - Log2Timeline json timeline file.
-       The goal is to provide easily readable and straight forward files for the Forensic analyst.
-       MPP will create a file for each artefact.
-       Attributes :
-       None
-    """
+    """Orchestrateur Principal de LAPP."""
 
-    def __init__(self, path_to_archive, output_directory, case_name, machine_name="", separator='|',
-                 main_id="") -> None:
-        """
-        Constructor for the WindowsForensicArtefactParser Class
+    def __init__(self, path_to_archive, output_directory, case_name, is_uac=True, machine_name="", separator='|',
+                 main_id="", artefact_config=None, main_config=None) -> None:
 
-        :param output_directory: (str) directory where the results file will be written
-        :param separator: (str) separator for csv output file
-        :param case_name:  (str) name that will be set into json result files (for practical purpose with elk)
-        :param main_config: (dict) json str containing the main configuration
-        :param artefact_config: (dict) json str containing the configuration for the artefacts names
-        """
+        self.ascii_art_lapp = r"""
+            ██╗       █████╗  ██████╗ ██████╗ 
+            ██║      ██╔══██╗ ██╔══██╗██╔══██╗
+            ██║      ███████║ ██████╔╝██████╔╝
+            ██║      ██╔══██║ ██╔═══╝ ██╔═══╝ 
+            ███████╗  ██║  ██║ ██║     ██║     
+            ╚══════╝   ╚═╝  ╚═╝  ╚═╝     ╚═╝     
+    
+            Linux Forensic Artefact Parser Project
+            """
 
-        self.ascii_art_wapp = r"""
-        ███████╗    ██████═╗ ██████╗ ██████╗ 
-        ██╔════██╗██╔═════██╗██╔══██╗██╔══██
-        ██║    ██║██║     ██║██║███ ║██║███
-        ██║    ██║██║     ██║██║    ║██║
-        ███████╔╝╚║═╝██████╔████╗══╗████║
-        ╚══════╝  ╚═════╝  ╚════╝  ╚════╝ 
+        print(self.ascii_art_lapp)
+        self.is_uac = is_uac
 
-        Windows Forensic Artefect Parser Project
-        Made by Hugo ROLLAND
-        """
-        print(self.ascii_art_wapp)
-        self.path_to_archive = path_to_archive
-        self.dir_out = output_directory
-        self.case_name = case_name
-        self.separator = separator
+            # Initialisation du contexte global (qui gère l'arborescence et les configs)
+        self.ctx = LappContext(path_to_archive, output_directory, case_name, machine_name, separator, main_id,
+                                   artefact_config, main_config)
+        self.logger = self.ctx.logger
 
-        if machine_name:
-            self.machine_name = machine_name
-        else:
-            self.machine_name = "no_name"
-
-        if main_id:
-            self.main_id = main_id
-        else:
-            self.main_id = self.machine_name
-
-
-        self.current_date = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
-        self.machine_working_folder_name = self.machine_name + "_" + self.current_date
-        self.case_work_dir = os.path.join(self.dir_out, self.case_name)
-        self.log_dir = os.path.join(self.dir_out, "execution_logs")
-        self.machine_working_folder_path = os.path.join(self.case_work_dir, self.machine_working_folder_name)
-        self.extracted_main_dir = os.path.join(self.machine_working_folder_path, "extracted")
-        self.parsed_dir = os.path.join(self.machine_working_folder_path, "parsed")
-        self.timeline_dir = os.path.join(self.parsed_dir, "timeline")
-        self.initialise_working_directories()
-
-        self.running_log_file_path = os.path.join(self.log_dir, "{}_running.log".format(self.main_id))
-        self.logger_run = LoggerManager.LoggerManager("running", self.running_log_file_path, "INFO")
-
-        self.plaso_storage_file = os.path.join(self.timeline_dir, "timeline.plaso")
-        self.l2t_log_file = os.path.join(self.timeline_dir, "l2t.log.gz")
-        self.psort_log_file = os.path.join(self.timeline_dir, "l2t.log.gz")
-        self.timeline_json_path = os.path.join(self.timeline_dir, "timeline.json")
-        self.timeline_csv_path = os.path.join(self.timeline_dir, "timeline.csv")
-
-    def initialise_working_directories(self):
-        """
-            To create directories where the results will be written
-        """
-        try:
-            os.makedirs(self.case_work_dir, exist_ok=True)
-            os.makedirs(self.machine_working_folder_path, exist_ok=True)
-            os.makedirs(self.extracted_main_dir, exist_ok=True)
-            os.makedirs(self.parsed_dir, exist_ok=True)
-            os.makedirs(self.log_dir, exist_ok=True)
-            os.makedirs(self.timeline_dir, exist_ok=True)
-
-        except:
-            sys.stderr.write("\nfailed to initialises directories {}\n".format(traceback.format_exc()))
-
-    def clean_archive_name(self, pattern, og_name):
-        new_name = re.sub(pattern, '', og_name)
-        return new_name
 
     def extract(self):
-        """
-         to extract orc archives
-        :return:
-        """
         extraction_successful = False
         try:
-            extractor = Extractor.ArchiveExtractor(self.extracted_main_dir, self.logger_run)
+            # Utilisation de l'extracteur générique
+            extractor = ArchiveExtractor(str(self.ctx.extracted_main_dir), self.logger)
+            self.logger.info("[EXTRACTING] archives", header="START")
 
-            self.logger_run.info("[EXTRACTING] archives", header="START", indentation=0)
-            cleaned_name_archive = self.clean_archive_name(r'__\d+$', self.path_to_archive)
+            archive_path = str(self.ctx.path_to_archive)
+            self.logger.info("[EXTRACTING] Got Archive {}".format(archive_path), header="INFO")
 
-            root, filename = os.path.split(cleaned_name_archive)  # /blabla/ - uac.tar.gz
-            filename_wo_ext, file_ext = os.path.splitext(filename)  # /blabla/orc1
-            self.logger_run.info(f"[EXTRACTING] Got Archive {self.path_to_archive}", header="INFO", indentation=1)
-            self.logger_run.info(f"[EXTRACTING] Got Archive root :{root}  :Filename{filename}", header="INFO", indentation=1)
+            # La méthode run() de l'extracteur se charge du nettoyage de nom et de la récursivité
+            self.logger.info("[EXTRACTING] {}".format(archive_path), header="START")
+            extractor.run(archive_path)
+            
+            extraction_successful = True
+            self.logger.info("[EXTRACTING] archives", header="FINISHED")
+        except Exception as e:
+            self.logger.error("[EXTRACTING] Error: {}".format(e), header="ERROR")
 
-            if file_ext in [".tar.gz",".tar",".gz"]:
-                self.logger_run.info(f"[EXTRACTING] {self.path_to_archive}", header="START", indentation=1)
-                extraction_successful = extractor.run(self.path_to_archive)
-            else:
-                self.logger_run.info("[EXTRACTING] No compatible archive found", header="INFO", indentation=1)
+        if not extraction_successful:
+            exit(1)
 
-            self.logger_run.info("[EXTRACTING] archives", header="FINISHED", indentation=0)
-        except:
-            self.logger_run.error("[EXTRACTING] archives {}".format(traceback.format_exc()), header="ERROR",
-                                  indentation=0)
 
+    def do_wazuh(self):
+        self.logger.info("[LAPP][WAZUH]", header="START", indentation=1)
+        # TODO: Pipeline Wazuh
+        self.logger.info("[LAPP][WAZUH] Pipeline à développer...", header="INFO", indentation=1)
+        self.logger.info("[LAPP][WAZUH]", header="FINISHED", indentation=1)
 
     def do(self):
+        """Le Chef d'Orchestre principal."""
+        
+        # 1. Extraction de l'archive
         self.extract()
 
+        dispatcher = ArtefactDispatcher(self.ctx)
+        dispatcher.run_discovery(self.ctx.extracted_main_dir)
+
+        if self.ctx.main_config.get("wazuh", False):
+            self.do_wazuh()
+            
+        self.logger.info("[LAPP] Fin de l'exécution.", header="FINISHED")
+
+
 def parse_args():
-    """
-        Function to parse args
-    """
-
-    argument_parser = argparse.ArgumentParser(description=(
-        'Solution to parse UAC archives'))
-
-    argument_parser.add_argument('-a', '--archive', action="store",
-                                 required=False, dest="archive", default=False,
-                                 help="path to the orc archive")
-
-    argument_parser.add_argument("-o", "--output", action="store",
-                                 required=True, dest="output_dir", default=False,
+    argument_parser = argparse.ArgumentParser(description='Solution to parse UAC/Linux archives')
+    argument_parser.add_argument('-a', '--archive', action="store", required=False, dest="archive", default=False,
+                                 help="path to the linux archive")
+    argument_parser.add_argument("-o", "--output", action="store", required=True, dest="output_dir", default=False,
                                  help="dest where the result will be written")
-
-    argument_parser.add_argument("-c", "--casename", action="store",
-                                 required=True, dest="case_name", default=None,
+    argument_parser.add_argument("-c", "--casename", action="store", required=True, dest="case_name", default=None,
                                  help="name of the case u working on")
-
-    argument_parser.add_argument("-s", "--separator", action="store",
-                                 required=False, dest="separator", default="|",
+    argument_parser.add_argument("-s", "--separator", action="store", required=False, dest="separator", default="|",
                                  help="separator that will be used on csv files")
-
-    argument_parser.add_argument("-m", "--machine_name", action="store",
-                                 required=False, dest="machine_name",
-                                 metavar="name of the machine",
-                                 help="name of the machine")
-
+    argument_parser.add_argument("-m", "--machine_name", action="store", required=False, dest="machine_name",
+                                 metavar="name of the machine", help="name of the machine")
     return argument_parser
 
 
+if __name__ == '__main__':
+    parser = parse_args()
+    args = parser.parse_args()
+
+    start_time = time.time()
+    now = datetime.now()
+    print("Started at {}:".format(now.strftime('%m/%d/%Y, %H:%M:%S')))
+
+    if args.archive:
+        app = LinuxForensicArtefactParser(
+            path_to_archive=args.archive,
+            output_directory=args.output_dir,
+            case_name=args.case_name,
+            machine_name=args.machine_name,
+            separator=args.separator
+        )
+        app.do()
+    else:
+        print(parser.print_help())
+        exit(1)
+
+    time_in_sec = time.time() - start_time
+    print("Finished in {} ".format(timedelta(seconds=time_in_sec)))

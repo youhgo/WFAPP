@@ -1,0 +1,32 @@
+{
+            "artefacts": {
+                "system": {
+                    "system_info": ["Systeminfo.csv"]
+                },
+                "network": {
+                    "tcpvcon": ["Tcpvcon.txt"],
+                    "arp_cache": ["arp_cache.txt"]
+                },
+                "process": {
+                    "process1": ["process1.csv", "processes1.csv"]
+                },
+                "event_logs": {
+                    "access": ["access.*.log"]
+                },
+                "disk": {
+                    "bodyfile": ["bodyfile.txt"],
+                    "VSS_List": ["VSS_list.csv"]
+                },
+                "browsers": {
+                    "browser_history": [".*.sqlite"]
+                },
+                "others": {
+                    "event_consumer": ["EventConsumer.txt"]
+                },
+                "scripts": {
+                    "bat": [
+                        ".*.sh"
+                    ]
+                }
+            }
+        }

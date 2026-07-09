@@ -5,7 +5,6 @@ from ..classes.WappContext import WappContext
 from ..parsers import DiskParser
 import re
 
-
 class DiskPipeline(BaseArtefactPipeline):
     def __init__(self, context: WappContext):
         super().__init__(context)
@@ -14,6 +13,7 @@ class DiskPipeline(BaseArtefactPipeline):
         self.out_disk_dir = self.context.parsed_dir / "disk"
         self.out_dir = self.context.result_parsed_dir
         self.out_disk_dir.mkdir(parents=True, exist_ok=True)
+
     def get_regex_patterns(self):
         patterns = []
         for v in self.config_process.values():

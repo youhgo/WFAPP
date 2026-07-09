@@ -22,6 +22,7 @@ class ArchiveExtractor:
 
         Args:
             destination_root (str): The root directory where archives will be extracted.
+            logger (logging.Logger): Logger instance for tracking the process.
         """
         self.logger_run = logger
         self.destination_root = destination_root
@@ -44,7 +45,6 @@ class ArchiveExtractor:
 
         self.known_extensions = sorted(self.handlers.keys(), key=len, reverse=True)
 
-
     def _get_handler(self, file_path):
         """Finds the correct handler based on the file extension."""
         filename = os.path.basename(file_path).lower()
@@ -53,28 +53,38 @@ class ArchiveExtractor:
                 return handler
         return None
 
-    # --- MODIFIED SECTION ---
-    # This method is now more robust for compound extensions.
+    def _get_unique_path(self, base_path):
+        """
+        Vérifie si le chemin existe. Si oui, ajoute un suffixe (_1, _2...)
+        jusqu'à trouver un nom de chemin disponible.
+        """
+        if not os.path.exists(base_path):
+            return base_path
+        
+        counter = 1
+        while True:
+            new_path = f"{base_path}_{counter}"
+            if not os.path.exists(new_path):
+                return new_path
+            counter += 1
+
     def _get_output_path(self, file_path):
         """
-        Generates the output directory name from the archive name, correctly
-        handling compound extensions like .tar.gz.
+        Generates a unique output directory name from the archive name, correctly
+        handling compound extensions like .tar.gz and avoiding overwrites.
         """
         base_name = os.path.basename(file_path)
-
-        # Check against a sorted list of extensions (longest first)
+        target_path = ""
         for ext in self.known_extensions:
             if base_name.lower().endswith(ext):
-                # Remove the longest matching extension
                 output_dir_name = base_name[:-len(ext)]
-                # For single-file compression like .gz, the output path is a directory
-                # named after the file.
-                return os.path.join(os.path.dirname(file_path), output_dir_name)
+                target_path = os.path.join(os.path.dirname(file_path), output_dir_name)
+                break
+        if not target_path:
+            target_path = os.path.join(os.path.dirname(file_path), os.path.splitext(base_name)[0])
 
-        # Fallback if no known handler extension is found
-        return os.path.join(os.path.dirname(file_path), os.path.splitext(base_name)[0])
 
-    # --- END MODIFIED SECTION ---
+        return self._get_unique_path(target_path)
 
     def _extract_zip(self, file_path, output_path):
         """Extracts a .zip file."""
@@ -88,8 +98,7 @@ class ArchiveExtractor:
 
     def _extract_gz(self, file_path, output_path):
         """Decompresses a .gz file."""
-        # The output filename is the archive name without .gz
-        output_filename = os.path.basename(self._get_output_path(file_path))
+        output_filename = os.path.basename(output_path)
         full_output_path = os.path.join(output_path, output_filename)
         with gzip.open(file_path, 'rb') as f_in:
             with open(full_output_path, 'wb') as f_out:
@@ -97,7 +106,7 @@ class ArchiveExtractor:
 
     def _extract_xz(self, file_path, output_path):
         """Decompresses an .xz file."""
-        output_filename = os.path.basename(self._get_output_path(file_path))
+        output_filename = os.path.basename(output_path)
         full_output_path = os.path.join(output_path, output_filename)
         with lzma.open(file_path) as f_in:
             with open(full_output_path, 'wb') as f_out:
@@ -125,7 +134,6 @@ class ArchiveExtractor:
         if not handler:
             return
 
-        # The new _get_output_path doesn't need the extension passed to it.
         output_path = self._get_output_path(file_path)
 
         self.logger_run.info(f"Found archive: {file_path}")
@@ -160,8 +168,8 @@ class ArchiveExtractor:
 
         self.logger_run.info(f"Starting process for: {initial_archive_path}")
         cleaned_name_archive = self.clean_archive_name(r'__\d+$', initial_archive_path)
-
         initial_dest_path = os.path.join(self.destination_root, os.path.basename(cleaned_name_archive))
+        initial_dest_path = self._get_unique_path(initial_dest_path)
         shutil.copy(initial_archive_path, initial_dest_path)
 
         self.extract_recursively(self.destination_root)
@@ -171,7 +179,11 @@ class ArchiveExtractor:
         new_name = re.sub(pattern, '', og_name)
         return new_name
 
+
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+    main_logger = logging.getLogger(__name__)
+
     parser = argparse.ArgumentParser(
         description="A tool to recursively extract nested archives and delete the originals.",
         epilog="Example: python extractor.py --archive /path/to/archive.tar.gz --destination /path/to/output"
@@ -191,5 +203,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    extractor = ArchiveExtractor(destination_root=args.destination)
+    # Fixed: passed the logger to the class initialization
+    extractor = ArchiveExtractor(destination_root=args.destination, logger=main_logger)
     extractor.run(initial_archive_path=args.archive)
