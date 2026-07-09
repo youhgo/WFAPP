@@ -3,14 +3,14 @@ import inspect
 from pathlib import Path
 from typing import List, Dict
 
-from ..classes.WappContext import WappContext
+from ..classes.LappContext import LappContext
 from ..classes.BaseArtefactPipelines import BaseArtefactPipeline
 
 
 class ArtefactDispatcher:
     """Le Routeur qui inspecte les fichiers et les distribue aux pipelines."""
 
-    def __init__(self, context: WappContext) -> None:
+    def __init__(self, context: LappContext) -> None:
         self.context = context
         self.pipelines: List[BaseArtefactPipeline] = []
 
