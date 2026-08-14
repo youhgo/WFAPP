@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./ressources/images/wapp_logo.png" width="600" height="600" alt="APP System Architecture">
+  <img src="./ressources/images/app.logo.jpeg" width="600" height="600" alt="APP System Architecture">
 </p>
 
 
