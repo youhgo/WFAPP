@@ -18,54 +18,40 @@ class ArtefactDispatcher:
         self._load_dynamic_pipelines()
 
     def _load_dynamic_pipelines(self) -> None:
-        """Parcourt le dossier courant et charge tous les pipelines valides."""
-        cfg = self.context.main_config
+        """Parcourt le dossier courant et charge tous les pipelines depuis le registre."""
+        cfg = self.context.config.get("pipelines", {})
         modules_dir = Path(__file__).parent
 
-        # Mapping : Relie le nom du fichier Python à la clé de ta configuration JSON
-        config_mapping: Dict[str, str] = {
-            "evtx_pipeline": "evtx",
-            "mft_pipeline": "mft",
-            "prefetch_pipeline": "prefetch",
-            "hive_pipeline": "hive",
-            "lnk_pipeline": "lnk",
-            "system_info_pipeline": "system_info",
-            "disk_pipeline": "disk",
-            "process_pipeline": "process",
-            "network_pipeline": "network",
-            "web_history_pipeline": "webHistory"
-        }
+        from ..classes.Registry import PIPELINE_REGISTRY
 
         self.context.logger.info("[DISPATCHER] Chargement dynamique des modules en cours...", header="INFO")
 
-        # Parcourt tous les fichiers .py (idéalement, on filtre directement ceux qui finissent par _pipeline)
+        # Importer tous les modules pour déclencher les décorateurs @register_pipeline
         for file_path in modules_dir.glob("*.py"):
             module_name = file_path.stem
 
             if module_name in ["__init__", "dispatcher", "legacy_pipeline"]:
                 continue
 
-            config_key = config_mapping.get(module_name)
-
-            # Si le module est listé mais désactivé dans la config, on l'ignore
-            if config_key and not cfg.get(config_key, False):
-                self.context.logger.info(f"[DISPATCHER] Pipeline ignoré (désactivé via config) : {module_name}")
-                continue
-
             try:
-                module = importlib.import_module(f".{module_name}", package=__package__)
-
-                for name, obj in inspect.getmembers(module, inspect.isclass):
-                    if (issubclass(obj, BaseArtefactPipeline) and
-                            obj is not BaseArtefactPipeline and
-                            obj.__module__ == module.__name__):
-                        self.pipelines.append(obj(self.context))
-                        self.context.logger.info(f" -> Pipeline chargé avec succès : {name}", header="INFO",
-                                                 indentation=1)
-
+                importlib.import_module(f".{module_name}", package=__package__)
             except Exception as e:
-                self.context.logger.error(f"Erreur critique au chargement du module {module_name}: {e}", header="ERROR",
-                                          indentation=1)
+                self.context.logger.error(f"Erreur critique à l'import du module {module_name}: {e}", header="ERROR", indentation=1)
+
+        # Maintenant que tout est importé, on instancie les pipelines autorisés par la config
+        for config_key, pipeline_class in PIPELINE_REGISTRY.items():
+            pipeline_cfg = cfg.get(config_key, {})
+            is_enabled = pipeline_cfg.get("enabled", True)  # PLUG & PLAY: Enabled by default!
+            
+            if not is_enabled:
+                self.context.logger.info(f"[DISPATCHER] Pipeline ignoré (désactivé via config) : {config_key}")
+                continue
+                
+            try:
+                self.pipelines.append(pipeline_class(self.context))
+                self.context.logger.info(f" -> Pipeline chargé avec succès : {pipeline_class.__name__} (clé: {config_key})", header="INFO", indentation=1)
+            except Exception as e:
+                self.context.logger.error(f"Erreur d'instanciation du pipeline {pipeline_class.__name__}: {e}", header="ERROR", indentation=1)
 
     def run_discovery(self, extracted_dir: Path) -> None:
         self.context.logger.info("[DISPATCHER] Lancement du routage (Single Pass)", header="START")

@@ -1,10 +1,11 @@
+import os
 from flask import Flask
 from extensions import db, login_manager
 
 
 def create_app():
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'votre_cle_secrete_ici'
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////python-docker/db/users.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -17,8 +18,8 @@ def create_app():
 
     app.register_blueprint(wapp_api, url_prefix='/')
     app.register_blueprint(parse_api, url_prefix='/api/parse')
-    app.config['CELERY_BROKER_URL'] = 'redis://redis:6379/0'
-    app.config['CELERY_RESULT_BACKEND'] = 'redis://redis:6379/0'
+    app.config['CELERY_BROKER_URL'] = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
+    app.config['CELERY_RESULT_BACKEND'] = os.environ.get('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
 
     # Créer les tables de la base de données
     with app.app_context():

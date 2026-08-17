@@ -51,4 +51,5 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["entrypoint.sh"]
 
 COPY . .
-
+RUN useradd -m -u 1000 appuser && chown -R appuser /python-docker
+USER appuser

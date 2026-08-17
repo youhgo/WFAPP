@@ -1,26 +1,32 @@
 import re
-from pathlib import Path
 import traceback
+from pathlib import Path
 
 from ..classes.BaseArtefactPipelines import BaseArtefactPipeline
 from ..classes.WappContext import WappContext
-from ..parsers import ActivitiesCacheParser
+from ..classes.Registry import register_pipeline
+from ..classes.BaseParser import CsvOutputSink
+from ..parsers.ActivitiesCacheParser import ActivitiesCacheParser
 
+@register_pipeline(name="database")
 class DbPipeline(BaseArtefactPipeline):
+    DEFAULT_PATTERNS = {"Activity_cache": ["ActivitiesCache.db"], "sdb": [".*.sdb"], "SRUM": ["SRUDB.dat", "SRU.*.log"]}
+
     def __init__(self, context: WappContext):
         super().__init__(context)
         self.out_other_dir = self.context.parsed_dir / "database"
         self.out_dir = self.context.result_parsed_dir
         self.out_other_dir.mkdir(exist_ok=True)
-        self.config_process = self.context.artefact_config.get("artefacts", {}).get("database", {})
+        self.parser = ActivitiesCacheParser(self.logger, separator=self.context.separator)
+        self.sinks = {}
 
-    def get_regex_patterns(self):
+
         patterns = []
         for v in self.config_process.values():
             patterns.extend(v if isinstance(v, list) else [v])
         return patterns
 
-    def _matches_category(self, file_name, category_key):
+
         patterns = self.config_process.get(category_key, [])
         for p in patterns:
             if re.search(p, file_name, re.IGNORECASE):
@@ -30,13 +36,28 @@ class DbPipeline(BaseArtefactPipeline):
     def process(self, file_path: Path):
         self.logger.info(f"[PIPELINE][DATABASE] Traitement de {file_path.name}", header="START", indentation=1)
         try:
+            if not self.can_process(file_path):
+                return
+
             if self._matches_category(file_path.name, "Activity_cache"):
-                parser = ActivitiesCacheParser.ActivitiesCacheParser(self.logger, separator=self.context.separator)
-                parser.parse_activities_cache(file_path, self.out_other_dir)
+                for artifact_type, record in self.parser.parse(file_path):
+                    if artifact_type not in self.sinks:
+                        out_path = self.out_other_dir / f"{artifact_type}.csv"
+                        self.sinks[artifact_type] = CsvOutputSink(out_path, separator=self.context.separator)
+                        self.context.wazuh_importer_file_config["files"].append({"path": str(out_path), "type": artifact_type})
+                        
+                    self.sinks[artifact_type].write_record(record)
+                    
             elif self._matches_category(file_path.name, "sdb"):
-                pass
+                self.copy_raw_artefact(file_path, self.out_other_dir)
             elif self._matches_category(file_path.name, "SRUM"):
-                pass
+                self.copy_raw_artefact(file_path, self.out_other_dir)
+                
+            self.logger.info(f"[PIPELINE][DATABASE] Succès", header="FINISHED", indentation=1)
         except Exception as e:
-            self.logger.error(f"[PIPELINE][DATABASE] Erreur sur {file_path.name}: {traceback.format_exc()}",
-                              header="ERROR", indentation=1)
+            self.logger.error(f"[PIPELINE][DATABASE] Erreur sur {file_path.name}: {traceback.format_exc()}", header="ERROR", indentation=1)
+
+    def finalize(self):
+        for sink in self.sinks.values():
+            sink.close()
+        self.sinks.clear()

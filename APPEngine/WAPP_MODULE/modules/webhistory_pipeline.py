@@ -2,23 +2,26 @@ from pathlib import Path
 import re
 from ..classes.BaseArtefactPipelines import BaseArtefactPipeline
 from ..classes.WappContext import WappContext
-from ..parsers.WebHistoryParser import HistoryExporter
+from ..classes.Registry import register_pipeline
+from ..classes.BaseParser import CsvOutputSink
+from ..parsers.WebHistoryParser import WebHistoryParser
 
+@register_pipeline(name="browsers")
 class WebHistoryPipeline(BaseArtefactPipeline):
+    DEFAULT_PATTERNS = {"browser_history": [".*.sqlite"]}
+
     def __init__(self, context: WappContext):
         super().__init__(context)
-        self.out_file = self.context.result_parsed_dir / "web_history.csv"
-        self.out_dir = self.context.result_parsed_dir
-        self.parser = HistoryExporter(self.logger, str(self.out_file))
-        self.config_process = self.context.artefact_config.get("artefacts", {}).get("browsers", {})
+        self.parser = WebHistoryParser(self.logger, separator=self.context.separator)
+        self.csv_sink = None
 
-    def get_regex_patterns(self):
+
         patterns = []
         for v in self.config_process.values():
             patterns.extend(v if isinstance(v, list) else [v])
         return patterns
 
-    def _matches_category(self, file_name, category_key):
+
         patterns = self.config_process.get(category_key, [])
         for p in patterns:
             if re.search(p, file_name, re.IGNORECASE):
@@ -28,12 +31,20 @@ class WebHistoryPipeline(BaseArtefactPipeline):
     def process(self, file_path: Path):
         self.logger.info(f"[PIPELINE][WEBHISTORY] Traitement de {file_path.name}", header="START", indentation=1)
         try:
-            res_file = self.parser.parse_file(str(file_path))
-            self.context.wazuh_importer_file_config["files"].append({"path": str(res_file), "type": f"web_history"})
+            if not self.can_process(file_path):
+                return
+                
+            for artifact_type, record in self.parser.parse(file_path):
+                if not self.csv_sink:
+                    csv_path = self.context.result_parsed_dir / f"{artifact_type}.csv"
+                    self.csv_sink = CsvOutputSink(csv_path, separator=self.context.separator)
+                    self.context.wazuh_importer_file_config["files"].append({"path": str(csv_path), "type": "web_history"})
+                self.csv_sink.write_record(record)
+                
+            self.logger.info(f"[PIPELINE][WEBHISTORY] Succès", header="FINISHED", indentation=1)
         except Exception as e:
             self.logger.error(f"[PIPELINE][WEBHISTORY] Erreur sur {file_path.name}: {e}", header="ERROR", indentation=1)
 
     def finalize(self):
-        # A la toute fin du parcours des fichiers, on génère le CSV fusionné
-        self.logger.info("[PIPELINE][WEBHISTORY] Finalisation et écriture CSV", header="START", indentation=1)
-        self.parser.write_to_csv()
+        if self.csv_sink:
+            self.csv_sink.close()

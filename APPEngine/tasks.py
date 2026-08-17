@@ -10,7 +10,7 @@ SHARED_FOLDER_PATH = "/python-docker/shared_files/"
 DEPOT_FOLDER_PATH = os.path.join(SHARED_FOLDER_PATH, "depot")
 WORKING_FOLDER_PATH = os.path.join(SHARED_FOLDER_PATH, "work")
 LOG_FOLDER_PATH = os.path.join(WORKING_FOLDER_PATH, "execution_logs")
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379'),
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379')
 CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379')
 celery = Celery('tasks', broker=CELERY_BROKER_URL, backend=CELERY_RESULT_BACKEND)
 
@@ -32,8 +32,6 @@ def parse_archive(content, file_name):
         if content.get("archiveType", "") == "UAC":
             #return {"taskId": "{}".format(parse_archive.request.id), "WokerStatus": "Failled", "Message": "UAC parser is not available for now"}
             return parse_uac(main_id, content, file_name)
-        if content.get("archiveType", "") == "ORC":
-            return parse_orc(main_id, content, file_name)
         else:
             return parse_orc(main_id, content, file_name)
 

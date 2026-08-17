@@ -33,7 +33,6 @@ def users_admin():
 def list_users():
     if not current_user.is_admin:
         return jsonify({"message": "Access forbidden"}), 403
-    from models import User
     users = User.query.all()
     # Inclure le statut d'administrateur dans la réponse
     return jsonify([{"id": u.id, "username": u.username, "is_admin": u.is_admin} for u in users])
@@ -45,7 +44,6 @@ def list_users():
 def update_user(user_id):
     if not current_user.is_admin:
         return jsonify({"message": "Access forbidden"}), 403
-    from models import User, db
     data = request.get_json()
     user = User.query.get_or_404(user_id)
     if "username" in data:
@@ -65,7 +63,6 @@ def update_user(user_id):
 def delete_user(user_id):
     if not current_user.is_admin:
         return jsonify({"message": "Access forbidden"}), 403
-    from models import User, db
     user = User.query.get_or_404(user_id)
     db.session.delete(user)
     db.session.commit()
@@ -318,3 +315,30 @@ def list_resources_api():
             "message": f"An error occurred: {str(e)}"
         }
         return jsonify(response), 500
+
+import re
+
+@wapp_api.route('/api/pipelines', methods=['GET'])
+@login_required
+def get_pipelines():
+    modules_dir = "/python-docker/WAPP_MODULE/modules"
+    pipelines = []
+    
+    try:
+        if os.path.exists(modules_dir):
+            for file_name in os.listdir(modules_dir):
+                if file_name.endswith('.py') and not file_name.startswith('__'):
+                    file_path = os.path.join(modules_dir, file_name)
+                    try:
+                        with open(file_path, "r", encoding="utf-8") as f:
+                            content = f.read()
+                            match = re.search(r'@register_pipeline\(name="([^"]+)"\)', content)
+                            if match:
+                                pipelines.append(match.group(1))
+                    except Exception as e:
+                        print(f"Error reading {file_name}: {e}", file=sys.stderr)
+    except Exception as e:
+        print(f"Error scanning modules directory: {e}", file=sys.stderr)
+        
+    return jsonify({"status": "OK", "pipelines": pipelines})
+

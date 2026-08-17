@@ -1,0 +1,15 @@
+{
+  "pipelines": {
+    "process": {
+      "enabled": true
+    },
+    "hive": {
+      "enabled": true,
+      "patterns": {
+        "AMCACHE": [
+          "Amcache.hve$"
+        ]
+      }
+    }
+  }
+}

@@ -9,8 +9,23 @@ from datetime import datetime
 from .base_processor import BaseFileProcessor
 import sys
 
+from ..elk_registry import register_elk_processor
+
+@register_elk_processor("registry")
 class RegistryJsonProcessor(BaseFileProcessor):
     """Processeur pour les fichiers de logs Registre, Amcache et AppCompatCache générés au format JSON."""
+
+    DEFAULT_PATTERNS = {
+        r'^Amcache\.hve_regpy\.json$': "amcache_regpy",
+        r'^Amcache\.hve_yarp\.jsonl$': "amcache_yarp",
+        r'^SECURITY_yarp\.jsonl$': "registry_security",
+        r'^SOFTWARE_yarp\.jsonl$': "registry_software",
+        r'^SYSTEM_yarp\.jsonl$': "registry_system",
+        r'^NTUSER\.DAT_yarp\.jsonl$': "registry_ntuser"
+    }
+
+    def __init__(self, case_name="unknown", machine_name="unknown"):
+        super().__init__(case_name, machine_name)
 
     def _parse_yarp_timestamp(self, timestamp_str: str) -> str:
         if not timestamp_str:

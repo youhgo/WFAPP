@@ -6,8 +6,17 @@ from datetime import datetime
 from .base_processor import BaseFileProcessor
 
 
+from ..elk_registry import register_elk_processor
+
+@register_elk_processor("processes")
 class PrefetchJsonProcessor(BaseFileProcessor):
     """Orchestre la lecture et le traitement des fichiers de logs Prefetch (.pf parsés en JSON)."""
+    DEFAULT_PATTERNS = {
+        r'^.*\.pf\.json$': "prefetch"
+    }
+
+    def __init__(self, case_name="unknown", machine_name="unknown"):
+        super().__init__(case_name, machine_name)
 
     def _parse_run_time(self, timestamp_str: str) -> str:
         """Convertit un timestamp de Prefetch ('YYYY-MM-DD HH:MM:SS') en ISO8601."""

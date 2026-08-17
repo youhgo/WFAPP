@@ -417,8 +417,13 @@ class EvtxHandler:
 
         return doc
 
+from ..elk_registry import register_elk_processor
+
+@register_elk_processor("evtx")
 class EvtxJsonProcessor(BaseFileProcessor):
-    """Processeur pour les fichiers EVTX (format JSON ou JSON Lines)."""
+    DEFAULT_PATTERNS = {
+        r'.*\.evtx\.json$': "evtx"
+    }
 
     def __init__(self, case_name="unknown", machine_name="unknown"):
         super().__init__(case_name=case_name, machine_name=machine_name)

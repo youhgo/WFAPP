@@ -7,8 +7,19 @@ from datetime import datetime, timezone  # Importation de timezone nécessaire p
 from .base_processor import BaseFileProcessor
 
 
+from ..elk_registry import register_elk_processor
+
+@register_elk_processor("disk")
 class DiskProcessor(BaseFileProcessor):
     """Orchestre la lecture et le traitement des fichiers de logs disque (MFT, USN, Timeline)."""
+    DEFAULT_PATTERNS = {
+        r'^mft\.json$': "mft",
+        r'^mft\.timeline$': "mft_timeline",
+        r'^USN.*\.csv$': "usnjrnl"
+    }
+
+    def __init__(self, case_name="unknown", machine_name="unknown"):
+        super().__init__(case_name, machine_name)
 
     def _get_valid_mft_timestamp(self, raw_log: dict) -> str:
         for block, time_type in [('si_times', 'mtime'), ('si_times', 'crtime'), ('fn_times', 'mtime'),

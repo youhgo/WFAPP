@@ -6,8 +6,20 @@ from datetime import datetime
 from .base_processor import BaseFileProcessor
 
 
+from ..elk_registry import register_elk_processor
+
+@register_elk_processor("network")
 class NetworkProcessor(BaseFileProcessor):
     """Processeur pour les fichiers texte contenant la sortie de 'netstat', 'tcpvcon', 'arp -a', ou des enregistrements DNS."""
+    DEFAULT_PATTERNS = {
+        r'^netstat\.txt$': "netstat",
+        r'^tcpvcon\.txt$': "tcpvcon",
+        r'^arp_cache\.txt$': "arp",
+        r'^DNS_records\.txt$': "dns"
+    }
+
+    def __init__(self, case_name="unknown", machine_name="unknown"):
+        super().__init__(case_name, machine_name)
 
     def _parse_address(self, address_str: str):
         try:

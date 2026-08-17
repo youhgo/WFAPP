@@ -7,8 +7,18 @@ from datetime import datetime
 from .base_processor import BaseFileProcessor
 
 
+from ..elk_registry import register_elk_processor
+
+@register_elk_processor("system_info")
 class SystemInfoProcessor(BaseFileProcessor):
     """Processeur pour les fichiers systeminfo (format CSV)."""
+    DEFAULT_PATTERNS = {
+        r'^Systeminfo\.csv$': "system_info",
+        r'^system_info\.csv$': "system_info"
+    }
+
+    def __init__(self, case_name="unknown", machine_name="unknown"):
+        super().__init__(case_name, machine_name)
 
     def _format_sysinfo_timestamp(self, time_str: str) -> str:
         """

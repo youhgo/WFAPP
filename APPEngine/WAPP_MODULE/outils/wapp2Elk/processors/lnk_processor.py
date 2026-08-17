@@ -5,7 +5,17 @@ import json
 from datetime import datetime
 from .base_processor import BaseFileProcessor
 
+from ..elk_registry import register_elk_processor
+
+@register_elk_processor("lnk")
 class LnkJsonProcessor(BaseFileProcessor):
+    DEFAULT_PATTERNS = {
+        r'^.*\.lnk\.json$': "lnk"
+    }
+
+    def __init__(self, case_name="unknown", machine_name="unknown"):
+        super().__init__(case_name, machine_name)
+
     """Processeur pour les fichiers LNK (format JSON complet)."""
     def _format_lnk_timestamp(self, time_str: str) -> str:
         if not time_str: return None

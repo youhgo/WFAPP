@@ -9,13 +9,38 @@ from .WappContext import WappContext
 
 class BaseArtefactPipeline:
     """Classe de base pour tous les pipelines d'artefacts."""
+    
+    DEFAULT_PATTERNS = {}
 
     def __init__(self, context: WappContext):
         self.context = context
         self.logger = context.logger
+        self.pipeline_name = getattr(self.__class__, '__pipeline_name__', 'unknown')
 
     def get_regex_patterns(self) -> list:
-        return []
+        custom_config = self.context.config.get("pipelines", {}).get(self.pipeline_name, {})
+        patterns_dict = custom_config.get("patterns", self.DEFAULT_PATTERNS)
+        
+        patterns = []
+        if isinstance(patterns_dict, dict):
+            for v in patterns_dict.values():
+                patterns.extend(v if isinstance(v, list) else [v])
+        elif isinstance(patterns_dict, list):
+            patterns.extend(patterns_dict)
+        return patterns
+
+    def _matches_category(self, file_name, category_key):
+        custom_config = self.context.config.get("pipelines", {}).get(self.pipeline_name, {})
+        patterns_dict = custom_config.get("patterns", self.DEFAULT_PATTERNS)
+        
+        patterns = patterns_dict.get(category_key, [])
+        if not isinstance(patterns, list):
+            patterns = [patterns]
+            
+        for p in patterns:
+            if re.search(p, file_name, re.IGNORECASE):
+                return True
+        return False
 
     def can_process(self, file_path: Path) -> bool:
         patterns = self.get_regex_patterns()

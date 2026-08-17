@@ -50,11 +50,7 @@ class WappContext:
         self._init_directories()
 
         # Configurations
-        self.artefact_config = self._load_config(artefact_config,
-                                                 "/python-docker/WAPP_MODULE/config/artefact_name_config.json",
-                                                 self._get_default_artefact_config(), "[ARTEFACT][CONFIG]")
-        self.main_config = self._load_config(main_config, "/python-docker/WAPP_MODULE/config/parser_config.json",
-                                             self._get_default_main_config(), "[PARSER][CONFIG]")
+        self.config = self._load_config(main_config, "/python-docker/WAPP_MODULE/config/wfapp_config.json", {}, "[CONFIG]")
 
         # Wazuh & SystemInfo
         self.wazuh_importer_file_config = {"files": []}
@@ -78,99 +74,5 @@ class WappContext:
                 self.logger.info(f"{log_header} Loading config from {file_path}", header="INFO")
                 return json.load(f)
         except Exception:
-            self.logger.error(f"{log_header} Error loading config, using embedded fallback", header="ERROR")
+            self.logger.info(f"{log_header} No config file found at {file_path}, using defaults.", header="INFO")
             return default_config
-
-    def _get_default_artefact_config(self):
-        return {
-            "artefacts": {
-                "system": {
-                    "system_info": ["Systeminfo.csv"]
-                },
-                "network": {
-                    "tcpvcon": ["Tcpvcon.txt"],
-                    "arp_cache": ["arp_cache.txt"],
-                    "dns_cache": ["dns_cache.txt"],
-                    "netstat": ["netstat.txt"],
-                    "routes": ["routes.txt"],
-                    "hosts": ["hosts$"],
-                    "lmhosts": ["lmhosts.sam"],
-                    "protocol": ["protocol$"],
-                    "services": ["services$"],
-                    "network": ["networks$"],
-                    "bits": ["BITS_jobs.txt"],
-                    "dns_records": ["DNS_records.txt"]
-                },
-                "hives": {
-                    "NTUSER": ["NTUSER.DAT$"],
-                    "AMCACHE": ["Amcache.hve$"],
-                    "SOFTWARE": ["SOFTWARE$"],
-                    "SYSTEM": ["SYSTEM$"],
-                    "SECURITY": ["SECURITY$"],
-                    "SAM": ["SAM$"]
-                },
-                "process": {
-                    "process1": ["process1.csv", "processes1.csv"],
-                    "process2": ["process2.csv", "processes2.csv"],
-                    "autoruns": ["autoruns.csv"],
-                    "sample_autoruns": ["GetSamples_autoruns.xml", "Process_Autoruns.xml"],
-                    "sample_timeline": ["GetSamples_timeline.csv", "Process_timeline.csv"],
-                    "sample_info": ["GetSamples_sampleinfo.csv", "Process_sampleinfo.csv"],
-                    "handle": ["handle.txt"],
-                    "enum_lock": ["Enumlocs.txt"],
-                    "list_dll": ["Listdlls.txt"],
-                    "ps_services": ["psService.txt"]
-                },
-                "event_logs": {
-                    "evtx": [".*.evtx"]
-                },
-                "powershell": {
-                    "consol_history": ["ConsoleHost_history.txt"],
-                    "Module_Analysis_Cache": ["ModuleAnalysisCache"],
-                    "powerview": ["PowerView"],
-                    "scripts": [".*.ps1"]
-                },
-                "master_file_table": {
-                    "MFT": ["MFT$"]
-                },
-                "disk": {
-                    "usn_journal": ["USNInfo.*.csv"],
-                    "VSS_List": ["VSS_list.csv"]
-                },
-                "lnk": {
-                    "lnk": [".*.lnk"]
-                },
-                "files": {
-                    "Wmi": ["OBJECTS.DATA", "INDEX.BTR", "MAPPING*.MAP"],
-                    "recent_file": [".*-ms"]
-                },
-                "prefetch": {
-                    "super_fetch": ["ag.*.db"],
-                    "prefetch": [".*.pf"]
-                },
-                "database": {
-                    "Activity_cache": ["ActivitiesCache.db"],
-                    "sdb": [".*.sdb"],
-                    "SRUM": ["SRUDB.dat", "SRU.*.log"]
-                },
-                "browsers": {
-                    "browser_history": [".*.sqlite"]
-                },
-                "others": {
-                    "event_consumer": ["EventConsumer.txt"],
-                    "ad_computer": ["AD_computers.csv"],
-                    "setup_api": ["setupapi"],
-                    "mrt": ["mrt"]
-                },
-                "scripts": {
-                    "bat": [
-                        ".*.bat"
-                    ]
-                }
-            }
-        }
-
-    def _get_default_main_config(self):
-        return {"restore": 0, "rename_from_orc": 0, "disk": 1, "elk": 0, "plaso2elk": 0, "wazuh": 0, "plaso2wazuh": 0,
-                "evtx": 1, "hive": 1, "mft": 1, "mpp": 1, "network": 1, "lnk": 1, "plaso": 1, "prefetch": 1,
-                "process": 1, "system_info": 1, "webHistory": 1}

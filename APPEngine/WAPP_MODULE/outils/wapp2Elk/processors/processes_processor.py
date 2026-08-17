@@ -10,8 +10,22 @@ from datetime import datetime
 from .base_processor import BaseFileProcessor
 
 
+from ..elk_registry import register_elk_processor
+
+@register_elk_processor("processes")
 class ProcessesProcessor(BaseFileProcessor):
     """Processeur pour divers formats de listes de processus et d'autoruns (CSV et XML)."""
+    DEFAULT_PATTERNS = {
+        r'^autoruns\.csv$': "autoruns_sysinternals",
+        r'^processes1\.csv$': "processes_win32",
+        r'^processes2\.csv$': "processes_get_proc",
+        r'^Process_sampleinfo\.csv$': "processes_sampleinfo",
+        r'^Process_timeline\.csv$': "processes_timeline",
+        r'^Process_Autoruns\.xml$': "processes_autorun"
+    }
+
+    def __init__(self, case_name="unknown", machine_name="unknown"):
+        super().__init__(case_name, machine_name)
 
     def _parse_wmi_timestamp(self, ts: str) -> str:
         if not ts or '.' not in ts: return datetime.utcnow().isoformat() + "Z"

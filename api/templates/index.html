@@ -424,52 +424,79 @@
         // Set default view
         switchContent('#upload-content');
 
-        // --- Module Selection Logic ---
-        const moduleConfig = {
-            "restore": 0, "rename_from_orc": 0, "disk": 1, "wazuh": 1, "evtx": 1, "hive": 1, "mft": 1,
-            "network": 1, "lnk": 1, "plaso": 1, "mpp": 1,  "plaso2wazuh": 1, "prefetch": 1,
-            "process": 1, "system_info": 1, "webHistory": 1
-        };
-
-        // Groupes de modules
-        const preProcModules = ["restore", "rename_from_orc"];
-        const exportModules = ["wazuh"];
-        const plasoModules = ["plaso", "mpp",  "plaso2wazuh"];
+        // --- Dynamic Module Selection Logic ---
+        const preProcModules = ["restore", "rename_from_orc", "legacy"];
+        const exportModules = ["wazuh", "plaso2wazuh", "elk", "plaso2elk"];
+        const plasoModules = ["plaso", "mpp", "mactime"];
 
         const preProcChecklist = document.getElementById('preProcChecklist');
         const analyzeChecklist = document.getElementById('analyzeChecklist');
         const plasoChecklist = document.getElementById('plasoChecklist');
         const exportChecklist = document.getElementById('exportChecklist');
 
-        Object.keys(moduleConfig).forEach(moduleName => {
-            const isChecked = moduleConfig[moduleName] === 1;
-
-            // Format name : Transforme "rename_from_orc" en "Rename From Orc"
-            const formattedName = moduleName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-
-            const switchHtml = `
-                <div class="group flex items-center justify-between p-2 sm:p-2.5 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-100 transition-colors duration-200">
-                    <label for="module-${moduleName}" class="text-xs sm:text-sm font-medium text-gray-700 cursor-pointer flex-1 select-none group-hover:text-blue-700 transition-colors truncate pr-2">
-                        ${formattedName}
-                    </label>
-                    <label class="switch shrink-0">
-                        <input type="checkbox" id="module-${moduleName}" name="modules" value="${moduleName}" ${isChecked ? 'checked' : ''}>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            `;
-
-            // Dispatch into the correct category box
-            if (preProcModules.includes(moduleName)) {
-                preProcChecklist.insertAdjacentHTML('beforeend', switchHtml);
-            } else if (exportModules.includes(moduleName)) {
-                exportChecklist.insertAdjacentHTML('beforeend', switchHtml);
-            } else if (plasoModules.includes(moduleName)) {
-                plasoChecklist.insertAdjacentHTML('beforeend', switchHtml);
-            } else {
-                analyzeChecklist.insertAdjacentHTML('beforeend', switchHtml);
+        async function fetchAndRenderPipelines() {
+            try {
+                const response = await fetch('/api/pipelines');
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+                
+                if (data.status === "OK" && data.pipelines && data.pipelines.length > 0) {
+                    renderPipelines(data.pipelines);
+                } else {
+                    console.warn("No pipelines found dynamically, using fallback.");
+                    renderFallbackPipelines();
+                }
+            } catch (error) {
+                console.error("Error fetching pipelines:", error);
+                renderFallbackPipelines();
             }
-        });
+        }
+        
+        function renderFallbackPipelines() {
+            renderPipelines(["disk", "wazuh", "evtx", "hives", "master_file_table", "network", "lnk", "plaso", "mpp", "plaso2wazuh", "prefetch", "process", "system_info", "browsers"]);
+        }
+
+        function renderPipelines(pipelines) {
+            pipelines.forEach(moduleName => {
+                // By default, everything is enabled except specific modules
+                const isChecked = !["restore", "rename_from_orc", "elk", "plaso2elk"].includes(moduleName);
+
+                const formattedName = moduleName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+                const switchHtml = `
+                    <div class="group flex items-center justify-between p-2 sm:p-2.5 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-100 transition-colors duration-200">
+                        <label for="module-${moduleName}" class="text-xs sm:text-sm font-medium text-gray-700 cursor-pointer flex-1 select-none group-hover:text-blue-700 transition-colors truncate pr-2">
+                            ${formattedName}
+                        </label>
+                        <label class="switch shrink-0">
+                            <input type="checkbox" id="module-${moduleName}" name="modules" value="${moduleName}" ${isChecked ? 'checked' : ''}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                `;
+
+                if (preProcModules.includes(moduleName)) {
+                    preProcChecklist.insertAdjacentHTML('beforeend', switchHtml);
+                } else if (exportModules.includes(moduleName)) {
+                    exportChecklist.insertAdjacentHTML('beforeend', switchHtml);
+                } else if (plasoModules.includes(moduleName)) {
+                    plasoChecklist.insertAdjacentHTML('beforeend', switchHtml);
+                } else {
+                    analyzeChecklist.insertAdjacentHTML('beforeend', switchHtml);
+                }
+            });
+            
+            // Appliquer les dépendances une fois le DOM généré
+            enforceArchiveDependencies();
+            
+            // Attacher l'événement Plaso s'il existe
+            const plasoCb = document.getElementById('module-plaso');
+            if (plasoCb) {
+                plasoCb.addEventListener('change', enforcePlasoDependencies);
+            }
+        }
+        
+        fetchAndRenderPipelines();
 
         // --- Helper Function for Visual States ---
         const setVisualState = (cb, isDisabled, forceUncheck = false) => {
@@ -550,11 +577,6 @@
             enforcePlasoDependencies();
         };
 
-        // Listen to changes on the Plaso checkbox
-        const plasoCheckbox = document.getElementById('module-plaso');
-        if (plasoCheckbox) {
-            plasoCheckbox.addEventListener('change', enforcePlasoDependencies);
-        }
 
         // Listen to changes on the Archive Type Select
         const archiveTypeSelect = document.getElementById('archiveType');
@@ -562,8 +584,6 @@
             archiveTypeSelect.addEventListener('change', enforceArchiveDependencies);
         }
 
-        // Call initially to set correct state on page load
-        enforceArchiveDependencies();
 
 
         // --- Category Specific Select / Deselect Logic ---

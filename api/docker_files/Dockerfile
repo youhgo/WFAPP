@@ -30,5 +30,7 @@ COPY docker_files/requirements.txt requirements.txt
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY . .
+RUN useradd -m -u 1000 appuser && chown -R appuser /python-docker
+USER appuser
 CMD [ "python3",  "wapp_server.py"]
 

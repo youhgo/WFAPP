@@ -5,13 +5,15 @@ import os
 import argparse
 import traceback
 from .elastic_uploader import ElasticUploader
-from .processors.evtx_processor import EvtxJsonProcessor
-from .processors.disk_processor import DiskProcessor
-from .processors.lnk_processor import LnkJsonProcessor
-from .processors.registry_processor import RegistryJsonProcessor
-from .processors.network_processor import NetworkProcessor
-from .processors.processes_processor import ProcessesProcessor
-from .processors.prefetch_processor import PrefetchJsonProcessor
+from .elk_registry import ELK_PROCESSORS_REGISTRY
+import pkgutil
+import importlib
+from . import processors
+
+# Charger tous les modules du dossier processors pour déclencher l'enregistrement @register_elk_processor
+for _, module_name, _ in pkgutil.iter_modules(processors.__path__):
+    importlib.import_module(f".processors.{module_name}", package=__package__)
+
 
 
 class ElkForensicPipeline:
@@ -29,46 +31,14 @@ class ElkForensicPipeline:
 
         self.allowed_types = self._normalize_artifact_types(artifact_types)
 
-        self.target_indices = {
-            "evtx": f"{self.index_prefix}_{self.case_name}_{self.machine_name}_evtx",
-            "disk": f"{self.index_prefix}_{self.case_name}_{self.machine_name}_disk",
-            "lnk": f"{self.index_prefix}_{self.case_name}_{self.machine_name}_lnk",
-            "registry": f"{self.index_prefix}_{self.case_name}_{self.machine_name}_registry",
-            "network": f"{self.index_prefix}_{self.case_name}_{self.machine_name}_network",
-            "processes": f"{self.index_prefix}_{self.case_name}_{self.machine_name}_process"
-        }
+        self.target_indices = {}
+        self.processor_instances = {}
+        
+        for category, cls_list in ELK_PROCESSORS_REGISTRY.items():
+            self.target_indices[category] = f"{self.index_prefix}_{self.case_name}_{self.machine_name}_{category}"
+            for cls in cls_list:
+                self.processor_instances[cls] = cls(case_name=self.case_name, machine_name=self.machine_name)
 
-        self.ARTEFACT_PATTERNS = {
-            r'^Amcache\.hve_regpy\.json$': "amcache_regpy",
-            r'^Amcache\.hve_yarp\.jsonl$': "amcache_yarp",
-            r'^SECURITY_yarp\.jsonl$': "registry_security",
-            r'^SOFTWARE_yarp\.jsonl$': "registry_software",
-            r'^SYSTEM_yarp\.jsonl$': "registry_system",
-            r'^NTUSER\.DAT_yarp\.jsonl$': "registry_ntuser",
-            r'.*\.evtx\.json$': "evtx",
-            r'^mft\.json$': "mft",
-            r'^mft\.timeline$': "mft_timeline",
-            r'^USN.*\.csv$': "usnjrnl",
-            r'^.*\.lnk\.json$': "lnk",
-            r'^netstat\.txt$': "netstat",
-            r'^tcpvcon\.txt$': "tcpvcon",
-            r'^arp_cache\.txt$': "arp",
-            r'^DNS_records\.txt$': "dns",
-            r'^autoruns\.csv$': "autoruns_sysinternals",
-            r'^processes1\.csv$': "processes_win32",
-            r'^processes2\.csv$': "processes_get_proc",
-            r'^Process_sampleinfo\.csv$': "processes_sampleinfo",
-            r'^Process_timeline\.csv$': "processes_timeline",
-            r'^Process_Autoruns\.xml$': "processes_autorun",
-            r'^.*\.pf\.json$': "prefetch"
-        }
-
-        self.uploader = ElasticUploader(es_hosts.split(','), es_user, es_pass, verify_ssl)
-        self.processors = {
-            "evtx": EvtxJsonProcessor(), "disk": DiskProcessor(), "lnk": LnkJsonProcessor(),
-            "registry": RegistryJsonProcessor(), "network": NetworkProcessor(), "processes": ProcessesProcessor(),
-            "prefetch": PrefetchJsonProcessor()
-        }
 
     def _sanitize_for_index(self, name: str) -> str:
         return ''.join(c if c.isalnum() or c in '-_' else '_' for c in name).lower()
@@ -101,12 +71,13 @@ class ElkForensicPipeline:
     def validate_patterns(self):
         """Vérifie la validité de toutes les expressions régulières au démarrage."""
         print("[*] Validation des patterns d'artefacts...")
-        for pattern in self.ARTEFACT_PATTERNS.keys():
-            try:
-                re.compile(pattern, re.IGNORECASE)
-            except re.error as e:
-                print(f"\n[ERREUR DE CONFIGURATION] L'expression régulière suivante est invalide : '{pattern}'")
-                exit(1)
+        for cls in self.processor_instances.keys():
+            for pattern in cls.DEFAULT_PATTERNS.keys():
+                try:
+                    re.compile(pattern, re.IGNORECASE)
+                except re.error as e:
+                    print(f"\n[ERREUR DE CONFIGURATION] L'expression régulière suivante est invalide : '{pattern}' (dans {cls.__name__})")
+                    exit(1)
         print("[+] Patterns validés avec succès.")
 
     def run(self):
@@ -136,66 +107,42 @@ class ElkForensicPipeline:
         """Parcourt le répertoire source, identifie les fichiers et délègue le parsing."""
         print(f"[*] Recherche récursive des artefacts dans : {self.source_dir}")
 
-        # Liste des dossiers à ignorer (en minuscules pour être insensible à la casse)
-        #IGNORED_DIRS = {'parsed_for_human', 'timeline'}
         IGNORED_DIRS = {'timeline'}
 
-        # On récupère 'dirs' pour pouvoir le modifier in-place
         for root, dirs, files in os.walk(self.source_dir):
-
-            # --- EXCLUSION DES DOSSIERS ---
-            # On modifie la liste 'dirs' en place. os.walk ne descendra pas
-            # dans les dossiers retirés de cette liste.
             dirs[:] = [d for d in dirs if d.lower() not in IGNORED_DIRS]
-            # ------------------------------
 
             for filename in files:
                 dataset = None
-                for pattern, ds in self.ARTEFACT_PATTERNS.items():
-                    if re.match(pattern, filename, re.IGNORECASE):
-                        dataset = ds
+                category = None
+                processor_instance = None
+                
+                # Cherche le bon processeur
+                for cls, instance in self.processor_instances.items():
+                    for pattern, ds in cls.DEFAULT_PATTERNS.items():
+                        if re.match(pattern, filename, re.IGNORECASE):
+                            dataset = ds
+                            category = cls.__processor_name__
+                            processor_instance = instance
+                            break
+                    if dataset:
                         break
 
-                if dataset:
-                    processor_key, processor_method = self._get_processor_for_dataset(dataset)
-
+                if dataset and processor_instance:
                     # --- FILTRAGE PAR TYPE (--type) ---
-                    if "all" not in self.allowed_types and processor_key not in self.allowed_types:
+                    if "all" not in self.allowed_types and category not in self.allowed_types:
                         continue
-                        # ----------------------------------
 
                     filepath = os.path.join(root, filename)
                     print(f"  -> Fichier trouvé : {filepath} (dataset: {dataset})")
 
-                    if processor_method:
-                        kwargs = {"machine_name": self.machine_name} if processor_key == "network" else {}
-                        try:
-                            for doc, doc_type in processor_method.process_file(filepath, dataset=dataset,
-                                                                               filename=filename, **kwargs):
-                                yield {"_index": self.target_indices[doc_type], "_source": doc}
-                        except Exception as e:
-                            print(f"  [ERREUR] Echec traitement fichier {filename}: {e}")
-                    else:
-                        print(f"  [Attention] Aucun processeur trouvé pour le dataset '{dataset}'. Fichier ignoré.")
+                    kwargs = {"machine_name": self.machine_name} if category == "network" else {}
+                    try:
+                        for doc, doc_type in processor_instance.process_file(filepath, dataset=dataset, filename=filename, **kwargs):
+                            yield {"_index": self.target_indices.get(doc_type, self.target_indices[category]), "_source": doc}
+                    except Exception as e:
+                        print(f"  [ERREUR] Echec traitement fichier {filename}: {e}")
 
-    def _get_processor_for_dataset(self, dataset):
-        # Cette méthode associe le dataset spécifique à une catégorie générique (processor_key)
-        if dataset.startswith("registry") or dataset.startswith("amcache"):
-            return "registry", self.processors["registry"]
-        elif dataset in ["mft", "usnjrnl", "mft_timeline"]:
-            return "disk", self.processors["disk"]
-        elif dataset in ["netstat", "tcpvcon", "arp", "dns"]:
-            return "network", self.processors["network"]
-        elif dataset.startswith("processes") or dataset.startswith("autoruns"):
-            return "processes", self.processors["processes"]
-        elif dataset == "evtx":
-            return "evtx", self.processors["evtx"]
-        elif dataset == "lnk":
-            return "lnk", self.processors["lnk"]
-        elif dataset == "prefetch":
-            # Prefetch est techniquement un processus dans la logique actuelle
-            return "processes", self.processors["prefetch"]
-        return None, None
 
 
 def parse_arguments():
