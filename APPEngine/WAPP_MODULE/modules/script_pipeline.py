@@ -7,6 +7,10 @@ from ..classes.Registry import register_pipeline
 
 @register_pipeline(name="scripts")
 class ScriptPipeline(BaseArtefactPipeline):
+    """
+    Parses scripts and associated executions.
+    """
+    recommended = True
     DEFAULT_PATTERNS = {"bat": [".*.bat"]}
 
     def __init__(self, context: WappContext):
@@ -15,21 +19,8 @@ class ScriptPipeline(BaseArtefactPipeline):
         self.out_dir = self.context.result_parsed_dir
         self.out_script_dir.mkdir(parents=True, exist_ok=True)
 
-
-        patterns = []
-        for v in self.config_process.values():
-            patterns.extend(v if isinstance(v, list) else [v])
-        return patterns
-
-
-        patterns = self.config_process.get(category_key, [])
-        for p in patterns:
-            if re.search(p, file_name, re.IGNORECASE):
-                return True
-        return False
-
     def process(self, file_path: Path):
-        self.logger.info(f"[PIPELINE][SCRIPT] Traitement de {file_path.name}", header="START", indentation=1)
+        self.logger.info(f"[PIPELINE][SCRIPT] Processing {file_path.name}", header="START", indentation=1)
         try:
             if not self.can_process(file_path):
                 return
@@ -39,6 +30,6 @@ class ScriptPipeline(BaseArtefactPipeline):
             if self._matches_category(file_path.name, "bat"):
                 self.copy_raw_artefact(file_path, out_bat_dir)
                 
-            self.logger.info(f"[PIPELINE][SCRIPT] Succès", header="FINISHED", indentation=1)
+            self.logger.info(f"[PIPELINE][SCRIPT] Success", header="FINISHED", indentation=1)
         except Exception as e:
-            self.logger.error(f"[PIPELINE][SCRIPT] Erreur sur {file_path.name}: {e}", header="ERROR", indentation=1)
+            self.logger.error(f"[PIPELINE][SCRIPT] Error on {file_path.name}: {e}", header="ERROR", indentation=1)

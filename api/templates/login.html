@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>Login - APP</title>
-  <!-- Remplacement du CDN par le chemin local -->
+  <!-- Replaced CDN with local path -->
   <script src="{{ url_for('static', filename='vendor/tailwindcss.js') }}"></script>
-  <!-- Ajout de la police Inter pour la cohérence -->
+  <!-- Added Inter font for consistency -->
   <style>
       @import url("{{ url_for('static', filename='vendor/inter.css') }}");
       body {
@@ -28,7 +28,7 @@
     </form>
     <p id="errorMsg" class="text-red-600 mt-4 text-center hidden"></p>
   </div>
-  <!-- Le script reste inchangé -->
+  <!-- Script remains unchanged -->
   <script>
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -43,7 +43,7 @@
         });
 
         if (res.ok) {
-          window.location.href = '/index'; // redirect vers GUI
+          window.location.href = '/index'; // redirect to GUI
         } else {
           const data = await res.json();
           const errorMsgElement = document.getElementById('errorMsg');

@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <title>User Management</title>
-  <!-- Remplacement du CDN par le chemin local -->
+  <!-- Replaced CDN with local path -->
   <script src="{{ url_for('static', filename='vendor/tailwindcss.js') }}"></script>
   <style>
-    /* Ajout de la police Inter pour la cohérence */
+    /* Added Inter font for consistency */
     @import url("{{ url_for('static', filename='vendor/inter.css') }}");
     body {
         font-family: 'Inter', sans-serif;
@@ -79,16 +79,16 @@
         </div>
         <div class="flex justify-end space-x-4 mt-6">
           <button type="button" id="cancelEditBtn" class="bg-gray-300 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors duration-200">
-            Annuler
+            Cancel
           </button>
           <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200">
-            Sauvegarder
+            Save
           </button>
         </div>
       </form>
     </div>
   </div>
-    <!-- Le script reste inchangé -->
+    <!-- Script remains unchanged -->
 <script>
 async function fetchUsers() {
   const res = await fetch('/api/users');
@@ -121,22 +121,22 @@ async function fetchUsers() {
   });
 }
 
-// Fonction pour afficher la modale d'édition
+// Function to show edit modal
 function showEditModal(id, username, isAdmin) {
   const modal = document.getElementById('editModal');
   document.getElementById('editUserId').value = id;
   document.getElementById('editUsername').value = username;
-  document.getElementById('editPassword').value = ''; // toujours vider le champ mot de passe
+  document.getElementById('editPassword').value = ''; // always clear the password field
   document.getElementById('editIsAdmin').checked = isAdmin;
   modal.style.display = 'flex';
 }
 
-// Fonction pour cacher la modale d'édition
+// Function to hide edit modal
 function hideEditModal() {
   document.getElementById('editModal').style.display = 'none';
 }
 
-// Ajout des écouteurs d'événements pour la modale
+// Add event listeners for the modal
 document.getElementById('cancelEditBtn').addEventListener('click', () => {
   hideEditModal();
 });
@@ -201,7 +201,7 @@ document.getElementById('addUserForm').addEventListener('submit', async (e) => {
 
 fetchUsers();
 
-// Gérer la déconnexion
+// Handle logout
 document.getElementById('logoutButton').addEventListener('click', async () => {
     try {
         const res = await fetch('/api/logout', { method: 'POST' });

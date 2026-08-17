@@ -7,9 +7,9 @@ from typing import Generator, Any, Dict, Tuple
 
 class BaseParser(ABC):
     """
-    Classe de base pour tous les parsers.
-    Les parsers doivent lire la donnée brute, la nettoyer et la "yield" (générer).
-    Ils ne doivent plus s'occuper de créer ou fermer les fichiers de sortie.
+    Base class for all parsers.
+    Parsers must read the raw data, clean it and yield it.
+    They no longer need to worry about creating or closing output files.
     """
     
     def __init__(self, logger=None, separator="|"):
@@ -19,7 +19,7 @@ class BaseParser(ABC):
     @abstractmethod
     def parse(self, input_path: Path) -> Generator[Tuple[str, Any], None, None]:
         """
-        Doit lire le fichier d'entrée et yield des tuples (artifact_type, dictionnaire ou string).
+        Must read the input file and yield tuples (artifact_type, dictionary or string).
         Ex: yield "prefetch", {"Date": "2023-01-01", "Time": "12:00:00", "Data": "example"}
         """
         pass
@@ -27,8 +27,8 @@ class BaseParser(ABC):
 
 class CsvOutputSink:
     """
-    Gère l'écriture standardisée dans un fichier CSV.
-    Prend les dictionnaires "yieldés" par le parser et les écrit.
+    Manages standardized writing to a CSV file.
+    Takes the dictionaries yielded by the parser and writes them.
     """
     def __init__(self, output_path: Path, separator="|"):
         self.output_path = output_path
@@ -59,11 +59,13 @@ class CsvOutputSink:
 
 class JsonlOutputSink:
     """
-    Gère l'écriture standardisée dans un fichier JSONL (JSON Lines).
+    Manages standardized writing to a JSONL (JSON Lines) file.
     """
-    def __init__(self, output_path: Path):
+    def __init__(self, output_path: Path, context=None, ingest_to_siem=True):
         self.output_path = output_path
         self.file = None
+        if context and ingest_to_siem:
+            context.siem_ingestion_files.append(str(self.output_path))
 
     def write_record(self, record: Dict[str, Any]):
         if not self.file:
@@ -80,7 +82,7 @@ class JsonlOutputSink:
 
 class TextOutputSink:
     """
-    Gère l'écriture de lignes de texte brut.
+    Manages writing raw text lines.
     """
     def __init__(self, output_path: Path):
         self.output_path = output_path
@@ -97,3 +99,43 @@ class TextOutputSink:
         if self.file:
             self.file.close()
             self.file = None
+
+
+class DualOutputSink:
+    def __init__(self, output_path: Path, separator="|", jsonl_dir: Path = None, context=None, ingest_to_siem=True):
+        self.csv_path = output_path
+        if jsonl_dir:
+            self.jsonl_path = jsonl_dir / f"{output_path.stem}.jsonl"
+        else:
+            self.jsonl_path = output_path.with_suffix('.jsonl')
+        self.separator = separator
+        self.csv_file = None
+        self.jsonl_file = None
+        if context and ingest_to_siem:
+            context.siem_ingestion_files.append(str(self.jsonl_path))
+        self.writer = None
+        self.headers_written = False
+
+    def write_record(self, record: Dict[str, Any]):
+        if not self.csv_file:
+            self.csv_path.parent.mkdir(parents=True, exist_ok=True)
+            self.csv_file = open(self.csv_path, "a", newline="", encoding="utf-8")
+            self.jsonl_file = open(self.jsonl_path, "a", encoding="utf-8")
+            
+        if not self.headers_written and self.csv_file.tell() == 0:
+            self.writer = csv.DictWriter(self.csv_file, fieldnames=record.keys(), delimiter=self.separator)
+            self.writer.writeheader()
+            self.headers_written = True
+        elif not self.writer:
+            self.writer = csv.DictWriter(self.csv_file, fieldnames=record.keys(), delimiter=self.separator)
+
+        self.writer.writerow(record)
+        self.jsonl_file.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    def close(self):
+        if self.csv_file:
+            self.csv_file.close()
+            self.csv_file = None
+        if self.jsonl_file:
+            self.jsonl_file.close()
+            self.jsonl_file = None

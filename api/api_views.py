@@ -6,7 +6,7 @@ from flask import Blueprint, Response, jsonify, render_template, request, send_f
 from flask_login import login_user, logout_user, login_required, current_user
 from worker import celery
 from extensions import db, login_manager
-from models import User   # ✅ Import du modèle
+from models import User   # ✅ Import model
 
 wapp_api = Blueprint('wapp_api', __name__)
 SHARED_FOLDER_PATH = "/python-docker/shared_files/"
@@ -17,28 +17,28 @@ LOG_FOLDER_PATH = os.path.join(WORKING_FOLDER_PATH, "execution_logs")
 RESOURCES_FOLDER_PATH = "/python-docker/ressources"
 
 
-# Page d’admin protégée
+# Protected admin page
 @wapp_api.route("/admin/users")
 @login_required
 def users_admin():
-    # Vérification du nouveau champ is_admin
+    # Check new is_admin field
     if not current_user.is_admin:
         return jsonify({"message": "Access forbidden"}), 403
     return render_template("users.html")
 
 
-# API pour récupérer la liste des utilisateurs
+# API to fetch the list of users
 @wapp_api.route("/api/users", methods=["GET"])
 @login_required
 def list_users():
     if not current_user.is_admin:
         return jsonify({"message": "Access forbidden"}), 403
     users = User.query.all()
-    # Inclure le statut d'administrateur dans la réponse
+    # Include admin status in the response
     return jsonify([{"id": u.id, "username": u.username, "is_admin": u.is_admin} for u in users])
 
 
-# API pour modifier un user
+# API to update a user
 @wapp_api.route("/api/users/<int:user_id>", methods=["PUT"])
 @login_required
 def update_user(user_id):
@@ -50,14 +50,14 @@ def update_user(user_id):
         user.username = data["username"]
     if "password" in data:
         user.set_password(data["password"])
-    # Ajoutez la logique pour mettre à jour le statut d'administrateur
+    # Add logic to update the admin status
     if "is_admin" in data:
         user.is_admin = data["is_admin"]
     db.session.commit()
     return jsonify({"message": "User updated"})
 
 
-# API pour supprimer un user
+# API to delete a user
 @wapp_api.route("/api/users/<int:user_id>", methods=["DELETE"])
 @login_required
 def delete_user(user_id):
@@ -68,7 +68,7 @@ def delete_user(user_id):
     db.session.commit()
     return jsonify({"message": "User deleted"})
 
-# Assurez-vous d'appliquer la même logique pour les autres routes admin.
+# Make sure to apply the same logic to other admin routes.
 
 
 @wapp_api.route("/index")
@@ -82,7 +82,7 @@ def login_page():
     return render_template("login.html")
 
 
-# Fonction de chargement des utilisateurs
+# User loader function
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -126,7 +126,7 @@ def login():
 @wapp_api.route('/api/logout', methods=['POST'])
 @login_required
 def logout():
-    """Déconnecte l'utilisateur actuel et le redirige vers la page de connexion."""
+    """Logs out the current user and redirects them to the login page."""
     logout_user()
     return jsonify({"message": "Successfully logged out"}), 200
 
@@ -318,27 +318,80 @@ def list_resources_api():
 
 import re
 
+import ast
+
+def extract_plugin_info(file_path):
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            tree = ast.parse(f.read(), filename=file_path)
+    except Exception as e:
+        print(f"AST Error reading {file_path}: {e}", file=sys.stderr)
+        return None
+
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef):
+            is_plugin = False
+            plugin_name = None
+            plugin_type = None
+            
+            for decorator in node.decorator_list:
+                if isinstance(decorator, ast.Call) and getattr(decorator.func, 'id', '') in ['register_pipeline', 'register_preprocessor', 'register_postprocessor']:
+                    is_plugin = True
+                    func_id = getattr(decorator.func, 'id', '')
+                    if func_id == 'register_preprocessor': plugin_type = 'preprocessor'
+                    elif func_id == 'register_pipeline': plugin_type = 'pipeline'
+                    elif func_id == 'register_postprocessor': plugin_type = 'postprocessor'
+                    
+                    if decorator.args and isinstance(decorator.args[0], ast.Constant):
+                        plugin_name = decorator.args[0].value
+                    elif decorator.keywords:
+                        for kw in decorator.keywords:
+                            if kw.arg == 'name' and isinstance(kw.value, ast.Constant):
+                                plugin_name = kw.value.value
+            
+            if is_plugin and plugin_name:
+                description = ast.get_docstring(node)
+                if description:
+                    description = description.strip()
+                else:
+                    description = "No description available."
+                    
+                recommended = True
+                for item in node.body:
+                    if isinstance(item, ast.Assign):
+                        for target in item.targets:
+                            if getattr(target, 'id', '') == 'recommended':
+                                if isinstance(item.value, ast.Constant):
+                                    recommended = item.value.value
+                return {
+                    "name": plugin_name,
+                    "description": description,
+                    "recommended": recommended,
+                    "type": plugin_type
+                }
+    return None
+
 @wapp_api.route('/api/pipelines', methods=['GET'])
 @login_required
 def get_pipelines():
-    modules_dir = "/python-docker/WAPP_MODULE/modules"
+    dirs = [
+        "/python-docker/WAPP_MODULE/preprocessors",
+        "/python-docker/WAPP_MODULE/modules",
+        "/python-docker/WAPP_MODULE/postprocessors"
+    ]
     pipelines = []
     
-    try:
-        if os.path.exists(modules_dir):
-            for file_name in os.listdir(modules_dir):
-                if file_name.endswith('.py') and not file_name.startswith('__'):
-                    file_path = os.path.join(modules_dir, file_name)
-                    try:
-                        with open(file_path, "r", encoding="utf-8") as f:
-                            content = f.read()
-                            match = re.search(r'@register_pipeline\(name="([^"]+)"\)', content)
-                            if match:
-                                pipelines.append(match.group(1))
-                    except Exception as e:
-                        print(f"Error reading {file_name}: {e}", file=sys.stderr)
-    except Exception as e:
-        print(f"Error scanning modules directory: {e}", file=sys.stderr)
-        
+    for d in dirs:
+        try:
+            if os.path.exists(d):
+                for file_name in os.listdir(d):
+                    if file_name.endswith('.py') and not file_name.startswith('__'):
+                        file_path = os.path.join(d, file_name)
+                        info = extract_plugin_info(file_path)
+                        if info:
+                            pipelines.append(info)
+        except Exception as e:
+            print(f"Error scanning directory {d}: {e}", file=sys.stderr)
+            
     return jsonify({"status": "OK", "pipelines": pipelines})
 

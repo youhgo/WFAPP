@@ -19,30 +19,31 @@ except ImportError:
 
 def _clean_long_filename(base_name: str) -> str:
     """
-    Nettoie les noms de fichiers trop longs lors de l'extraction (évite les erreurs OS OSError 206/207).
-    Utilise la même logique de Regex robuste que le OrcRenamer.
+    Cleans overly long filenames during extraction (prevents OS errors OSError 206/207).
+    Uses the same robust Regex logic as OrcRenamer.
     """
-    # Ne pas appliquer cette logique si le nom est déjà valide (< 255 bytes)
+    # Do not apply this logic if the name is already valid (< 255 bytes)
+    # We preserve the full name so that the GetThis.csv mapping works
     if len(base_name.encode('utf-8')) <= 255:
         return base_name
 
-    # 1. Nettoyage du suffixe ORC ({GUID}.data)
+    # 1. Clean ORC suffix ({GUID}.data)
     filename_clean = re.sub(r'_\{[a-fA-F0-9\-]+\}(?:\.data)?$', '', base_name)
     filename_clean = re.sub(r'\_data$', '', filename_clean)
 
-    # 2. Nettoyage des préfixes ORC (3 ou 4 blocs hexadécimaux/numériques séparés par _)
-    filename_clean = re.sub(r'^([A-Fa-f0-9]+_){3,4}', '', filename_clean)
+    # 2. Clean ORC prefixes (3 or 4 hex/num blocks separated by _)
+    filename_clean = re.sub(r'^([A-Fa-f0-9]{5,20}_){2,4}(?:[A-Fa-f0-9]+_)?', '', filename_clean)
 
-    # Sécurité : si la regex a accidentellement vidé le nom, on génère un nom basé sur le hash
+    # Safety: if the regex accidentally emptied the name, generate a name based on the hash
     if not filename_clean:
         file_hash = hashlib.md5(base_name.encode('utf-8')).hexdigest()[:8]
         file_ext = "".join(Path(base_name).suffixes)
         filename_clean = f"RENAMED_EMPTY_{file_hash}{file_ext}"
 
-    # Ultime sécurité : si le nom est *encore* trop long, le tronquer brutalement
+    # Ultimate safety: if the name is *still* too long, brutally truncate it
     if len(filename_clean.encode('utf-8')) > 255:
         name, ext = os.path.splitext(filename_clean)
-        # On garde de la place pour l'extension
+        # Keep room for the extension
         filename_clean = name[:200] + ext
 
     return filename_clean
@@ -50,7 +51,7 @@ def _clean_long_filename(base_name: str) -> str:
 
 class OrcExtractor:
     """
-    Classe gérant l'extraction (récursive) des archives DFIR-ORC (.zip, .7z).
+    Class managing the (recursive) extraction of DFIR-ORC archives (.zip, .7z).
     """
 
     def __init__(self, logger, password=None):
@@ -59,16 +60,16 @@ class OrcExtractor:
 
     def extract_recursively(self, archive_ext, archive_path, dest_dir):
         """
-        Extrait l'archive principale, puis cherche et extrait toutes les archives imbriquées.
+        Extracts the main archive, then searches and extracts all nested archives.
         """
-        self.logger.info(f"[EXTRACTOR] Début de l'extraction principale de {archive_path}", header="START")
+        self.logger.info(f"[EXTRACTOR] Start main extraction of {archive_path}", header="START")
 
-        # 1. Extraction de l'archive racine
+        # 1. Root archive extraction
         success = self._extract_archive(archive_ext, archive_path, dest_dir)
         if not success:
             return False
 
-        # 2. Boucle pour l'extraction récursive des archives imbriquées (créées par ORC)
+        # 2. Loop for recursive extraction of nested archives (created by ORC)
         archives_to_extract = True
         while archives_to_extract:
             archives_to_extract = False
@@ -78,21 +79,21 @@ class OrcExtractor:
                         nested_archive_path = os.path.join(root, file)
                         nested_ext = os.path.splitext(file)[1]
 
-                        self.logger.info(f"[EXTRACTOR] Extraction de l'archive imbriquée: {file}", header="INFO",
+                        self.logger.info(f"[EXTRACTOR] Extraction of nested archive: {file}", header="INFO",
                                          indentation=1)
 
                         if self._extract_archive(nested_ext, nested_archive_path, root):
                             try:
-                                os.remove(nested_archive_path)  # Nettoyage après extraction réussie
+                                os.remove(nested_archive_path)  # Cleanup after successful extraction
                             except OSError:
                                 pass
-                            archives_to_extract = True  # On continue de chercher au cas où l'archive extraite en contenait d'autres
+                            archives_to_extract = True  # Keep searching in case the extracted archive contained others
 
-        self.logger.info("[EXTRACTOR] Extraction récursive terminée", header="FINISHED")
+        self.logger.info("[EXTRACTOR] Recursive extraction completed", header="FINISHED")
         return True
 
     def _extract_archive(self, ext, archive_path, dest_dir):
-        """Méthode interne gérant la logique d'extraction 7z et Zip."""
+        """Internal method managing 7z and Zip extraction logic."""
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
 
         try:
@@ -102,7 +103,7 @@ class OrcExtractor:
                         zip_ref.setpassword(self.password.encode('utf-8'))
 
                     for member in zip_ref.infolist():
-                        # Utilisation de la fonction de nettoyage des noms longs
+                        # Use the long filename cleaning function
                         clean_name = _clean_long_filename(os.path.basename(member.filename))
                         member.filename = os.path.join(os.path.dirname(member.filename), clean_name)
                         zip_ref.extract(member, path=dest_dir)
@@ -114,8 +115,8 @@ class OrcExtractor:
                         z.extractall(path=dest_dir)
                     return True
                 else:
-                    # Fallback utilisant l'exécutable système 7za si py7zr n'est pas installé
-                    self.logger.warning("[EXTRACTOR] py7zr non disponible, fallback vers 7za (binaire système)",
+                    # Fallback using system 7za executable if py7zr is not installed
+                    self.logger.warning("[EXTRACTOR] py7zr unavailable, fallback to 7za (system binary)",
                                         indentation=1)
                     cmd = ['7za', 'x', archive_path, f'-o{dest_dir}', '-y']
                     if self.password:
@@ -123,15 +124,15 @@ class OrcExtractor:
                     subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
                     return True
         except Exception as e:
-            self.logger.error(f"[EXTRACTOR] Échec de l'extraction {archive_path} : {e}", header="ERROR", indentation=1)
+            self.logger.error(f"[EXTRACTOR] Extraction failed for {archive_path} : {e}", header="ERROR", indentation=1)
             return False
 
 
 class ArtefactRestorer:
     """
-    Si l'utilisateur demande une restauration de l'arborescence (--restore),
-    cette classe reconstruit les dossiers d'origine (ex: C:/Windows/System32/...)
-    à partir des fichiers de logs GetThis.
+    If the user requests tree restoration (--restore),
+    this class rebuilds original folders (e.g., C:/Windows/System32/...)
+    from GetThis log files.
     """
 
     def __init__(self, extracted_dir: str, restored_dir: str, logger):
@@ -142,8 +143,8 @@ class ArtefactRestorer:
 
     def build_mapping(self):
         """
-        Identique au OrcRenamer : lit tous les GetThis.csv pour mapper
-        le nom généré par ORC vers le chemin complet (FullName).
+        Same as OrcRenamer: reads all GetThis.csv files to map
+        the name generated by ORC to the full path (FullName).
         """
         getthis_files = [f for f in self.extracted_dir.rglob("*.csv") if "GetThis" in f.name]
 
@@ -156,20 +157,20 @@ class ArtefactRestorer:
                         full_name = row.get("FullName")
 
                         if sample_name and full_name:
-                            # Extraction cross-platform sécurisée
+                            # Secure cross-platform extraction
                             ugly_basename = sample_name.replace('\\', '/').split('/')[-1]
 
-                            # Nettoyage du FullName pour en faire un chemin relatif propre
-                            # Transforme "C:\Windows\..." en "C/Windows/..." pour éviter les bugs
+                            # Clean FullName to make it a proper relative path
+                            # Transforms "C:\Windows\..." to "C/Windows/..." to avoid bugs
                             clean_path = full_name.replace('\\', '/').lstrip('/')
                             clean_path = clean_path.replace(':', '')
 
                             self.mapping[ugly_basename] = clean_path
             except Exception as e:
-                self.logger.error(f"[RESTORER] Erreur lecture {csv_file.name}: {e}", header="ERROR", indentation=1)
+                self.logger.error(f"[RESTORER] Error reading {csv_file.name}: {e}", header="ERROR", indentation=1)
 
     def run(self):
-        self.logger.info("[RESTORER] Démarrage de la restauration de l'arborescence (Virtual FileSystem)",
+        self.logger.info("[RESTORER] Starting tree restoration (Virtual FileSystem)",
                          header="START")
         self.build_mapping()
 
@@ -182,19 +183,19 @@ class ArtefactRestorer:
 
             original_name = file_path.name
 
-            # On ne déplace pas les fichiers d'inventaire
+            # Do not move inventory files
             if original_name.endswith(".csv") and "GetThis" in original_name:
                 continue
 
             if original_name in self.mapping:
-                # Récupère le chemin d'origine (ex: C/Windows/System32/winevt/Logs/Security.evtx)
+                # Retrieve original path (e.g., C/Windows/System32/winevt/Logs/Security.evtx)
                 relative_target = self.mapping[original_name]
                 target_path = self.restored_dir / relative_target
 
-                # Création des dossiers parents automatiquement
+                # Create parent folders automatically
                 target_path.parent.mkdir(parents=True, exist_ok=True)
 
-                # Gestion anti-écrasement
+                # Anti-overwrite management
                 counter = 1
                 base_target = target_path
                 while target_path.exists():
@@ -202,14 +203,14 @@ class ArtefactRestorer:
                     counter += 1
 
                 try:
-                    # On déplace le fichier vers sa place dans l'arborescence restaurée
+                    # Move file to its place in the restored tree
                     shutil.move(str(file_path), str(target_path))
                     restored_count += 1
                 except Exception as e:
-                    self.logger.warning(f"[RESTORER] Impossible de déplacer {original_name}: {e}", header="WARNING",
+                    self.logger.warning(f"[RESTORER] Failed to move {original_name}: {e}", header="WARNING",
                                         indentation=2)
             else:
-                # Fichiers n'apparaissant pas dans GetThis (Orphelins, métadonnées ORC, logs...)
+                # Files not appearing in GetThis (Orphans, ORC metadata, logs...)
                 target_path = self.restored_dir / "ORC_Metadata_Orphans" / original_name
                 target_path.parent.mkdir(parents=True, exist_ok=True)
                 try:
@@ -218,12 +219,12 @@ class ArtefactRestorer:
                 except:
                     pass
 
-        # Nettoyage du dossier d'extraction d'origine qui devrait être vide
+        # Cleanup the original extraction folder which should be empty
         try:
             shutil.rmtree(self.extracted_dir)
         except OSError:
             pass
 
         self.logger.info(
-            f"[RESTORER] Terminée. {restored_count} fichiers replacés et {orphans_count} métadonnées sauvegardées.",
+            f"[RESTORER] Completed. {restored_count} files moved and {orphans_count} metadata saved.",
             header="FINISHED")

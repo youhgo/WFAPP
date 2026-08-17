@@ -12,17 +12,17 @@ from pathlib import Path
 import json
 
 # Imports des classes métiers
-from .classes.OrcExtractor import OrcExtractor, ArtefactRestorer
-from .classes.OrcRenamer import OrcRenamer
+
 from .classes.WappContext import WappContext
 
 # Import du dispatcher dynamique
-from .modules.dispatcher import ArtefactDispatcher
+from .classes.dispatcher import ArtefactDispatcher
+from .classes.PreProcessorDispatcher import PreProcessorDispatcher
+from .classes.PostProcessorDispatcher import PostProcessorDispatcher
 
 # Imports des parsers et outils externes
 from .parsers import MaximumPlasoParserJson
-from .outils.plaso2ELK import plaso_2_siem, plaso_to_wazuh
-from .outils.wapp2Elk import App_2_wazuh, App_2_elk
+from .utils.plaso2ELK import plaso_2_siem, plaso_to_wazuh
 
 
 try:
@@ -73,272 +73,22 @@ class WindowsForensicArtefactParser:
         self.timeline_csv_path = self.ctx.timeline_dir / "timeline.csv"
 
 
-    def extract(self):
-        extraction_successful = False
-        try:
-            extractor = OrcExtractor(self.logger, "avproof")
-            self.logger.info("[EXTRACTING] archives", header="START")
-
-
-            archive_path = str(self.ctx.path_to_archive)
-            archive_filename = os.path.basename(archive_path)
-            cleaned_filename = re.sub(r'^[a-f0-9]+__', '', archive_filename)
-            file_ext = os.path.splitext(cleaned_filename)[1].lower()  # .lower() est une bonne pratique
-
-            self.logger.info(f"[EXTRACTING] cleaning archive name to {cleaned_filename}", header="INFO")
-            self.logger.info(f"[EXTRACTING] found extension {file_ext}", header="INFO")
-
-            if file_ext in [".7z", ".zip"]:
-                # Note importante : on garde `archive_path` d'origine pour l'extraction car
-                # le fichier sur le disque dur possède toujours le préfixe numérique !
-                extraction_successful = extractor.extract_recursively(file_ext,
-                                                                      archive_path,
-                                                                      str(self.ctx.extracted_dir))
-            self.logger.info("[EXTRACTING] archives", header="FINISHED")
-        except Exception as e:
-            self.logger.error(f"[EXTRACTING] Error: {e}", header="ERROR")
-
-        if extraction_successful:
-            if self.is_orc:
-                try:
-                    # Si restauration de l'arborescence (Virtual FileSystem) demandée
-                    if self.ctx.main_config.get("restore", False):
-                        restorer = ArtefactRestorer(str(self.ctx.extracted_dir), str(self.ctx.restored_path), self.logger)
-                        restorer.run()
-                    else:
-                        # NOUVELLE LOGIQUE : Renommage intelligent via GetThis.csv
-                        renamer = OrcRenamer(self.ctx)
-                        renamer.rename_files(self.ctx.extracted_dir)
-                except Exception as e:
-                    self.logger.error(f"Critical error while post-processing extraction : {e}", header="CRITICAL")
-        else :
-            exit(1)
-
-    def clean_duplicates(self, dir_to_clean):
-        self.logger.info("[CLEAN DUPLICATE] Démarrage", header="START")
-        try:
-            for file in Path(dir_to_clean).rglob("*"):
-                if file.is_file():
-                    seen_lines = set()
-                    l_temp = []
-                    with open(file, 'r', encoding='utf-8', errors='ignore') as f:
-                        for line in f:
-                            if line not in seen_lines:
-                                seen_lines.add(line)
-                                l_temp.append(line)
-                    with open(file, 'w', encoding='utf-8') as f:
-                        f.writelines(l_temp)
-            self.logger.info("[CLEAN DUPLICATE] Terminé", header="FINISHED")
-        except Exception as e:
-            self.logger.error(f"[CLEAN DUPLICATE] Erreur: {e}", header="ERROR")
-
-    def create_timeline(self):
-        self.logger.info("[CREATING][TIMELINE]", header="START")
-        timeline_entries = []
-        final_header = None
-        SOURCE_FILE_COLUMN_INDEX = 2
-
-        for file_path in self.ctx.result_parsed_dir.rglob("*.csv"):
-            if file_path.name == "small_timeline.csv": continue
-            try:
-                with file_path.open('r', newline='', encoding='utf-8') as f:
-                    reader = csv.reader(f, delimiter='|')
-                    try:
-                        header = next(reader)
-                        if final_header is None:
-                            final_header = header[:]
-                            final_header.insert(SOURCE_FILE_COLUMN_INDEX, 'SourceFile')
-                    except StopIteration:
-                        continue
-                    for row in reader:
-                        if not row: continue
-                        row.insert(SOURCE_FILE_COLUMN_INDEX, file_path.stem)
-                        timeline_entries.append(row)
-            except Exception:
-                pass
-
-        if timeline_entries:
-            try:
-                sorted_timeline = sorted(timeline_entries, key=lambda x: x[0])
-            except IndexError:
-                sorted_timeline = sorted(timeline_entries)
-
-            timeline_path = self.ctx.result_parsed_dir / "small_timeline.csv"
-            with open(timeline_path, 'w', newline='', encoding='utf-8') as tl:
-                writer = csv.writer(tl, delimiter='|')
-                if final_header: writer.writerow(final_header)
-                writer.writerows(sorted_timeline)
-        self.logger.info("[CREATING][TIMELINE]", header="FINISHED")
-
-    # --- Plaso, ELK, Wazuh ---
-    def do_plaso(self):
-        self.logger.info("[TOOLING][PLASO] Log2Timeline", header="START")
-        try:
-            subprocess.run(
-                ["log2timeline.py", "--logfile", str(self.l2t_log_file), "--storage-file", str(self.plaso_storage_file),
-                 str(self.ctx.extracted_main_dir)])
-            self.logger.info("[PARSING][PSORT] to JSON", header="START")
-            subprocess.run(["psort.py", "-o", "json_line", "--logfile", str(self.psort_log_file), "-w",
-                            str(self.timeline_json_path), str(self.plaso_storage_file)])
-            subprocess.run(
-                ["psort.py", "-o", "l2tcsv", "--logfile", str(self.psort_log_file), "-w", str(self.timeline_csv_path),
-                 str(self.plaso_storage_file)])
-        except Exception as e:
-            self.logger.error(f"[TOOLING][PLASO] Erreur: {e}", header="ERROR")
-
-    def do_maximum_plaso_parser(self):
-        """
-        Launch Maximum plaso parser, a parser for json plaso timeline that convert a timeline to lot of differents
-        artefacts files formated in human friendly format : DATE|TIME|ETC|ETC
-        """
-        try:
-            self.logger.info("[MAXIMUMPLASOPARSER]", header="START", indentation=1)
-            # Correction: Retrait du mp.parse_timeline(), on instancie et on appelle proprement
-            parser = MaximumPlasoParserJson.MaximumPlasoParser(
-                path_to_timeline=str(self.timeline_json_path),
-                output_directory=str(self.ctx.parsed_dir),
-                separator=self.ctx.separator,
-                machine_name=self.ctx.machine_name
-            )
-            parser.parse_timeline()
-            self.logger.info("[MAXIMUMPLASOPARSER]", header="FINISHED", indentation=1)
-        except Exception as e:
-            self.logger.error("[MAXIMUMPLASOPARSER] {}".format(traceback.format_exc()), header="ERROR", indentation=1)
-
-    def do_plaso2elk(self):
-        try:
-            es_host = f"{os.getenv('ELK_HOST', 'localhost')}:{os.getenv('ELK_PORT', '9200')}"
-            verify_ssl = str(os.getenv('ES_VERIFYSSL', '0')).lower() in ['1', 'true', 'yes']
-
-            self.logger.info("[PLASO][ELK]", header="START", indentation=1)
-            self.logger.info(
-                f"[PLASO][ELK] param are: {self.ctx.case_name}|{self.ctx.machine_name}|{self.ctx.timeline_json_path}|{es_host}|{os.getenv('ELK_USER')}|xxxxxx|{os.getenv('ES_CHUNKSIZE')}|{verify_ssl}|{os.getenv('ES_TIMEOUT')}|{os.getenv('ES_NBTHREAD')}|{os.getenv('ES_MODE')}",
-                header="START", indentation=1)
-
-            # Correction: Ajout de .ctx pour les variables globales et valeurs par défaut pour les getenv()
-            p_agent = plaso_2_siem.PlasoPipeline(
-                case_name=self.ctx.case_name,
-                machine_name=self.ctx.machine_name,
-                timeline_path=str(self.ctx.timeline_json_path),
-                es_hosts=es_host,
-                es_user=os.getenv('ELK_USER', ''),
-                es_pass=os.getenv('ELK_PASSWD', ''),
-                chunk_size=int(os.getenv('ES_CHUNKSIZE', '500')),
-                verify_ssl=verify_ssl,
-                es_timeout=int(os.getenv('ES_TIMEOUT', '60')),
-                thread_count=int(os.getenv('ES_NBTHREAD', '4')),
-                mode=os.getenv('ES_MODE', 'wapp')
-            )
-            p_agent.run()
-            self.logger.info("[PLASO][ELK]", header="FINISHED", indentation=1)
-        except Exception as e:
-            self.logger.error(f"[PLASO][ELK] aborting, ERROR: {traceback.format_exc()}", header="ERROR", indentation=1)
-
-    def do_elk(self, artifact_types="all"):
-        try:
-            es_host = f"{os.getenv('ELK_HOST', 'localhost')}:{os.getenv('ELK_PORT', '9200')}"
-            verify_ssl = str(os.getenv('ES_VERIFYSSL', '0')).lower() in ['1', 'true', 'yes']
-
-            self.logger.info("[WAPP][ELK]", header="START", indentation=1)
-
-            # Correction: Ajout de .ctx et cast de l'output en chaine de caractère
-            pipeline = App_2_elk.ElkForensicPipeline(
-                case_name=self.ctx.case_name,
-                machine_name=self.ctx.machine_name,
-                source_dir=str(self.ctx.result_parsed_dir),
-                es_hosts=es_host,
-                es_user=os.getenv('ELK_USER', ''),
-                es_pass=os.getenv('ELK_PASSWD', ''),
-                chunk_size=int(os.getenv('ES_CHUNKSIZE', '500')),
-                verify_ssl=verify_ssl,
-                artifact_types=artifact_types
-            )
-            pipeline.run()
-            self.logger.info("[WAPP][ELK]", header="FINISHED", indentation=1)
-        except Exception as e:
-            self.logger.error(f"[WAPP][ELK] aborting, ERROR: {traceback.format_exc()}", header="ERROR", indentation=1)
-
-    def do_plaso2wazuh(self):
-        try:
-            wazuh_host = f"{os.getenv('WAZUH_HOST', 'localhost')}:{os.getenv('WAZUH_PORT', '9200')}"
-            verify_ssl = str(os.getenv('WAZUH_VERIFYSSL', '0')).lower() in ['1', 'true', 'yes']
-
-            self.logger.info("[PLASO][WAZUH]", header="START", indentation=1)
-
-            # Ajout de valeurs par défaut sur les int() pour éviter les erreurs NoneType
-            p_agent = plaso_to_wazuh.PlasoPipeline(
-                case_name=self.ctx.case_name,
-                machine_name=self.ctx.machine_name,
-                timeline_path=str(self.timeline_json_path),
-                es_hosts=wazuh_host,
-                es_user=os.getenv('WAZUH_USER', ''),
-                es_pass=os.getenv('WAZUH_PASSWD', ''),
-                chunk_size=int(os.getenv('WAZUH_CHUNKSIZE', '500')),
-                verify_ssl=verify_ssl,
-                es_timeout=int(os.getenv('WAZUH_TIMEOUT', '60')),
-                thread_count=int(os.getenv('WAZUH_NBTHREAD', '4')),
-                mode=os.getenv('WAZUH_MODE', 'wapp')
-            )
-            p_agent.run()
-            self.logger.info("[PLASO][WAZUH]", header="FINISHED", indentation=1)
-        except Exception as e:
-            self.logger.error(f"[PLASO][WAZUH] aborting, ERROR: {traceback.format_exc()}", header="ERROR",
-                              indentation=1)
-
-    def do_wazuh(self):
-        try:
-            es_host = f"{os.getenv('WAZUH_HOST')}:{os.getenv('WAZUH_PORT')}"
-            verify_ssl = os.getenv('WAZUH_VERIFYSSL', '0').lower() in ['1', 'true', 'yes']
-            self.logger.info("[WAPP][WAZUH] Envoi des données WAPP vers Wazuh", header="START", indentation=1)
-            pipeline = App_2_wazuh.ForensicPipeline(
-                case_name = self.ctx.case_name,
-                machine_name = self.ctx.machine_name,
-                es_hosts = es_host,
-                es_user = os.getenv('WAZUH_USER', ''),
-                es_pass = os.getenv('WAZUH_PASSWD', ''),
-                chunk_size = int(os.getenv('WAZUH_CHUNKSIZE')),
-                verify_ssl = verify_ssl,
-                artifact_types =  "all",
-                es_timeout = int(os.getenv('WAZUH_TIMEOUT')),
-                thread_count = int(os.getenv('WAZUH_NBTHREAD')),
-                mode = os.getenv('WAZUH_MODE'),
-                source_dir = str(self.ctx.result_parsed_dir),
-                config_file = self.ctx.wazuh_importer_file_config
-            )
-
-            pipeline.run()
-
-            self.logger.info("[WAPP][WAZUH] Succès", header="FINISHED", indentation=1)
-        except Exception as e:
-            self.logger.error(f"[WAPP][WAZUH] Erreur: {e}", header="ERROR", indentation=1)
 
 
     def do(self):
         """Le Chef d'Orchestre principal."""
-        # 1. Extraction de l'archive et Pré-Processing (Renommage ou Restauration)
-        self.extract()
+        
+        # 1. Exécution des plugins de Pré-Traitement (Extraction, Restauration, Renommage, etc.)
+        pre_dispatcher = PreProcessorDispatcher(self.ctx)
+        pre_dispatcher.run()
 
         # 2. Lancement du Dispatcher (Inventaire et parsing dynamique O(N))
         dispatcher = ArtefactDispatcher(self.ctx)
         dispatcher.run_discovery(self.ctx.extracted_main_dir)
 
-        # 3. Post-Processing de l'environnement WAPP (Nettoyage & Timeline globale)
-        self.clean_duplicates(
-            self.ctx.result_parsed_dir)
-        self.create_timeline()
-
-        if self.ctx.main_config.get("elk", False):
-            self.do_elk("all")
-        if self.ctx.main_config.get("wazuh", False):
-            self.do_wazuh()
-        if self.ctx.main_config.get("plaso", False):
-            self.do_plaso()
-            if self.ctx.main_config.get("mpp", False):
-                self.do_maximum_plaso_parser()
-            if self.ctx.main_config.get("plaso2elk", False):
-                self.do_plaso2elk()
-            if self.ctx.main_config.get("plaso2wazuh", False):
-                self.do_plaso2wazuh()
+        # 3. Exécution des plugins de Post-Traitement (Nettoyage, Timeline, Plaso, ELK, Wazuh, etc.)
+        post_dispatcher = PostProcessorDispatcher(self.ctx)
+        post_dispatcher.run()
 
         self.logger.info("[WAPP] Fin de l'exécution.", header="FINISHED")
 

@@ -81,7 +81,7 @@ services:
     environment:
       CELERY_BROKER_URL: ${REDIS_URL}
       CELERY_RESULT_BACKEND: ${REDIS_URL}
-      TOOL_PATH: "/python-docker/WAPP_MODULE/outils"
+      TOOL_PATH: "/python-docker/WAPP_MODULE/utils"
 
       ELK_HOST: ${ELK_HOST}
       ELK_PORT: ${ELK_PORT}
@@ -110,6 +110,7 @@ services:
 
     volumes:
       - ${SHARED_FOLDER_PATH}:/python-docker/shared_files/
+      - ./APPEngine/WAPP_MODULE:/python-docker/WAPP_MODULE:ro
     depends_on:
       - redis
     networks:

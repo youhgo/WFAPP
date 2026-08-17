@@ -145,9 +145,9 @@
 
                     <form id="uploadForm" class="space-y-6 sm:space-y-8">
 
-                        <!-- Informations du Cas (Top Section) -->
+                        <!-- Case Information (Top Section) -->
                         <div class="bg-gray-50 p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm">
-                            <h3 class="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Informations du cas</h3>
+                            <h3 class="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Case Information</h3>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                                 <div class="md:col-span-2 lg:col-span-2">
@@ -170,7 +170,7 @@
                                     <input type="text" id="machineName" name="machineName" required placeholder="ex: MyMachine" class="shadow-sm block w-full rounded-lg border-gray-300 border p-2 sm:p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow">
                                 </div>
                                 <div>
-                                    <label for="archiveType" class="block text-sm font-medium text-gray-700 mb-1">Type d'archive</label>
+                                    <label for="archiveType" class="block text-sm font-medium text-gray-700 mb-1">Archive Type</label>
                                     <select id="archiveType" name="archiveType" class="shadow-sm block w-full rounded-lg border-gray-300 border p-2 sm:p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow">
                                         <option value="ORC">ORC</option>
                                         <option value="KAPE">KAPE</option>
@@ -182,19 +182,25 @@
 
                         <!-- Sélection des modules (Grille globale) -->
                         <div>
-                            <h3 class="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Modules to analyze</h3>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider">Modules to analyze</h3>
+                                <button type="button" onclick="openHelpModal()" class="flex items-center space-x-1 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-md transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <span>Module Help</span>
+                                </button>
+                            </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 items-stretch">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6 items-stretch">
 
-                                <!-- Box 1: Pré-traitement -->
+                                <!-- Box 1: Pre-processing -->
                                 <div class="bg-white p-3 sm:p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col h-full">
                                     <div class="flex justify-between items-center mb-2 sm:mb-3 pb-2 border-b border-gray-100">
-                                        <h3 class="text-xs font-bold text-gray-600 uppercase tracking-wider pr-2">Pré-traitement</h3>
+                                        <h3 class="text-xs font-bold text-gray-600 uppercase tracking-wider pr-2">1. Pre-processing</h3>
                                         <div class="flex items-center space-x-1 bg-gray-50 p-1 rounded-md border border-gray-200 shrink-0">
-                                            <button type="button" id="selectAllPreProcBtn" title="Tout sélectionner" class="p-1 text-gray-500 hover:text-blue-600 transition-colors">
+                                            <button type="button" id="selectAllPreProcBtn" title="Select All" class="p-1 text-gray-500 hover:text-blue-600 transition-colors">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                             </button>
-                                            <button type="button" id="deselectAllPreProcBtn" title="Tout désélectionner" class="p-1 text-gray-500 hover:text-red-600 transition-colors">
+                                            <button type="button" id="deselectAllPreProcBtn" title="Deselect All" class="p-1 text-gray-500 hover:text-red-600 transition-colors">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                             </button>
                                         </div>
@@ -203,15 +209,15 @@
                                     <div id="preProcChecklist" class="space-y-1 sm:space-y-2 overflow-y-scroll custom-scrollbar pr-1 sm:pr-2 h-40"></div>
                                 </div>
 
-                                <!-- Box 2: Analyse & Traitement -->
+                                <!-- Box 2: Parsing -->
                                 <div class="bg-white p-3 sm:p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col h-full">
                                     <div class="flex justify-between items-center mb-2 sm:mb-3 pb-2 border-b border-gray-100">
-                                        <h3 class="text-xs font-bold text-gray-600 uppercase tracking-wider pr-2">Analyse</h3>
+                                        <h3 class="text-xs font-bold text-gray-600 uppercase tracking-wider pr-2">2. Parsing</h3>
                                         <div class="flex items-center space-x-1 bg-gray-50 p-1 rounded-md border border-gray-200 shrink-0">
-                                            <button type="button" id="selectAllAnalyzeBtn" title="Tout sélectionner" class="p-1 text-gray-500 hover:text-blue-600 transition-colors">
+                                            <button type="button" id="selectAllAnalyzeBtn" title="Select All" class="p-1 text-gray-500 hover:text-blue-600 transition-colors">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                             </button>
-                                            <button type="button" id="deselectAllAnalyzeBtn" title="Tout désélectionner" class="p-1 text-gray-500 hover:text-red-600 transition-colors">
+                                            <button type="button" id="deselectAllAnalyzeBtn" title="Deselect All" class="p-1 text-gray-500 hover:text-red-600 transition-colors">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                             </button>
                                         </div>
@@ -220,15 +226,32 @@
                                     <div id="analyzeChecklist" class="space-y-1 sm:space-y-2 overflow-y-scroll custom-scrollbar pr-1 sm:pr-2 h-40"></div>
                                 </div>
 
-                                <!-- Box 3: Plaso & Dérivés -->
+                                <!-- Box 3: Post-processing -->
                                 <div class="bg-white p-3 sm:p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col h-full">
                                     <div class="flex justify-between items-center mb-2 sm:mb-3 pb-2 border-b border-gray-100">
-                                        <h3 class="text-xs font-bold text-gray-600 uppercase tracking-wider pr-2">Plaso & Dérivés</h3>
+                                        <h3 class="text-xs font-bold text-gray-600 uppercase tracking-wider pr-2">3. Post-processing</h3>
                                         <div class="flex items-center space-x-1 bg-gray-50 p-1 rounded-md border border-gray-200 shrink-0">
-                                            <button type="button" id="selectAllPlasoBtn" title="Tout sélectionner" class="p-1 text-gray-500 hover:text-blue-600 transition-colors">
+                                            <button type="button" id="selectAllPostProcBtn" title="Select All" class="p-1 text-gray-500 hover:text-blue-600 transition-colors">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                             </button>
-                                            <button type="button" id="deselectAllPlasoBtn" title="Tout désélectionner" class="p-1 text-gray-500 hover:text-red-600 transition-colors">
+                                            <button type="button" id="deselectAllPostProcBtn" title="Deselect All" class="p-1 text-gray-500 hover:text-red-600 transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- Use overflow-y-scroll to ALWAYS show the scrollbar track -->
+                                    <div id="postProcChecklist" class="space-y-1 sm:space-y-2 overflow-y-scroll custom-scrollbar pr-1 sm:pr-2 h-40"></div>
+                                </div>
+
+                                <!-- Box 4: Plaso & Derivatives -->
+                                <div class="bg-white p-3 sm:p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col h-full">
+                                    <div class="flex justify-between items-center mb-2 sm:mb-3 pb-2 border-b border-gray-100">
+                                        <h3 class="text-xs font-bold text-gray-600 uppercase tracking-wider pr-2">4. Plaso & Derivatives</h3>
+                                        <div class="flex items-center space-x-1 bg-gray-50 p-1 rounded-md border border-gray-200 shrink-0">
+                                            <button type="button" id="selectAllPlasoBtn" title="Select All" class="p-1 text-gray-500 hover:text-blue-600 transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            </button>
+                                            <button type="button" id="deselectAllPlasoBtn" title="Deselect All" class="p-1 text-gray-500 hover:text-red-600 transition-colors">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                             </button>
                                         </div>
@@ -237,15 +260,15 @@
                                     <div id="plasoChecklist" class="space-y-1 sm:space-y-2 overflow-y-scroll custom-scrollbar pr-1 sm:pr-2 h-40"></div>
                                 </div>
 
-                                <!-- Box 4: Exportations SIEM -->
+                                <!-- Box 5: SIEM Exports -->
                                 <div class="bg-white p-3 sm:p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col h-full">
                                     <div class="flex justify-between items-center mb-2 sm:mb-3 pb-2 border-b border-gray-100">
-                                        <h3 class="text-xs font-bold text-gray-600 uppercase tracking-wider pr-2">Exports SIEM</h3>
+                                        <h3 class="text-xs font-bold text-gray-600 uppercase tracking-wider pr-2">5. SIEM Exports</h3>
                                         <div class="flex items-center space-x-1 bg-gray-50 p-1 rounded-md border border-gray-200 shrink-0">
-                                            <button type="button" id="selectAllExportBtn" title="Tout sélectionner" class="p-1 text-gray-500 hover:text-blue-600 transition-colors">
+                                            <button type="button" id="selectAllExportBtn" title="Select All" class="p-1 text-gray-500 hover:text-blue-600 transition-colors">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                             </button>
-                                            <button type="button" id="deselectAllExportBtn" title="Tout désélectionner" class="p-1 text-gray-500 hover:text-red-600 transition-colors">
+                                            <button type="button" id="deselectAllExportBtn" title="Deselect All" class="p-1 text-gray-500 hover:text-red-600 transition-colors">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                             </button>
                                         </div>
@@ -376,7 +399,7 @@
         const toggleSidebar = () => {
             sidebar.classList.toggle('-translate-x-full');
             mobileOverlay.classList.toggle('hidden');
-            document.body.classList.toggle('overflow-hidden'); // Empêche le scroll du fond
+            document.body.classList.toggle('overflow-hidden'); // Prevent background scroll
         };
 
         mobileMenuButton.addEventListener('click', toggleSidebar);
@@ -425,14 +448,18 @@
         switchContent('#upload-content');
 
         // --- Dynamic Module Selection Logic ---
-        const preProcModules = ["restore", "rename_from_orc", "legacy"];
+        const preProcModules = ["extract", "restore", "rename_from_orc", "legacy"];
         const exportModules = ["wazuh", "plaso2wazuh", "elk", "plaso2elk"];
         const plasoModules = ["plaso", "mpp", "mactime"];
+        const postProcModules = ["clean_duplicates", "create_timeline"];
 
         const preProcChecklist = document.getElementById('preProcChecklist');
         const analyzeChecklist = document.getElementById('analyzeChecklist');
         const plasoChecklist = document.getElementById('plasoChecklist');
         const exportChecklist = document.getElementById('exportChecklist');
+        const postProcChecklist = document.getElementById('postProcChecklist');
+
+        let globalPlugins = [];
 
         async function fetchAndRenderPipelines() {
             try {
@@ -441,7 +468,8 @@
                 const data = await response.json();
                 
                 if (data.status === "OK" && data.pipelines && data.pipelines.length > 0) {
-                    renderPipelines(data.pipelines);
+                    globalPlugins = data.pipelines;
+                    renderPipelines(globalPlugins);
                 } else {
                     console.warn("No pipelines found dynamically, using fallback.");
                     renderFallbackPipelines();
@@ -453,23 +481,31 @@
         }
         
         function renderFallbackPipelines() {
-            renderPipelines(["disk", "wazuh", "evtx", "hives", "master_file_table", "network", "lnk", "plaso", "mpp", "plaso2wazuh", "prefetch", "process", "system_info", "browsers"]);
+            const fallback = ["disk", "wazuh", "evtx", "hives", "master_file_table", "network", "lnk", "plaso", "mpp", "plaso2wazuh", "prefetch", "process", "system_info", "browsers"].map(name => ({
+                name: name,
+                description: "Fallback plugin",
+                recommended: true,
+                type: "pipeline"
+            }));
+            globalPlugins = fallback;
+            renderPipelines(fallback);
         }
 
         function renderPipelines(pipelines) {
-            pipelines.forEach(moduleName => {
-                // By default, everything is enabled except specific modules
+            pipelines.forEach(pluginObj => {
+                const moduleName = pluginObj.name;
                 const isChecked = !["restore", "rename_from_orc", "elk", "plaso2elk"].includes(moduleName);
+                const isDisabled = ["extract"].includes(moduleName);
 
                 const formattedName = moduleName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
                 const switchHtml = `
-                    <div class="group flex items-center justify-between p-2 sm:p-2.5 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-100 transition-colors duration-200">
-                        <label for="module-${moduleName}" class="text-xs sm:text-sm font-medium text-gray-700 cursor-pointer flex-1 select-none group-hover:text-blue-700 transition-colors truncate pr-2">
+                    <div class="flex items-center justify-between p-2 sm:p-2.5 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-100 transition-colors duration-200">
+                        <label for="module-${moduleName}" class="text-xs sm:text-sm font-medium text-gray-700 cursor-pointer flex-1 select-none hover:text-blue-700 transition-colors truncate pr-2 ${isDisabled ? 'opacity-50' : ''}">
                             ${formattedName}
                         </label>
-                        <label class="switch shrink-0">
-                            <input type="checkbox" id="module-${moduleName}" name="modules" value="${moduleName}" ${isChecked ? 'checked' : ''}>
+                        <label class="switch shrink-0 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}">
+                            <input type="checkbox" id="module-${moduleName}" name="modules" value="${moduleName}" ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}>
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -481,15 +517,67 @@
                     exportChecklist.insertAdjacentHTML('beforeend', switchHtml);
                 } else if (plasoModules.includes(moduleName)) {
                     plasoChecklist.insertAdjacentHTML('beforeend', switchHtml);
+                } else if (postProcModules.includes(moduleName)) {
+                    postProcChecklist.insertAdjacentHTML('beforeend', switchHtml);
                 } else {
                     analyzeChecklist.insertAdjacentHTML('beforeend', switchHtml);
                 }
             });
+            attachDependencies();
+        }
+        
+        // --- Modal Help Logic ---
+        window.openHelpModal = function() {
+            const modalContent = document.getElementById('helpModalContent');
+            modalContent.innerHTML = '';
             
-            // Appliquer les dépendances une fois le DOM généré
+            const categories = {
+                'preprocessor': 'Pre-processing',
+                'pipeline': 'Parsing',
+                'postprocessor': 'Post-processing'
+            };
+            
+            for (const [type, label] of Object.entries(categories)) {
+                const pluginsOfType = globalPlugins.filter(p => p.type === type);
+                if (pluginsOfType.length === 0) continue;
+                
+                let html = `<h4 class="font-bold text-lg text-gray-800 mt-6 mb-3 pb-2 border-b border-gray-200">${label}</h4>`;
+                html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+                
+                pluginsOfType.forEach(p => {
+                    const recHtml = p.recommended 
+                        ? `<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full border border-green-200">⭐ Recommended</span>`
+                        : `<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full border border-yellow-200">⚠️ Optional</span>`;
+                        
+                    html += `
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-bold text-blue-700">${p.name}</span>
+                                ${recHtml}
+                            </div>
+                            <p class="text-sm text-gray-600">${p.description}</p>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+                modalContent.innerHTML += html;
+            }
+            
+            document.getElementById('helpModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        window.closeHelpModal = function() {
+            document.getElementById('helpModal').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+        // --- End of Modal Logic ---
+
+        function attachDependencies() {
+            // Apply dependencies once DOM is generated
             enforceArchiveDependencies();
             
-            // Attacher l'événement Plaso s'il existe
+            // Attach Plaso event if it exists
             const plasoCb = document.getElementById('module-plaso');
             if (plasoCb) {
                 plasoCb.addEventListener('change', enforcePlasoDependencies);
@@ -529,7 +617,7 @@
                 const isPlasoChecked = plasoCb.checked;
                 const isUAC = archiveType === 'UAC';
 
-                // On applique la règle à plaso2wazuh ET mpp
+                // Apply rule to plaso2wazuh AND mpp
                 [plaso2wazuhCb, mppCb].forEach(cb => {
                     if (cb) {
                         const shouldDisable = isUAC || !isPlasoChecked;
@@ -573,7 +661,7 @@
                 });
             }
 
-            // 3. Toujours réévaluer Plaso par dessus pour conserver les sous-dépendances
+            // 3. Always re-evaluate Plaso on top to keep sub-dependencies
             enforcePlasoDependencies();
         };
 
@@ -633,6 +721,18 @@
         document.getElementById('deselectAllExportBtn').addEventListener('click', function() {
             if (this.disabled) return;
             document.querySelectorAll('#exportChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = false; });
+            enforcePlasoDependencies();
+        });
+
+        // Post-traitement Select/Deselect
+        document.getElementById('selectAllPostProcBtn').addEventListener('click', function() {
+            if (this.disabled) return;
+            document.querySelectorAll('#postProcChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = true; });
+            enforcePlasoDependencies();
+        });
+        document.getElementById('deselectAllPostProcBtn').addEventListener('click', function() {
+            if (this.disabled) return;
+            document.querySelectorAll('#postProcChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = false; });
             enforcePlasoDependencies();
         });
 
@@ -890,5 +990,30 @@
         });
     });
     </script>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col transform transition-all">
+            <div class="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50 rounded-t-xl">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800">Module Help</h3>
+                    <p class="text-sm text-gray-500 mt-1">Documentation automatically generated from plugin source code.</p>
+                </div>
+                <button onclick="closeHelpModal()" class="text-gray-400 hover:text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-full p-2 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1" id="helpModalContent">
+                <!-- Injected dynamically by JS -->
+            </div>
+            
+            <div class="p-4 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end">
+                <button onclick="closeHelpModal()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

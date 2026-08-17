@@ -25,11 +25,11 @@ class OtherPipeline(BaseArtefactPipeline):
                 return True
         return False
     def process(self, file_path: Path):
-        self.logger.info(f"[PIPELINE][OTHER] Traitement de {file_path.name}", header="START", indentation=1)
+        self.logger.info(f"[PIPELINE][OTHER] Processing {file_path.name}", header="START", indentation=1)
         try:
             if self._matches_category(file_path.name, "event_consumer"):
                 self.copy_raw_artefact(file_path, self.out_other_dir)
             elif self._matches_category(file_path.name, "ad_computer"):
                 self.copy_raw_artefact(file_path, self.out_other_dir)
         except Exception as e:
-            self.logger.error(f"[PIPELINE][OTHER] Erreur sur {file_path.name}: {e}", header="ERROR", indentation=1)
+            self.logger.error(f"[PIPELINE][OTHER] Error on {file_path.name}: {e}", header="ERROR", indentation=1)

@@ -4,13 +4,17 @@ from pathlib import Path
 from ..classes.BaseArtefactPipelines import BaseArtefactPipeline
 from ..classes.WappContext import WappContext
 from ..classes.Registry import register_pipeline
-from ..classes.BaseParser import CsvOutputSink
+from ..classes.BaseParser import DualOutputSink
 from ..parsers.NetWorkParser import NetWorkParser
 
 
 @register_pipeline(name="network")
 class NetworkPipeline(BaseArtefactPipeline):
-    DEFAULT_PATTERNS = {"tcpvcon": ["Tcpvcon.txt"], "arp_cache": ["arp_cache.txt"], "dns_cache": ["dns_cache.txt"], "netstat": ["netstat.txt"], "routes": ["routes.txt"], "hosts": ["hosts$"], "lmhosts": ["lmhosts.sam"], "protocol": ["protocol$"], "services": ["services$"], "network": ["networks$"], "bits": ["BITS_jobs.txt"], "dns_records": ["DNS_records.txt"]}
+    """
+    Parses network configuration artifacts.
+    """
+    recommended = True
+    DEFAULT_PATTERNS = {"tcpvcon": [r"Tcpvcon(?:_\d+)?\.txt"], "arp_cache": [r"arp_cache(?:_\d+)?\.txt"], "dns_cache": [r"dns_cache(?:_\d+)?\.txt"], "netstat": [r"netstat(?:_\d+)?\.txt"], "routes": [r"routes(?:_\d+)?\.txt"], "hosts": [r"hosts(?:_\d+)?(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "lmhosts": [r"lmhosts(?:_\d+)?\.sam"], "protocol": [r"protocol(?:_\d+)?(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "services": [r"services(?:_\d+)?(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "network": [r"networks(?:_\d+)?(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "bits": [r"BITS_jobs(?:_\d+)?\.txt"], "dns_records": [r"DNS_records(?:_\d+)?\.txt"]}
 
     def __init__(self, context: WappContext):
         super().__init__(context)
@@ -21,21 +25,8 @@ class NetworkPipeline(BaseArtefactPipeline):
         self.parser = NetWorkParser(self.logger, separator=self.context.separator)
         self.sinks = {}
 
-
-        patterns = []
-        for v in self.config_process.values():
-            patterns.extend(v if isinstance(v, list) else [v])
-        return patterns
-
-
-        patterns = self.config_process.get(category_key, [])
-        for p in patterns:
-            if re.search(p, file_name, re.IGNORECASE):
-                return True
-        return False
-
     def process(self, file_path: Path):
-        self.logger.info(f"[PIPELINE][NETWORK] Traitement de {file_path.name}", header="START", indentation=1)
+        self.logger.info(f"[PIPELINE][NETWORK] Processing {file_path.name}", header="START", indentation=1)
         try:
             is_network = False
             for reg_pattern in self.get_regex_patterns():
@@ -59,11 +50,11 @@ class NetworkPipeline(BaseArtefactPipeline):
                 for artifact_type, record in self.parser.parse(file_path, category=category):
                     if artifact_type not in self.sinks:
                         csv_path = self.out_dir / f"{artifact_type}_parsed.csv"
-                        self.sinks[artifact_type] = CsvOutputSink(csv_path, separator=self.context.separator)
+                        self.sinks[artifact_type] = DualOutputSink(csv_path, separator=self.context.separator, jsonl_dir=self.context.siem_ingestion_dir, context=self.context)
                     self.sinks[artifact_type].write_record(record)
 
         except Exception as e:
-            self.logger.error(f"[PIPELINE][NETWORK] Erreur sur {file_path.name}: {e}", header="ERROR", indentation=1)
+            self.logger.error(f"[PIPELINE][NETWORK] Error on {file_path.name}: {e}", header="ERROR", indentation=1)
 
     def finalize(self):
         for sink in self.sinks.values():

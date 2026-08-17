@@ -77,9 +77,11 @@ class NetWorkParser(BaseParser):
             # mais on peut créer des clés dynamiques basées sur l'index (Col_0, Col_1...)
             # ou essayer de détecter l'en-tête natif. Pour garder la compatibilité avec
             # l'ancien parseur, nous allons séparer les champs.
-            for line in sorted(list(unique_lines)):
-                fields = line.split("|")
-                line_dict = {f"Col_{i}": val for i, val in enumerate(fields)}
+            lines_fields = [line.split("|") for line in sorted(list(unique_lines))]
+            max_fields = max((len(fields) for fields in lines_fields), default=0)
+
+            for fields in lines_fields:
+                line_dict = {f"Col_{i}": fields[i] if i < len(fields) else "" for i in range(max_fields)}
                 yield "netstat", line_dict
 
         except Exception as e:

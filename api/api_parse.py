@@ -1,9 +1,9 @@
 import json
 import os
 import sys
-import uuid  # Remplacement de random.randint
+import uuid  # Replaced random.randint
 import traceback
-from werkzeug.utils import secure_filename  # Ajout crucial pour la sécurité
+from werkzeug.utils import secure_filename  # Crucial addition for security
 from flask import Blueprint, request, url_for, jsonify
 from flask_login import login_required
 from worker import celery
@@ -19,7 +19,7 @@ os.makedirs(DEPOT_FOLDER_PATH, exist_ok=True)
 os.makedirs(WORKING_FOLDER_PATH, exist_ok=True)
 os.makedirs(LOG_FOLDER_PATH, exist_ok=True)
 
-# Extensions autorisées (sécurité supplémentaire)
+# Allowed extensions (additional security)
 ALLOWED_EXTENSIONS = {'.zip', '.7z', '.tar', '.gz'}
 
 
@@ -27,57 +27,57 @@ ALLOWED_EXTENSIONS = {'.zip', '.7z', '.tar', '.gz'}
 @login_required
 def parse_archive():
     try:
-        # 1. Validation de la présence du fichier
+        # 1. Validate file presence
         if 'file' not in request.files:
-            return jsonify({"error": "Aucun fichier fourni dans la requête"}), 400
+            return jsonify({"error": "No file provided in the request"}), 400
 
         file = request.files['file']
         if file.filename == '':
-            return jsonify({"error": "Le nom du fichier est vide"}), 400
+            return jsonify({"error": "Filename is empty"}), 400
 
-        # Optionnel mais recommandé : Vérifier l'extension
+        # Optional but recommended: Check extension
         ext = os.path.splitext(file.filename)[1].lower()
         if ext not in ALLOWED_EXTENSIONS:
-            return jsonify({"error": f"Extension {ext} non autorisée"}), 400
+            return jsonify({"error": f"Extension {ext} not allowed"}), 400
 
-        # 2. Sécurisation et renommage
-        # secure_filename enlève les caractères dangereux (espaces, / , \, etc.)
+        # 2. Securing and renaming
+        # secure_filename removes dangerous characters (spaces, /, \, etc.)
         safe_filename = secure_filename(file.filename)
 
-        # uuid4 génère un identifiant unique garanti (ex: 550e8400-e29b-41d4-a716-446655440000)
-        # On peut ne prendre que les 8 premiers caractères pour ne pas trop rallonger le nom
+        # uuid4 generates a guaranteed unique identifier (e.g., 550e8400-e29b-41d4-a716-446655440000)
+        # We can take only the first 8 characters to not lengthen the name too much
         unique_prefix = uuid.uuid4().hex[:8]
         file_name = f"{unique_prefix}__{file.filename}"
 
         file_path = os.path.join(DEPOT_FOLDER_PATH, file_name)
         file.save(file_path)
 
-        # 3. Validation des données JSON
+        # 3. Validate JSON data
         if 'json' not in request.form:
-            return jsonify({"error": "Le champ 'json' est manquant dans le formulaire"}), 400
+            return jsonify({"error": "The 'json' field is missing from the form"}), 400
 
         try:
             content = json.loads(request.form['json'])
         except json.JSONDecodeError:
-            return jsonify({"error": "Le champ 'json' contient un format invalide"}), 400
+            return jsonify({"error": "The 'json' field contains an invalid format"}), 400
 
-        # 4. Envoi à Celery
+        # 4. Send to Celery
         task = celery.send_task("tasks.parse_archive", args=[content, file_name], queue="parse")
 
         status_uri = url_for('wapp_api.get_task_status', task_id=task.id)
         run_uri = url_for('wapp_api.running_log', task_id=task.id)
 
         response = {
-            "message": "Votre demande d'analyse a été envoyée dans la file d'attente",
+            "message": "Your analysis request has been sent to the queue",
             "taskId": str(task.id),
             "statusUrl": f"{WAPP_API}{status_uri}",
             "runLogUrl": f"{WAPP_API}{run_uri}"
         }
 
-        # Utilisation du code 202 (Accepted) adapté aux tâches asynchrones
+        # Using 202 (Accepted) code suitable for asynchronous tasks
         return jsonify(response), 202
 
     except Exception as e:
-        # On logue l'erreur technique pour l'admin, mais on renvoie une erreur 500 générique au client
+        # We log the technical error for the admin, but return a generic 500 error to the client
         sys.stderr.write(f"\n[CRITICAL ERROR] parse_archive: {traceback.format_exc()}\n")
-        return jsonify({"error": "Une erreur interne est survenue lors du traitement de la requête"}), 500
+        return jsonify({"error": "An internal error occurred while processing the request"}), 500

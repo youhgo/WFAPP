@@ -4,12 +4,16 @@ from pathlib import Path
 from ..classes.BaseArtefactPipelines import BaseArtefactPipeline
 from ..classes.WappContext import WappContext
 from ..classes.Registry import register_pipeline
-from ..classes.BaseParser import CsvOutputSink, TextOutputSink
+from ..classes.BaseParser import DualOutputSink, TextOutputSink
 from ..parsers.ProcessParser import ProcessParser
 
 @register_pipeline(name="process")
 class ProcessPipeline(BaseArtefactPipeline):
-    DEFAULT_PATTERNS = {"process1": ["process1.csv", "processes1.csv"], "process2": ["process2.csv", "processes2.csv"], "autoruns": ["autoruns.csv"], "sample_autoruns": ["GetSamples_autoruns.xml", "Process_Autoruns.xml"], "sample_timeline": ["GetSamples_timeline.csv", "Process_timeline.csv"], "sample_info": ["GetSamples_sampleinfo.csv", "Process_sampleinfo.csv"], "handle": ["handle.txt"], "enum_lock": ["Enumlocs.txt"], "list_dll": ["Listdlls.txt"], "ps_services": ["psService.txt"]}
+    """
+    Parses process execution histories.
+    """
+    recommended = True
+    DEFAULT_PATTERNS = {"process1": [r"process1(?:_\d+)?\.csv", r"processes1(?:_\d+)?\.csv"], "process2": [r"process2(?:_\d+)?\.csv", r"processes2(?:_\d+)?\.csv"], "autoruns": [r"autoruns(?:_\d+)?\.csv"], "sample_autoruns": [r"GetSamples_autoruns(?:_\d+)?\.xml", r"Process_Autoruns(?:_\d+)?\.xml"], "sample_timeline": [r"GetSamples_timeline(?:_\d+)?\.csv", r"Process_timeline(?:_\d+)?\.csv"], "sample_info": [r"GetSamples_sampleinfo(?:_\d+)?\.csv", r"Process_sampleinfo(?:_\d+)?\.csv"], "handle": [r"handle(?:_\d+)?\.txt"], "enum_lock": [r"Enumlocs(?:_\d+)?\.txt"], "list_dll": [r"Listdlls(?:_\d+)?\.txt"], "ps_services": [r"psService(?:_\d+)?\.txt"]}
 
     def __init__(self, context: WappContext):
         super().__init__(context)
@@ -19,21 +23,8 @@ class ProcessPipeline(BaseArtefactPipeline):
         self.parser = ProcessParser(self.logger, separator=self.context.separator)
         self.sinks = {}
 
-
-        patterns = []
-        for v in self.config_process.values():
-            patterns.extend(v if isinstance(v, list) else [v])
-        return patterns
-
-
-        patterns = self.config_process.get(category_key, [])
-        for p in patterns:
-            if re.search(p, file_name, re.IGNORECASE):
-                return True
-        return False
-
     def process(self, file_path: Path):
-        self.logger.info(f"[PIPELINE][PROCESS] Traitement de {file_path.name}", header="START", indentation=1)
+        self.logger.info(f"[PIPELINE][PROCESS] Processing {file_path.name}", header="START", indentation=1)
         try:
             if not self.can_process(file_path):
                 return
@@ -50,7 +41,6 @@ class ProcessPipeline(BaseArtefactPipeline):
                 category = "autoruns"
             elif self._matches_category(file_path.name, "process1"):
                 category = "process1"
-                kwargs = {"is_simplified": True}
             elif self._matches_category(file_path.name, "process2"):
                 category = "process2"
             elif self._matches_category(file_path.name, "sample_autoruns"):
@@ -61,21 +51,33 @@ class ProcessPipeline(BaseArtefactPipeline):
                 category = "sample_info"
 
             if category:
-                for artifact_type, record in self.parser.parse(file_path, category=category, **kwargs):
-                    if artifact_type not in self.sinks:
-                        if isinstance(record, dict):
-                            out_path = self.out_dir / f"{artifact_type}.csv"
-                            self.sinks[artifact_type] = CsvOutputSink(out_path, separator=self.context.separator)
-                        else:
-                            # It's a text line (e.g. process1)
-                            # process1 is historically a file named 'process1' or 'process1_s' without extension
+                if category == "process1":
+                    # Parse normal version
+                    for artifact_type, record in self.parser.parse(file_path, category=category, is_simplified=False):
+                        if artifact_type not in self.sinks:
                             out_path = self.out_dir / artifact_type
                             self.sinks[artifact_type] = TextOutputSink(out_path)
-                            
-                    self.sinks[artifact_type].write_record(record)
+                        self.sinks[artifact_type].write_record(record)
+                    # Parse simplified version
+                    for artifact_type, record in self.parser.parse(file_path, category=category, is_simplified=True):
+                        if artifact_type not in self.sinks:
+                            out_path = self.out_dir / artifact_type
+                            self.sinks[artifact_type] = TextOutputSink(out_path)
+                        self.sinks[artifact_type].write_record(record)
+                else:
+                    for artifact_type, record in self.parser.parse(file_path, category=category, **kwargs):
+                        if artifact_type not in self.sinks:
+                            if isinstance(record, dict):
+                                out_path = self.out_dir / f"{artifact_type}.csv"
+                                self.sinks[artifact_type] = DualOutputSink(out_path, separator=self.context.separator, jsonl_dir=self.context.siem_ingestion_dir, context=self.context)
+                            else:
+                                out_path = self.out_dir / artifact_type
+                                self.sinks[artifact_type] = TextOutputSink(out_path)
+                                
+                        self.sinks[artifact_type].write_record(record)
                     
         except Exception as e:
-            self.logger.error(f"[PIPELINE][PROCESS] Erreur sur {file_path.name}: {e}", header="ERROR", indentation=1)
+            self.logger.error(f"[PIPELINE][PROCESS] Error on {file_path.name}: {e}", header="ERROR", indentation=1)
 
     def finalize(self):
         for sink in self.sinks.values():

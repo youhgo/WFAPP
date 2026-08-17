@@ -5,11 +5,15 @@ import re
 from ..classes.BaseArtefactPipelines import BaseArtefactPipeline
 from ..classes.WappContext import WappContext
 from ..classes.Registry import register_pipeline
-from ..classes.BaseParser import CsvOutputSink
+from ..classes.BaseParser import DualOutputSink
 from ..parsers.Linkparser import LinkParser
 
 @register_pipeline(name="lnk")
 class LnkPipeline(BaseArtefactPipeline):
+    """
+    Parses LNK shortcut files.
+    """
+    recommended = True
     DEFAULT_PATTERNS = {"lnk": [".*.lnk"]}
 
     def __init__(self, context: WappContext):
@@ -19,21 +23,8 @@ class LnkPipeline(BaseArtefactPipeline):
         self.parser = LinkParser(self.logger, separator=self.context.separator)
         self.csv_sink = None
 
-
-        patterns = []
-        for v in self.config_process.values():
-            patterns.extend(v if isinstance(v, list) else [v])
-        return patterns
-
-
-        patterns = self.config_process.get(category_key, [])
-        for p in patterns:
-            if re.search(p, file_name, re.IGNORECASE):
-                return True
-        return False
-
     def process(self, file_path: Path):
-        self.logger.info(f"[PIPELINE][LNK] Traitement de {file_path.name}", header="START", indentation=1)
+        self.logger.info(f"[PIPELINE][LNK] Processing {file_path.name}", header="START", indentation=1)
         try:
             if not self.can_process(file_path):
                 return
@@ -44,7 +35,7 @@ class LnkPipeline(BaseArtefactPipeline):
                     
                     if not self.csv_sink:
                         csv_path = self.context.result_parsed_dir / f"{artifact_type}.csv"
-                        self.csv_sink = CsvOutputSink(csv_path, separator=self.context.separator)
+                        self.csv_sink = DualOutputSink(csv_path, separator=self.context.separator, jsonl_dir=self.context.siem_ingestion_dir, context=self.context)
                     
                     self.csv_sink.write_record(record)
                     
@@ -55,7 +46,7 @@ class LnkPipeline(BaseArtefactPipeline):
                         self.context.wazuh_importer_file_config["files"].append({"path": str(json_path), "type": "lnk"})
                         
         except Exception as e:
-            self.logger.error(f"[PIPELINE][LNK] Erreur: {e}", header="ERROR", indentation=1)
+            self.logger.error(f"[PIPELINE][LNK] Error: {e}", header="ERROR", indentation=1)
 
     def finalize(self):
         if self.csv_sink:
