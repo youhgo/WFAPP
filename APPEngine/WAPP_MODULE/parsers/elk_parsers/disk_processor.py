@@ -137,7 +137,7 @@ class DiskProcessor(BaseFileProcessor):
 
     def _process_usn_file(self, filepath: str, dataset):
         print(f"  -> Lecture du fichier USN Journal (CSV) : {filepath}")
-        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+        with open(filepath, 'r', encoding='utf-8-sig', errors='ignore') as f:
             reader = csv.DictReader(f)
             for i, row in enumerate(reader):
                 try:

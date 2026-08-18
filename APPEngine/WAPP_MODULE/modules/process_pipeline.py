@@ -13,7 +13,7 @@ class ProcessPipeline(BaseArtefactPipeline):
     Parses process execution histories.
     """
     recommended = True
-    DEFAULT_PATTERNS = {"process1": [r"process1(?:_\d+)?\.csv", r"processes1(?:_\d+)?\.csv"], "process2": [r"process2(?:_\d+)?\.csv", r"processes2(?:_\d+)?\.csv"], "autoruns": [r"autoruns(?:_\d+)?\.csv"], "sample_autoruns": [r"GetSamples_autoruns(?:_\d+)?\.xml", r"Process_Autoruns(?:_\d+)?\.xml"], "sample_timeline": [r"GetSamples_timeline(?:_\d+)?\.csv", r"Process_timeline(?:_\d+)?\.csv"], "sample_info": [r"GetSamples_sampleinfo(?:_\d+)?\.csv", r"Process_sampleinfo(?:_\d+)?\.csv"], "handle": [r"handle(?:_\d+)?\.txt"], "enum_lock": [r"Enumlocs(?:_\d+)?\.txt"], "list_dll": [r"Listdlls(?:_\d+)?\.txt"], "ps_services": [r"psService(?:_\d+)?\.txt"]}
+    DEFAULT_PATTERNS = {"process1": [r"processes?_?1(?:_\d+)?\.csv"], "process2": [r"processes?_?2(?:_\d+)?\.csv"], "autoruns": [r"autoruns(?:_\d+)?\.csv"], "sample_autoruns": [r"GetSamples_autoruns(?:_\d+)?\.xml", r"Process_Autoruns(?:_\d+)?\.xml"], "sample_timeline": [r"GetSamples_timeline(?:_\d+)?\.csv", r"Process_timeline(?:_\d+)?\.csv"], "sample_info": [r"GetSamples_sampleinfo(?:_\d+)?\.csv", r"Process_sampleinfo(?:_\d+)?\.csv"], "handle": [r"handle(?:_\d+)?\.txt"], "enum_lock": [r"Enumlocs(?:_\d+)?\.txt"], "list_dll": [r"Listdlls(?:_\d+)?\.txt"], "ps_services": [r"psService(?:_\d+)?\.txt"]}
 
     def __init__(self, context: WappContext):
         super().__init__(context)

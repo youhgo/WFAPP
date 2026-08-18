@@ -17,8 +17,8 @@ class ProcessesProcessor(BaseFileProcessor):
     """Processeur pour divers formats de listes de processus et d'autoruns (CSV et XML)."""
     DEFAULT_PATTERNS = {
         r'^autoruns.*\.csv$': "autoruns_sysinternals",
-        r'^processes?1.*\.csv$': "processes_win32",
-        r'^processes?2.*\.csv$': "processes_get_proc",
+        r'^processes?_?1.*\.csv$': "processes_win32",
+        r'^processes?_?2.*\.csv$': "processes_get_proc",
         r'^Process_sampleinfo.*\.csv$': "processes_sampleinfo",
         r'^GetSamples_sampleinfo.*\.csv$': "processes_sampleinfo",
         r'^Process_timeline.*\.csv$': "processes_timeline",
@@ -61,6 +61,14 @@ class ProcessesProcessor(BaseFileProcessor):
         except (ValueError, TypeError):
             return datetime.utcnow().isoformat() + "Z"
 
+    def _clean_int(self, val):
+        if not val:
+            return None
+        try:
+            return int(str(val).strip())
+        except ValueError:
+            return None
+
     def _process_win32_process_row(self, row: dict, dataset) -> dict:
 
         base_doc = {"@timestamp": self._parse_wmi_timestamp(row.get("CreationDate")),
@@ -68,7 +76,7 @@ class ProcessesProcessor(BaseFileProcessor):
                     "event": {"kind": "event", "category": "process", "dataset": dataset,
                               "original": ",".join(str(v) for v in row.values())},
                     "process": {"name": row.get("ProcessName"), "executable": row.get("ExecutablePath"),
-                                "pid": row.get("ProcessId"), "parent": {"pid": row.get("ParentProcessId")},
+                                "pid": self._clean_int(row.get("ProcessId")), "parent": {"pid": self._clean_int(row.get("ParentProcessId"))},
                                 "command_line": row.get("CommandLine")}}
 
         if hasattr(self, 'inject_wapp_info'):
@@ -82,8 +90,8 @@ class ProcessesProcessor(BaseFileProcessor):
                     "host": {"name": row.get("MachineName")},
                     "event": {"kind": "event", "category": "process", "dataset": dataset,
                               "original": ",".join(str(v) for v in row.values())},
-                    "process": {"name": row.get("ProcessName"), "executable": row.get("Path"), "pid": row.get("Id"),
-                                "session_id": row.get("SI")}}
+                    "process": {"name": row.get("ProcessName"), "executable": row.get("Path"), "pid": self._clean_int(row.get("Id")),
+                                "session_id": self._clean_int(row.get("SI"))}}
         if hasattr(self, 'inject_wapp_info'):
             doc = self.inject_wapp_info(base_doc)
             return doc
@@ -108,7 +116,7 @@ class ProcessesProcessor(BaseFileProcessor):
                     "host": {"name": row.get("ComputerName")},
                     "event": {"kind": "event", "category": "process", "dataset": dataset,
                               "action": row.get("Type"), "original": ",".join(str(v) for v in row.values())},
-                    "process": {"pid": row.get("ProcessID"), "parent": {"pid": row.get("ParentID")}},
+                    "process": {"pid": self._clean_int(row.get("ProcessID")), "parent": {"pid": self._clean_int(row.get("ParentID"))}},
                     "dll": {"path": row.get("FullPath")}}
 
         if hasattr(self, 'inject_wapp_info'):
