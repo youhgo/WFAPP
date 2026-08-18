@@ -16,12 +16,14 @@ class RegistryJsonProcessor(BaseFileProcessor):
     """Processeur pour les fichiers de logs Registre, Amcache et AppCompatCache générés au format JSON."""
 
     DEFAULT_PATTERNS = {
-        r'^Amcache\.hve_regpy\.jsonl$': "amcache_regpy",
-        r'^Amcache\.hve_yarp\.jsonl$': "amcache_yarp",
-        r'^SECURITY_yarp\.jsonl$': "registry_security",
-        r'^SOFTWARE_yarp\.jsonl$': "registry_software",
-        r'^SYSTEM_yarp\.jsonl$': "registry_system",
-        r'^NTUSER\.DAT_yarp\.jsonl$': "registry_ntuser"
+        r'^Amcache(?:_\d+)?\.hve_regpy\.jsonl$': "amcache_regpy",
+        r'^Amcache(?:_\d+)?\.hve_yarp\.jsonl$': "amcache_yarp",
+        r'^SAM(?:_\d+)?_yarp\.jsonl$': "registry_sam",
+        r'^SECURITY(?:_\d+)?_yarp\.jsonl$': "registry_security",
+        r'^SOFTWARE(?:_\d+)?_yarp\.jsonl$': "registry_software",
+        r'^SYSTEM(?:_\d+)?_yarp\.jsonl$': "registry_system",
+        r'^NTUSER(?:_\d+)?\.DAT_yarp\.jsonl$': "registry_ntuser",
+        r'^UsrClass(?:_\d+)?\.dat_yarp\.jsonl$': "registry_usrclass"
     }
 
     def __init__(self, case_name="unknown", machine_name="unknown"):
@@ -378,7 +380,8 @@ class RegistryJsonProcessor(BaseFileProcessor):
 
         elif ds_lower in [
             'amcache_yarp', 'registry_security', 'registry_software',
-            'registry_system', 'registry_ntuser', 'registry_ntuser.dat', 'registry_sam'
+            'registry_system', 'registry_ntuser', 'registry_ntuser.dat', 'registry_sam',
+            'registry_usrclass'
         ]:
             # Nettoyer le dataset en interne si c'est un SAM pour respecter l'ancien routage
             internal_ds = 'registry_sam' if 'sam' in ds_lower else dataset
