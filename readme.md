@@ -46,7 +46,7 @@ Ensure you have the following dependencies installed:
 ### 2. Environment Configuration
 Clone the repository and copy the example environment file:
 ```bash
-git clone <repository_url>
+git clone https://github.com/youhgo/WFAPP.git
 cd WFAPP
 cp .env.example .env
 ```
