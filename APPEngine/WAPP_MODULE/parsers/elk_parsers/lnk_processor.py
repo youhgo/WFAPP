@@ -10,7 +10,7 @@ from ...classes.elk_registry import register_elk_processor
 @register_elk_processor("lnk")
 class LnkJsonProcessor(BaseFileProcessor):
     DEFAULT_PATTERNS = {
-        r'^.*\.lnk\.jsonl$': "lnk"
+        r'^lnk_raw\.jsonl$': "lnk"
     }
 
     def __init__(self, case_name="unknown", machine_name="unknown"):

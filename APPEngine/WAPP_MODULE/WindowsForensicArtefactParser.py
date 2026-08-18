@@ -74,7 +74,6 @@ class WindowsForensicArtefactParser:
 
 
 
-
     def do(self):
         """Le Chef d'Orchestre principal."""
         

@@ -12,21 +12,43 @@ from ...classes.elk_registry import register_elk_processor
 class NetworkProcessor(BaseFileProcessor):
     """Processeur pour les fichiers texte contenant la sortie de 'netstat', 'tcpvcon', 'arp -a', ou des enregistrements DNS."""
     DEFAULT_PATTERNS = {
-        r'^netstat\.txt$': "netstat",
-        r'^tcpvcon\.txt$': "tcpvcon",
-        r'^arp_cache\.txt$': "arp",
-        r'^DNS_records\.txt$': "dns"
+        r'^netstat.*\.txt$': "netstat",
+        r'^tcpvcon.*\.txt$': "tcpvcon",
+        r'^arp_cache.*\.txt$': "arp",
+        r'^DNS_records.*\.txt$': "dns",
+        r'^routes.*\.txt$': "routes",
+        r'^BITS_jobs.*\.txt$': "bits_jobs"
     }
 
     def __init__(self, case_name="unknown", machine_name="unknown"):
         super().__init__(case_name, machine_name)
 
     def _parse_address(self, address_str: str):
-        try:
-            ip, port = address_str.rsplit(':', 1)
-            return ip, int(port)
-        except (ValueError, AttributeError):
-            return address_str, None
+        if not address_str:
+            return None, None
+            
+        ip = address_str
+        port = None
+        
+        if ']:' in address_str or (':' in address_str and address_str.count(':') == 1):
+            parts = address_str.rsplit(':', 1)
+            ip_part, port_part = parts[0], parts[1]
+            if port_part == '*':
+                ip = ip_part
+                port = None
+            else:
+                try:
+                    port = int(port_part)
+                    ip = ip_part
+                except ValueError:
+                    pass
+
+        if ip in ['*', '*:*']:
+            ip = None
+        elif ip and ip.startswith('[') and ip.endswith(']'):
+            ip = ip[1:-1]
+            
+        return ip, port
 
     def _process_netstat_line(self, line: str, machine_name: str, dataset) -> dict:
         parts = re.split(r'\s+', line.strip())
@@ -87,10 +109,10 @@ class NetworkProcessor(BaseFileProcessor):
             if line.strip() and (line.strip().lower().startswith('tcp') or line.strip().lower().startswith('udp')):
                 try:
                     doc = self._process_netstat_line(line, machine_name, dataset)
-                    if hasattr(self, 'inject_wapp_info'):
-                        doc = self.inject_wapp_info(doc)
-
-                    if doc: yield doc, "network"
+                    if doc:
+                        if hasattr(self, 'inject_wapp_info'):
+                            doc = self.inject_wapp_info(doc)
+                        yield doc, "network"
                 except Exception as e:
                     print(f"\n[Attention] Impossible de traiter la ligne Netstat #{line_num}. Erreur: {e}\n")
 
@@ -99,9 +121,10 @@ class NetworkProcessor(BaseFileProcessor):
             if line.strip() and (line.strip().lower().startswith('tcp') or line.strip().lower().startswith('udp')):
                 try:
                     doc = self._process_tcpvcon_line(line, machine_name, dataset)
-                    if hasattr(self, 'inject_wapp_info'):
-                        doc = self.inject_wapp_info(doc)
-                    if doc: yield doc, "network"
+                    if doc:
+                        if hasattr(self, 'inject_wapp_info'):
+                            doc = self.inject_wapp_info(doc)
+                        yield doc, "network"
                 except Exception as e:
                     print(f"\n[Attention] Impossible de traiter la ligne Tcpvcon #{line_num}. Erreur: {e}\n")
 
@@ -116,9 +139,10 @@ class NetworkProcessor(BaseFileProcessor):
             try:
                 if len(re.split(r'\s+', line)) >= 3:
                     doc = self._process_arp_line(line, machine_name, current_interface, dataset)
-                    if hasattr(self, 'inject_wapp_info'):
-                        doc = self.inject_wapp_info(doc)
-                    if doc: yield doc, "network"
+                    if doc:
+                        if hasattr(self, 'inject_wapp_info'):
+                            doc = self.inject_wapp_info(doc)
+                        yield doc, "network"
             except Exception as e:
                 print(f"\n[Attention] Impossible de traiter la ligne ARP #{line_num}. Erreur: {e}\n")
 
@@ -132,9 +156,10 @@ class NetworkProcessor(BaseFileProcessor):
                 continue
             try:
                 doc = self._process_dns_line(line, current_zone, machine_name, dataset)
-                if hasattr(self, 'inject_wapp_info'):
-                    doc = self.inject_wapp_info(doc)
-                if doc: yield doc, "network"
+                if doc:
+                    if hasattr(self, 'inject_wapp_info'):
+                        doc = self.inject_wapp_info(doc)
+                    yield doc, "network"
             except Exception as e:
                 print(f"\n[Attention] Impossible de traiter la ligne DNS #{line_num}. Erreur: {e}\n")
 

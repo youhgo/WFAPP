@@ -27,6 +27,8 @@ class SystemInfoPipeline(BaseArtefactPipeline):
         try:
             if not self.can_process(file_path):
                 return
+            
+            self.context.siem_ingestion_files.append(str(file_path))
                 
             has_data = False
             for artifact_type, record in self.parser.parse(file_path):

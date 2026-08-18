@@ -12,7 +12,7 @@ class WazuhPostProcessor(BaseElasticPostProcessor):
     Generates JSON files ready to be ingested by Wazuh natively.
     """
     recommended = False
-    priority = 35
+    priority = 6
     requires = []
 
     def run(self) -> None:
@@ -48,8 +48,9 @@ class WazuhPostProcessor(BaseElasticPostProcessor):
             template_patterns = {name: f"*_{machine_name_sanitized}_{name}" for name in target_indices.keys()}
             uploader.setup_templates(**template_patterns)
 
+            dlq_path = str(self.context.parsed_dir / "orcLogs" / "failed_uploads_wazuh.json")
             actions_generator = self._find_and_process_files(processor_instances, target_indices)
-            uploader.bulk_upload(actions_generator, chunk_size)
+            uploader.bulk_upload(actions_generator, chunk_size, dlq_path=dlq_path)
 
             self.logger.info("[WAPP][WAZUH] Success", header="FINISHED", indentation=1)
         except Exception as e:

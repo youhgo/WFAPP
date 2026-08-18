@@ -12,7 +12,7 @@ class ElkPostProcessor(BaseElasticPostProcessor):
     Generates JSON files for ElasticSearch/Kibana natively.
     """
     recommended = False
-    priority = 30
+    priority = 5
     requires = []
 
     def run(self) -> None:
@@ -42,7 +42,8 @@ class ElkPostProcessor(BaseElasticPostProcessor):
             uploader.setup_templates(**template_patterns)
 
             actions_generator = self._find_and_process_files(processor_instances, target_indices)
-            uploader.streaming_bulk_upload(actions_generator, chunk_size)
+            dlq_path = self.context.result_parsed_dir / "orcLogs" / "failed_uploads_elk.json"
+            uploader.streaming_bulk_upload(actions_generator, chunk_size, dlq_path=str(dlq_path))
 
             self.logger.info("[WAPP][ELK] Success", header="FINISHED", indentation=1)
         except Exception as e:

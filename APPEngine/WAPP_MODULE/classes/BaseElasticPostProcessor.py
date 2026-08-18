@@ -36,5 +36,5 @@ class BaseElasticPostProcessor(BasePostProcessor, ABC):
                 try:
                     for doc, doc_type in processor_instance.process_file(filepath, dataset=dataset, filename=filename, **kwargs):
                         yield {"_index": target_indices.get(doc_type, target_indices[category]), "_source": doc}
-                    except Exception as e:
-                        self.logger.error(f"[WAPP][ELASTIC] Error processing file {filename}: {e}", indentation=2)
+                except Exception as e:
+                    self.logger.error(f"[WAPP][ELASTIC] Error processing file {filename}: {e}", indentation=2)

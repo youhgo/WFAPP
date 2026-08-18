@@ -15,7 +15,7 @@ class DiskProcessor(BaseFileProcessor):
     DEFAULT_PATTERNS = {
         r'^mft\.jsonl$': "mft",
         r'^mft\.timeline$': "mft_timeline",
-        r'^USN.*\.jsonl$': "usnjrnl"
+        r'^USNInfo.*\.csv$': "usnjrnl"
     }
 
     def __init__(self, case_name="unknown", machine_name="unknown"):
@@ -138,14 +138,12 @@ class DiskProcessor(BaseFileProcessor):
     def _process_usn_file(self, filepath: str, dataset):
         print(f"  -> Lecture du fichier USN Journal (CSV) : {filepath}")
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-            for i, line in enumerate(f):
-                if not line.strip(): continue
-                row = json.loads(line)
+            reader = csv.DictReader(f)
+            for i, row in enumerate(reader):
                 try:
                     yield self._process_usn_row(row, dataset), "disk"
                 except Exception as e:
-                    print(
-                        f"\n[Attention] Impossible de traiter la ligne CSV #{i + 2} du fichier {filepath}. Erreur: {e}\n")
+                    print(f"\n[Attention] Impossible de traiter la ligne CSV #{i + 2} du fichier {filepath}. Erreur: {e}\n")
 
     def _parse_timeline_timestamp(self, timestamp_str: str) -> str:
         """Convertit un timestamp Unix epoch (float string) en ISO8601, gère les Overflow."""

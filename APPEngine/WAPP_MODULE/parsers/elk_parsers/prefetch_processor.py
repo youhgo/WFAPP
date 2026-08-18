@@ -12,6 +12,7 @@ from ...classes.elk_registry import register_elk_processor
 class PrefetchJsonProcessor(BaseFileProcessor):
     """Orchestre la lecture et le traitement des fichiers de logs Prefetch (.pf parsés en JSON)."""
     DEFAULT_PATTERNS = {
+        r'^prefetch\.jsonl$': "prefetch",
         r'^.*\.pf\.jsonl$': "prefetch"
     }
 

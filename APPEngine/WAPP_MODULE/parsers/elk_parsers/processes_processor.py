@@ -16,12 +16,18 @@ from ...classes.elk_registry import register_elk_processor
 class ProcessesProcessor(BaseFileProcessor):
     """Processeur pour divers formats de listes de processus et d'autoruns (CSV et XML)."""
     DEFAULT_PATTERNS = {
-        r'^autoruns\.jsonl$': "autoruns_sysinternals",
-        r'^processes1\.jsonl$': "processes_win32",
-        r'^processes2\.jsonl$': "processes_get_proc",
-        r'^Process_sampleinfo\.jsonl$': "processes_sampleinfo",
-        r'^Process_timeline\.jsonl$': "processes_timeline",
-        r'^Process_Autoruns\.xml$': "processes_autorun"
+        r'^autoruns.*\.csv$': "autoruns_sysinternals",
+        r'^processes?1.*\.csv$': "processes_win32",
+        r'^processes?2.*\.csv$': "processes_get_proc",
+        r'^Process_sampleinfo.*\.csv$': "processes_sampleinfo",
+        r'^GetSamples_sampleinfo.*\.csv$': "processes_sampleinfo",
+        r'^Process_timeline.*\.csv$': "processes_timeline",
+        r'^GetSamples_timeline.*\.csv$': "processes_timeline",
+        r'^Process_Autoruns.*\.xml$': "processes_autorun",
+        r'^GetSamples_autoruns.*\.xml$': "processes_autorun",
+        r'^psService.*\.txt$': "psservice",
+        r'^Listdlls.*\.txt$': "listdlls",
+        r'^Enumlocs.*\.txt$': "enumlocs"
     }
 
     def __init__(self, case_name="unknown", machine_name="unknown"):

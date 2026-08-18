@@ -33,6 +33,7 @@ services:
       - ${SHARED_FOLDER_PATH}/redis_db:/data
 
   wapp_api:
+    user: "${UID:-1001}:${GID:-1001}"
     build:
       context: api/
       dockerfile: docker_files/Dockerfile
@@ -67,6 +68,7 @@ services:
       - FLASK_ENV=development
 
   wapp_worker:
+    user: "${UID:-1001}:${GID:-1001}"
     image: wapp-worker
     build:
       context: ./APPEngine

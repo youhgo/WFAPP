@@ -22,6 +22,9 @@ class LnkPipeline(BaseArtefactPipeline):
         self.lnk_dir.mkdir(exist_ok=True)
         self.parser = LinkParser(self.logger, separator=self.context.separator)
         self.csv_sink = None
+        self.raw_jsonl_path = self.context.siem_ingestion_dir / "lnk_raw.jsonl"
+        self.raw_jsonl_file = open(self.raw_jsonl_path, "a", encoding="utf-8")
+        self.context.siem_ingestion_files.append(str(self.raw_jsonl_path))
 
     def process(self, file_path: Path):
         self.logger.info(f"[PIPELINE][LNK] Processing {file_path.name}", header="START", indentation=1)
@@ -40,10 +43,7 @@ class LnkPipeline(BaseArtefactPipeline):
                     self.csv_sink.write_record(record)
                     
                     if raw_json:
-                        json_path = self.lnk_dir / f"{file_path.stem}.lnk.json"
-                        with open(json_path, "w", encoding="utf-8") as outfile:
-                            json.dump(raw_json, outfile, indent=4, default=str)
-                        self.context.wazuh_importer_file_config["files"].append({"path": str(json_path), "type": "lnk"})
+                        self.raw_jsonl_file.write(json.dumps(raw_json, ensure_ascii=False) + "\n")
                         
         except Exception as e:
             self.logger.error(f"[PIPELINE][LNK] Error: {e}", header="ERROR", indentation=1)
@@ -51,3 +51,5 @@ class LnkPipeline(BaseArtefactPipeline):
     def finalize(self):
         if self.csv_sink:
             self.csv_sink.close()
+        if hasattr(self, 'raw_jsonl_file') and self.raw_jsonl_file:
+            self.raw_jsonl_file.close()

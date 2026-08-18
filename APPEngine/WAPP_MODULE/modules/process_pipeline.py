@@ -33,6 +33,7 @@ class ProcessPipeline(BaseArtefactPipeline):
                 if re.search(reg_pattern, file_path.name, re.IGNORECASE):
                     self.copy_raw_artefact(file_path, self.out_process_dir)
                     self.context.wazuh_importer_file_config["files"].append({"path": str(file_path), "type": f"process_{file_path.stem}"})
+                    self.context.siem_ingestion_files.append(str(file_path))
                     break
 
             category = None

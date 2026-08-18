@@ -39,6 +39,7 @@ class NetworkPipeline(BaseArtefactPipeline):
 
             self.copy_raw_artefact(file_path, self.out_network_dir)
             self.context.wazuh_importer_file_config["files"].append({"path": str(file_path), "type": f"network_{file_path.stem}"})
+            self.context.siem_ingestion_files.append(str(file_path))
 
             category = None
             if self._matches_category(file_path.name, "tcpvcon"):

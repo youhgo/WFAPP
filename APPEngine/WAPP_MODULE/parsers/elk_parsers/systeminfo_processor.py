@@ -13,8 +13,7 @@ from ...classes.elk_registry import register_elk_processor
 class SystemInfoProcessor(BaseFileProcessor):
     """Processeur pour les fichiers systeminfo (format CSV)."""
     DEFAULT_PATTERNS = {
-        r'^Systeminfo\.jsonl$': "system_info",
-        r'^system_info\.jsonl$': "system_info"
+        r'^Systeminfo.*\.csv$': "system_info"
     }
 
     def __init__(self, case_name="unknown", machine_name="unknown"):
@@ -90,15 +89,13 @@ class SystemInfoProcessor(BaseFileProcessor):
     def process_file(self, filepath: str, **kwargs):
         print(f"  -> Lecture du fichier SystemInfo (CSV) : {filepath}")
 
-        # Utilisation de utf-8-sig pour gérer d'éventuels BOM Windows en début de fichier
-        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+        # Utilisation de cp850 pour gérer d'éventuels encodages Windows FR
+        with open(filepath, 'r', encoding='cp850', errors='ignore') as f:
             try:
-                # DictReader transforme chaque ligne en dictionnaire basé sur les headers
-                for i, line in enumerate(f):
-                    if not line.strip(): continue
-                    record = json.loads(line)
+                reader = csv.DictReader(f)
+                for i, row in enumerate(reader):
                     try:
-                        yield self._process_log(record), "system_info"
+                        yield self._process_log(row), "system_info"
                     except Exception as e:
                         print(f"[Attention] Erreur ligne {i + 1} dans {filepath}: {e}")
 

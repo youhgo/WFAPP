@@ -51,8 +51,8 @@ class DiskParser(BaseParser):
                         record = {
                             "Date": date,
                             "Time": time,
-                            "FileName": line[file_name_col_idx],
                             "Reason": line[reason_col_idx],
+                            "FileName": line[file_name_col_idx],
                             "FilePath": line[file_path_col_idx]
                         }
                         yield "USN", record

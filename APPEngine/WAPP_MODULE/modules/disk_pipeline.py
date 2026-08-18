@@ -10,10 +10,10 @@ from ..parsers.DiskParser import DiskParser
 @register_pipeline(name="disk")
 class DiskPipeline(BaseArtefactPipeline):
     """
-    Parse les artefacts relatifs aux disques et volumes.
+    Parse artifacts related to disks and volumes like MFT USN and VSS
     """
     recommended = True
-    DEFAULT_PATTERNS = {"usn_journal": [r"USNInfo(?:_\d+)?\..*\.csv"], "VSS_List": [r"VSS_list(?:_\d+)?\.csv"]}
+    DEFAULT_PATTERNS = {"usn_journal": [r"USNInfo.*\.csv$"], "VSS_List": [r"VSS_list(?:_\d+)?\.csv"]}
 
     def __init__(self, context: WappContext):
         super().__init__(context)
@@ -33,6 +33,7 @@ class DiskPipeline(BaseArtefactPipeline):
             elif self._matches_category(file_path.name, "usn_journal"):
                 self.copy_raw_artefact(file_path, self.out_disk_dir)
                 self.context.wazuh_importer_file_config["files"].append({"path": str(file_path), "type": "usnjrnl"})
+                self.context.siem_ingestion_files.append(str(file_path))
                 
                 # Parsing via Sink
                 for artifact_type, record in self.parser.parse(file_path, category="usnjrnl"):

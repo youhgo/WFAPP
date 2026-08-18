@@ -89,14 +89,14 @@ class WazuhUploader:
                         {
                             "ip_fields": {
                                 "match_pattern": "regex",
-                                "match": "^.*(ip|ip_address|client_ip|source_ip|destination_ip)$",
+                                "match": "^(.*_ip|ip)$",
                                 "mapping": {"type": "ip"}
                             }
                         },
                         {
                             "port_fields": {
                                 "match_pattern": "regex",
-                                "match": "^.*(port|src_port|dst_port)$",
+                                "match": "^(.*_port|port)$",
                                 "mapping": {"type": "integer"}
                             }
                         }
@@ -121,7 +121,7 @@ class WazuhUploader:
         for name, pattern in kwargs.items():
             self._create_index_template(f"forensic_{name}_template", pattern, priority)
 
-    def bulk_upload(self, actions_generator, chunk_size: int):
+    def bulk_upload(self, actions_generator, chunk_size: int, dlq_path: str = None):
 
         # ---> INJECTION À LA VOLÉE DES MÉTADONNÉES <---
         modified_actions_generator = inject_wapp_metadata(actions_generator, self.case_name, self.machine_name)
@@ -159,7 +159,8 @@ class WazuhUploader:
             print(f"Documents envoyés avec succès : {success_count}")
             if fail_count > 0:
                 print(f"Documents en échec : {fail_count}")
-                dlq_path = "failed_uploads_wazuh.json"
+                if not dlq_path:
+                    dlq_path = "/python-docker/shared_files/failed_uploads_wazuh.json"
                 try:
                     with open(dlq_path, 'w', encoding='utf-8') as f:
                         json.dump(failed_docs, f, indent=2, ensure_ascii=False, default=json_default_serializer)

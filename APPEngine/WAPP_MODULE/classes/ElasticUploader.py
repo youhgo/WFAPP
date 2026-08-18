@@ -37,14 +37,14 @@ class ElasticUploader:
                         {
                             "ip_fields": {
                                 "match_pattern": "regex",
-                                "match": "^.*(ip|ip_address|client_ip|source_ip|destination_ip)$",
+                                "match": "^(.*_ip|ip)$",
                                 "mapping": {"type": "ip"}
                             }
                         },
                         {
                             "port_fields": {
                                 "match_pattern": "regex",
-                                "match": "^.*(port|src_port|dst_port)$",
+                                "match": "^(.*_port|port)$",
                                 "mapping": {"type": "integer"}
                             }
                         }
@@ -68,7 +68,7 @@ class ElasticUploader:
         for name, pattern in kwargs.items():
             self._create_index_template(f"forensic_{name}_template", pattern)
 
-    def bulk_upload(self, actions_generator, chunk_size: int, thread_count: int = 4, mode: str = 'wapp', dlq_path: str = "failed_uploads.json"):
+    def bulk_upload(self, actions_generator, chunk_size: int, thread_count: int = 4, mode: str = 'wapp', dlq_path: str = "/python-docker/shared_files/failed_uploads.json"):
         if mode == 'parallel':
             bulk_func = parallel_bulk
             print(f"\\nEnvoi en mode PARALLÈLE ({thread_count} threads) par lots de {chunk_size}...")

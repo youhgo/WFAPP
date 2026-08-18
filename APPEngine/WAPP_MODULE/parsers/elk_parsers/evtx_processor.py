@@ -64,6 +64,11 @@ class EvtxHandler:
     def _get_user_data(self, raw_log: dict) -> dict:
         return raw_log.get("Event", {}).get("UserData", {})
 
+    def _clean_ip(self, ip_str: str):
+        if not ip_str or ip_str in ["-", "LOCAL", "unknown"]:
+            return None
+        return ip_str if (':' in ip_str or '.' in ip_str) else None
+
     def _format_timestamp(self, time_str: str) -> str:
         if not time_str: return datetime.utcnow().isoformat() + "Z"
         if '.' in time_str and len(time_str.split('.')[1]) > 7: time_str = time_str[:-2] + 'Z'
@@ -119,7 +124,7 @@ class EvtxHandler:
             port = None
         doc.update({"event": {**doc["event"], "action": "logon", "type": "start", "outcome": "success"},
                     "source": {"user": {"name": data.get("SubjectUserName")},
-                               "ip": data.get("IpAddress") if data.get("IpAddress") != "-" else None, "port": port},
+                               "ip": self._clean_ip(data.get("IpAddress")), "port": port},
                     "user": {"name": data.get("TargetUserName"), "domain": data.get("TargetDomainName")},
                     "winlog": {**doc["winlog"], "logon": {"type": data.get("LogonType")}}})
         return doc
@@ -136,7 +141,7 @@ class EvtxHandler:
             port = None
         doc.update({"event": {**doc["event"], "action": "logon", "type": "start", "outcome": "failure"},
                     "source": {"user": {"name": data.get("SubjectUserName")},
-                               "ip": data.get("IpAddress") if data.get("IpAddress") != "-" else None, "port": port},
+                               "ip": self._clean_ip(data.get("IpAddress")), "port": port},
                     "user": {"name": data.get("TargetUserName")},
                     "winlog": {**doc["winlog"], "logon": {"type": data.get("LogonType")}},
                     "error": {"code": status_code, "message": failure_text}})
@@ -321,7 +326,7 @@ class EvtxHandler:
         data = self._get_event_data(raw_log)
         doc.update(
             {"event": {**doc["event"], "action": "rdp_login", "outcome": "success"}, "user": {"name": data.get("User")},
-             "source": {"ip": data.get("ClientAddress")}})
+             "source": {"ip": self._clean_ip(data.get("ClientAddress"))}})
         return doc
 
     def handle_rdp_local_session(self, raw_log: dict) -> dict:
@@ -334,7 +339,7 @@ class EvtxHandler:
         doc.update({
             "event": {**doc["event"], "action": actions.get(doc["winlog"]["event_id"], "rdp_session_activity")},
             "user": {"name": event_xml_data.get("User")},
-            "source": {"ip": event_xml_data.get("Address")},
+            "source": {"ip": self._clean_ip(event_xml_data.get("Address"))},
             "winlog": {**doc["winlog"], "session_id": event_xml_data.get("SessionID")}
         })
         return doc
