@@ -17,14 +17,14 @@ WFAPP is a robust, modular, and extremely performant forensic pipeline designed 
 
 ---
 
-## 🎯 Features
+## Features
 
 - **Automated Pipeline**: Orchestrates forensic processing workflows with minimal configuration.
 - **Wazuh/SIEM Ready**: Automatically standardizes parsed output for easy ingestion by Wazuh or other SIEM solutions.
 - **Plug & Play Architecture**: Easily extendable. The community can drop a new parser and a new pipeline in the specific directories and the main Dispatcher will automatically load them.
 - **Extremely Low Memory Footprint**: Uses a stream-based (`yield`) reading approach. WFAPP can parse files of several Gigabytes (like huge Amcache hives) without loading the entire file into RAM.
 
-## 🧰 Supported Artifacts
+## Supported Artifacts
 
 WFAPP parses the following forensic artifacts out-of-the-box:
 - **Event Logs (.evtx)**
@@ -38,7 +38,7 @@ WFAPP parses the following forensic artifacts out-of-the-box:
 
 ---
 
-## 🚀 Installation & Usage
+## Installation & Usage
 
 ### 1. Requirements
 Ensure you have the following dependencies installed:
@@ -78,12 +78,12 @@ You can then access the Web UI at the port specified in your `.env`.
 
 ---
 
-## 🏗️ Architecture & How It Works
+## Architecture & How It Works
 
 1. **The Dispatcher (`dispatcher.py`)**: This is the heart of the engine. When the engine starts, the Dispatcher automatically scans the `modules/` folder for any class decorated with `@register_pipeline`. It automatically maps them to the appropriate configuration keys.
 2. **The Pipelines (`modules/`)**: Pipelines act as the bridge between the raw files and the parsers. They decide *which* files should be parsed (using Regex).
 3. **The Parsers (`parsers/`)**: Parsers implement a streaming `parse()` method using Python `yield`. They read a file line by line (or chunk by chunk), normalize the data into a standard Python dictionary, and instantly pass it back to the pipeline.
 4. **The Sinks (`classes/BaseParser.py`)**: The Pipeline redirects the yielded dictionary to an Output Sink (`CsvOutputSink`, `JsonlOutputSink`, or `TextOutputSink`). The Sink appends the line to the disk on the fly, drastically reducing memory usage.
 
-## 🤝 Contributing
+## Contributing
 Want to add a new artifact? We've designed WFAPP to be 100% Plug & Play. Please check the `DEVELOPER_GUIDE.md` for a comprehensive step-by-step tutorial on how to create your own pipeline in less than 5 minutes!
