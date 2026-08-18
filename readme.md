@@ -1,4 +1,15 @@
+<p align="center">
+  <img src="./ressources/images/app.logo.jpeg" width="600" height="600" alt="APP System Architecture">
+</p>
+
+
+
 # WFAPP - Windows Forensic Artifacts Parser Pipeline
+
+![Python Version](https://img.shields.io/badge/Python-3.9%20%7C%203.10%20%7C%203.11-blue?logo=python&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Supported-blue?logo=docker&logoColor=white)
+![Wazuh Ready](https://img.shields.io/badge/SIEM-Wazuh%20Ready-orange)
+![License](https://img.shields.io/badge/License-Apache%202.0-blue)
 
 WFAPP is a robust, modular, and extremely performant forensic pipeline designed to extract, parse, and normalize a wide range of Windows artifacts. It acts as an orchestrator that leverages community-driven open-source tools to extract raw data, before standardizing it into simplified, human-readable formats (CSV, JSONL).
 
