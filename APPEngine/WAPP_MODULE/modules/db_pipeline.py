@@ -14,6 +14,8 @@ class DbPipeline(BaseArtefactPipeline):
     Parses common SQLite databases.
     """
     recommended = True
+    importance = "Highly recommended"
+    speed = "Fast"
     DEFAULT_PATTERNS = {"Activity_cache": [r"ActivitiesCache(?:_\d+)?\.db"], "sdb": [r".*(?:_\d+)?\.sdb"], "SRUM": [r"SRUDB(?:_\d+)?\.dat", r"SRU.*(?:_\d+)?\.log"]}
 
     def __init__(self, context: WappContext):

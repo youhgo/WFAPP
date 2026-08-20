@@ -9,7 +9,9 @@ class Plaso2WazuhPostProcessor(BasePostProcessor):
     """
     Generates JSON files ready to be ingested by Wazuh from Plaso.
     """
-    recommended = False
+    recommended = True
+    importance = "Optional"
+    speed = "Slow"
 
     priority = 45
     requires = ['plaso']

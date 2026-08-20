@@ -9,6 +9,8 @@ class RestorePreProcessor(BasePreProcessor):
     Takes time if there are many files.
     """
     recommended = False
+    importance = "Optional"
+    speed = "Fast"
     priority = 10
     requires = ['extract']
     default_enabled = False

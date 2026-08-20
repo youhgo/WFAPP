@@ -12,6 +12,8 @@ class MppPostProcessor(BasePostProcessor):
     format : DATETIME|TYPE|ENTRIE|ETC|ETC
     """
     recommended = True
+    importance = "Highly recommended"
+    speed = "Fast"
 
     priority = 20
     requires = ['plaso']

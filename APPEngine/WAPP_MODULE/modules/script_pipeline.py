@@ -11,6 +11,8 @@ class ScriptPipeline(BaseArtefactPipeline):
     Parses scripts and associated executions.
     """
     recommended = True
+    importance = "Highly recommended"
+    speed = "Fast"
     DEFAULT_PATTERNS = {"bat": [".*.bat"]}
 
     def __init__(self, context: WappContext):

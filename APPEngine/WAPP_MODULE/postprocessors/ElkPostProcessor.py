@@ -11,7 +11,9 @@ class ElkPostProcessor(BaseElasticPostProcessor):
     """
     Generates JSON files for ElasticSearch/Kibana natively.
     """
-    recommended = False
+    recommended = True
+    importance = "Optional"
+    speed = "Slow"
     priority = 5
     requires = []
 

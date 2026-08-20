@@ -15,6 +15,8 @@ class EvtxPipeline(BaseArtefactPipeline):
     Parses Windows event logs.
     """
     recommended = True
+    importance = "Highly recommended"
+    speed = "Fast"
     DEFAULT_PATTERNS = {"evtx": [".*.evtx"]}
 
     def __init__(self, context: WappContext):

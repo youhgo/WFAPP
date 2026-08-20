@@ -14,6 +14,8 @@ class PrefetchPipeline(BaseArtefactPipeline):
     Parse les fichiers Prefetch pour l'historique d'exécution.
     """
     recommended = True
+    importance = "Highly recommended"
+    speed = "Fast"
     DEFAULT_PATTERNS = {"super_fetch": ["ag.*.db"], "prefetch": [".*.pf"]}
 
     def __init__(self, context: WappContext):

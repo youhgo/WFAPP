@@ -9,7 +9,9 @@ class Plaso2ElkPostProcessor(BasePostProcessor):
     """
     Generates JSON files for ElasticSearch/Kibana from Plaso.
     """
-    recommended = False
+    recommended = True
+    importance = "Optional"
+    speed = "Slow"
 
     priority = 40
     requires = ['plaso']

@@ -14,6 +14,8 @@ class MftPipeline(BaseArtefactPipeline):
     Parses the MFT to retrieve file history.
     """
     recommended = True
+    importance = "Highly recommended"
+    speed = "Fast"
     DEFAULT_PATTERNS = {"MFT": [r"\$?MFT(?:_\d+)?(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"]}
 
     def __init__(self, context: WappContext):

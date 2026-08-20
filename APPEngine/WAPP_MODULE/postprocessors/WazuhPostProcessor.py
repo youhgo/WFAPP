@@ -11,7 +11,9 @@ class WazuhPostProcessor(BaseElasticPostProcessor):
     """
     Generates JSON files ready to be ingested by Wazuh natively.
     """
-    recommended = False
+    recommended = True
+    importance = "Optional"
+    speed = "Slow"
     priority = 6
     requires = []
 

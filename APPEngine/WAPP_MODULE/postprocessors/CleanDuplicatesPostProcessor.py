@@ -8,6 +8,8 @@ class CleanDuplicatesPostProcessor(BasePostProcessor):
     Cleans duplicated lines to lighten exports.
     """
     recommended = True
+    importance = "Highly recommended"
+    speed = "Fast"
 
     priority = 1
     requires = []

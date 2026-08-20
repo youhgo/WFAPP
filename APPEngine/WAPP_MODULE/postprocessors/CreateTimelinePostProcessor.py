@@ -9,6 +9,8 @@ class CreateTimelinePostProcessor(BasePostProcessor):
     Warning: this is not PLASO.
     """
     recommended = True
+    importance = "Highly recommended"
+    speed = "Fast"
 
     priority = 2
     requires = ['clean_duplicates']

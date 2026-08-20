@@ -12,6 +12,8 @@ class PlasoPostProcessor(BasePostProcessor):
     Moreover, its format is more easily ingestible in Wazuh.
     """
     recommended = True
+    importance = "Highly recommended"
+    speed = "Slow"
 
     priority = 10
     requires = []

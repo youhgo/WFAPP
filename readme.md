@@ -155,6 +155,8 @@ APP leverages the power of these open-source tools:
 
 ---
 
-## Contributing
+## Contributing and Documentation
 
-Want to add a new artifact? We've designed WFAPP to be 100% Plug & Play. Please check the `DEVELOPER_GUIDE.md` for a comprehensive step-by-step tutorial on how to create your own pipeline in less than 5 minutes!
+- For information on writing new parsers, pipelines, or documenting plugins for the Web GUI, see the [DEVELOPER_GUIDE.md](ressources/documentation/DEVELOPER_GUIDE.md).
+- For automating parsing tasks and programmatically interacting with the backend, see the [API_GUIDE.md](ressources/documentation/API_GUIDE.md).
+- For a visual tour of the platform and an explanation of the web interface features, see the [GUI_GUIDE.md](ressources/documentation/GUI_GUIDE.md).

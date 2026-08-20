@@ -11,6 +11,8 @@ class PowerShellPipeline(BaseArtefactPipeline):
     Parses PowerShell execution logs.
     """
     recommended = True
+    importance = "Highly recommended"
+    speed = "Fast"
     DEFAULT_PATTERNS = {"consol_history": [r"ConsoleHost_history(?:_\d+)?\.txt"], "Module_Analysis_Cache": [r"ModuleAnalysisCache(?:_\d+)?"], "powerview": [r"PowerView(?:_\d+)?"], "scripts": [r".*(?:_\d+)?\.ps1"]}
 
     def __init__(self, context: WappContext):

@@ -14,6 +14,8 @@ class SystemInfoPipeline(BaseArtefactPipeline):
     Parses general system information.
     """
     recommended = True
+    importance = "Highly recommended"
+    speed = "Fast"
     DEFAULT_PATTERNS = {"system_info": [r"Systeminfo(?:_\d+)?\.csv"]}
 
     def __init__(self, context: WappContext):

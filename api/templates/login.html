@@ -2,33 +2,52 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Login - APP</title>
-  <!-- Replaced CDN with local path -->
+  <title>Login | WFAPP</title>
   <script src="{{ url_for('static', filename='vendor/tailwindcss.js') }}"></script>
-  <!-- Added Inter font for consistency -->
   <style>
       @import url("{{ url_for('static', filename='vendor/inter.css') }}");
       body {
           font-family: 'Inter', sans-serif;
+          background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+          color: #f8fafc;
+          min-height: 100vh;
+      }
+      .glass-panel {
+          background: rgba(30, 41, 59, 0.6);
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
       }
   </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center h-screen">
-  <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
-    <h1 class="text-2xl font-bold mb-6 text-center">Login</h1>
-    <form id="loginForm" class="space-y-4">
-      <input type="text" id="username" placeholder="Username" required
-        class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
-      <input type="password" id="password" placeholder="Password" required
-        class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
+<body class="flex items-center justify-center h-screen p-4">
+  <div class="glass-panel p-10 rounded-2xl w-full max-w-md shadow-2xl relative">
+    <div class="flex flex-col items-center mb-8">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-3xl shadow-lg mb-4">
+            W
+        </div>
+        <h1 class="text-2xl font-bold tracking-wide">WFAPP Portal</h1>
+        <p class="text-slate-400 text-sm mt-1">Sign in to your account</p>
+    </div>
+    <form id="loginForm" class="space-y-5">
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">Username</label>
+        <input type="text" id="username" placeholder="Enter username" required
+          class="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">Password</label>
+        <input type="password" id="password" placeholder="Enter password" required
+          class="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all">
+      </div>
       <button type="submit"
-        class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200">
-        Login
+        class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 mt-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-0.5 transition-all duration-300">
+        Access Portal
       </button>
     </form>
-    <p id="errorMsg" class="text-red-600 mt-4 text-center hidden"></p>
+    <div id="errorMsg" class="mt-6 text-center text-rose-400 text-sm hidden py-2 bg-rose-500/10 border border-rose-500/20 rounded-lg"></div>
   </div>
-  <!-- Script remains unchanged -->
+  
   <script>
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -43,19 +62,17 @@
         });
 
         if (res.ok) {
-          window.location.href = '/index'; // redirect to GUI
+          window.location.href = '/index';
         } else {
           const data = await res.json();
           const errorMsgElement = document.getElementById('errorMsg');
           errorMsgElement.textContent = data.message || 'Login failed';
           errorMsgElement.classList.remove('hidden');
-          errorMsgElement.classList.add('p-2', 'bg-red-100', 'rounded-lg');
         }
       } catch (err) {
         const errorMsgElement = document.getElementById('errorMsg');
-        errorMsgElement.textContent = 'Server error';
+        errorMsgElement.textContent = 'Server error. Please try again.';
         errorMsgElement.classList.remove('hidden');
-        errorMsgElement.classList.add('p-2', 'bg-red-100', 'rounded-lg');
       }
     });
   </script>

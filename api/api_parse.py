@@ -4,7 +4,7 @@ import sys
 import uuid  # Replaced random.randint
 import traceback
 from werkzeug.utils import secure_filename  # Crucial addition for security
-from flask import Blueprint, request, url_for, jsonify
+from flask import Blueprint, request, url_for, jsonify, make_response
 from flask_login import login_required
 from worker import celery
 
@@ -21,6 +21,94 @@ os.makedirs(LOG_FOLDER_PATH, exist_ok=True)
 
 # Allowed extensions (additional security)
 ALLOWED_EXTENSIONS = {'.zip', '.7z', '.tar', '.gz'}
+
+@parse_api.route('/upload_orc_bits', methods=['POST', 'BITS_POST'])
+def upload_orc_bits():
+    """
+    Minimal BITS server implementation to allow DFIR-ORC to upload directly.
+    """
+    packet_type = request.headers.get('BITS-Packet-Type')
+    
+    if not packet_type:
+        return jsonify({"error": "Missing BITS-Packet-Type header"}), 400
+        
+    if packet_type == 'Ping':
+        response = make_response()
+        response.headers['BITS-Packet-Type'] = 'Ack'
+        response.headers['BITS-Supported-Protocols'] = '1.5'
+        response.headers['Content-Length'] = '0'
+        return response, 200
+        
+    elif packet_type == 'Create-Session':
+        response = make_response()
+        session_id = str(uuid.uuid4())
+        response.headers['BITS-Packet-Type'] = 'Ack'
+        response.headers['BITS-Session-Id'] = session_id
+        response.headers['BITS-Supported-Protocols'] = '1.5'
+        response.headers['Content-Length'] = '0'
+        return response, 200
+        
+    elif packet_type == 'Fragment':
+        session_id = request.headers.get('BITS-Session-Id')
+        if not session_id:
+            return "Missing BITS-Session-Id", 400
+            
+        file_path = os.path.join(DEPOT_FOLDER_PATH, f"bits_temp_{session_id}.tmp")
+        
+        with open(file_path, "ab") as f:
+            f.write(request.get_data())
+            
+        response = make_response()
+        response.headers['BITS-Packet-Type'] = 'Ack'
+        response.headers['BITS-Session-Id'] = session_id
+        response.headers['Content-Length'] = '0'
+        return response, 200
+        
+    elif packet_type == 'Close-Session':
+        session_id = request.headers.get('BITS-Session-Id')
+        if not session_id:
+            return "Missing BITS-Session-Id", 400
+            
+        old_file_path = os.path.join(DEPOT_FOLDER_PATH, f"bits_temp_{session_id}.tmp")
+        new_file_name = f"DFIR-ORC_BITS_{session_id}.zip"
+        new_file_path = os.path.join(DEPOT_FOLDER_PATH, new_file_name)
+        
+        if os.path.exists(old_file_path):
+            os.rename(old_file_path, new_file_path)
+            
+        # Trigger Celery Task automatically for ORC archive
+        case_name = request.args.get('caseName', 'BITS_Auto_Ingest')
+        machine_name = request.args.get('machineName', f"Host_{session_id[:8]}")
+        
+        content = {
+            "archiveType": "ORC",
+            "caseName": case_name,
+            "machineName": machine_name
+        }
+        
+        task = celery.send_task("tasks.parse_archive", args=[content, new_file_name], queue="parse")
+            
+        response = make_response()
+        response.headers['BITS-Packet-Type'] = 'Ack'
+        response.headers['BITS-Session-Id'] = session_id
+        response.headers['Content-Length'] = '0'
+        return response, 200
+        
+    elif packet_type == 'Cancel-Session':
+        session_id = request.headers.get('BITS-Session-Id')
+        old_file_path = os.path.join(DEPOT_FOLDER_PATH, f"bits_temp_{session_id}.tmp")
+        if os.path.exists(old_file_path):
+            os.remove(old_file_path)
+            
+        response = make_response()
+        response.headers['BITS-Packet-Type'] = 'Ack'
+        response.headers['BITS-Session-Id'] = session_id
+        response.headers['Content-Length'] = '0'
+        return response, 200
+
+    return jsonify({"error": "Unknown BITS-Packet-Type"}), 400
+
+
 
 
 @parse_api.route('/parse_archive', methods=['POST'])

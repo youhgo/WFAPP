@@ -12,6 +12,8 @@ class WebHistoryPipeline(BaseArtefactPipeline):
     Parses web browsers history.
     """
     recommended = True
+    importance = "Highly recommended"
+    speed = "Fast"
     DEFAULT_PATTERNS = {"browser_history": [".*.sqlite"]}
 
     def __init__(self, context: WappContext):

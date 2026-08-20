@@ -13,6 +13,8 @@ class DiskPipeline(BaseArtefactPipeline):
     Parse artifacts related to disks and volumes like MFT USN and VSS
     """
     recommended = True
+    importance = "Highly recommended"
+    speed = "Fast"
     DEFAULT_PATTERNS = {"usn_journal": [r"USNInfo.*\.csv$"], "VSS_List": [r"VSS_list(?:_\d+)?\.csv"]}
 
     def __init__(self, context: WappContext):

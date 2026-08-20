@@ -14,6 +14,8 @@ class LnkPipeline(BaseArtefactPipeline):
     Parses LNK shortcut files.
     """
     recommended = True
+    importance = "Highly recommended"
+    speed = "Fast"
     DEFAULT_PATTERNS = {"lnk": [".*.lnk"]}
 
     def __init__(self, context: WappContext):

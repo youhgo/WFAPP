@@ -9,6 +9,8 @@ class RenamePreProcessor(BasePreProcessor):
     (Slow, so disabled by default. Must be checked by the user if desired).
     """
     recommended = False
+    importance = "Optionnal"
+    speed = "Slow"
     priority = 20
     requires = ['extract']
     default_enabled = False

@@ -10,6 +10,8 @@ class ExtractPreProcessor(BasePreProcessor):
     Decompresses the original archive. Required to start the analysis.
     """
     recommended = True
+    importance = "Mandatory"
+    speed = "Fast"
     priority = 0
     requires = []
     default_enabled = True

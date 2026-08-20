@@ -4,7 +4,16 @@ from pathlib import Path
 from ..classes.BaseArtefactPipelines import BaseArtefactPipeline
 from ..classes.WappContext import WappContext
 
+from ..classes.Registry import register_pipeline
+
+@register_pipeline('legacy')
 class OtherPipeline(BaseArtefactPipeline):
+    """
+    Process legacy ORC artefacts not explicitly parsed by other pipelines.
+    """
+    recommended = False
+    importance = "Optional"
+    speed = "Fast"
     def __init__(self, context: WappContext):
         super().__init__(context)
         self.out_other_dir = self.context.parsed_dir / "other"

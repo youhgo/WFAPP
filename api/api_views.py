@@ -1,6 +1,7 @@
 import sys
 from datetime import datetime
 import os
+import uuid
 
 from flask import Blueprint, Response, jsonify, render_template, request, send_from_directory, abort
 from flask_login import login_user, logout_user, login_required, current_user
@@ -17,13 +18,10 @@ LOG_FOLDER_PATH = os.path.join(WORKING_FOLDER_PATH, "execution_logs")
 RESOURCES_FOLDER_PATH = "/python-docker/ressources"
 
 
-# Protected admin page
+# Profile and Admin page
 @wapp_api.route("/admin/users")
 @login_required
 def users_admin():
-    # Check new is_admin field
-    if not current_user.is_admin:
-        return jsonify({"message": "Access forbidden"}), 403
     return render_template("users.html")
 
 
@@ -34,8 +32,8 @@ def list_users():
     if not current_user.is_admin:
         return jsonify({"message": "Access forbidden"}), 403
     users = User.query.all()
-    # Include admin status in the response
-    return jsonify([{"id": u.id, "username": u.username, "is_admin": u.is_admin} for u in users])
+    # Include admin status and api key in the response
+    return jsonify([{"id": u.id, "username": u.username, "is_admin": u.is_admin, "api_key": u.api_key} for u in users])
 
 
 # API to update a user
@@ -53,8 +51,15 @@ def update_user(user_id):
     # Add logic to update the admin status
     if "is_admin" in data:
         user.is_admin = data["is_admin"]
+    if "api_key" in data:
+        user.api_key = data["api_key"]
+    if data.get("generate_api_key"):
+        user.api_key = str(uuid.uuid4())
+    if data.get("revoke_api_key"):
+        user.api_key = None
+        
     db.session.commit()
-    return jsonify({"message": "User updated"})
+    return jsonify({"message": "User updated", "api_key": user.api_key})
 
 
 # API to delete a user
@@ -86,6 +91,45 @@ def login_page():
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+@login_manager.request_loader
+def load_user_from_request(request):
+    api_key = request.headers.get('X-API-Key')
+    if not api_key:
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            api_key = auth_header.split('Bearer ', 1)[1]
+    if api_key:
+        user = User.query.filter_by(api_key=api_key).first()
+        if user:
+            return user
+    return None
+
+@wapp_api.route('/api/me', methods=['GET'])
+@login_required
+def get_me():
+    return jsonify({
+        "id": current_user.id,
+        "username": current_user.username,
+        "is_admin": current_user.is_admin,
+        "api_key": current_user.api_key
+    })
+
+
+@wapp_api.route('/api/me/api_key', methods=['POST'])
+@login_required
+def manage_my_api_key():
+    data = request.get_json() or {}
+    
+    if data.get("action") == "revoke":
+        current_user.api_key = None
+    elif data.get("action") == "generate":
+        current_user.api_key = str(uuid.uuid4())
+    else:
+        return jsonify({"message": "Invalid action. Use 'revoke' or 'generate'"}), 400
+        
+    db.session.commit()
+    return jsonify({"message": "API key updated successfully", "api_key": current_user.api_key})
 
 
 @wapp_api.route('/api/register', methods=['POST'])
@@ -162,12 +206,46 @@ def stop_single_task(task_id):
 @wapp_api.route('/api/get_running_tasks')
 @login_required
 def get_running_tasks():
-    all_nodes = celery.control.inspect()
+    inspector = celery.control.inspect()
+    active_tasks = inspector.active() or {}
+    reserved_tasks = inspector.reserved() or {}
+    
+    tasks_with_status = {}
+    
+    def process_task_dict(task_dict):
+        for worker, tasks in task_dict.items():
+            if worker not in tasks_with_status:
+                tasks_with_status[worker] = []
+            for task in tasks:
+                task_id = task.get("id")
+                # Get real-time status from AsyncResult
+                res = celery.AsyncResult(task_id)
+                task["status"] = res.state
+                
+                # Extract archive name from args string
+                args_str = str(task.get("args", ""))
+                archive_name = "Unknown Archive"
+                import re
+                # Try to extract the last string parameter which is usually the filename
+                match = re.search(r"'([^']+)'(?:\]|\)|,?\s*)$", args_str)
+                if match:
+                    archive_name = match.group(1)
+                elif ".zip" in args_str or ".7z" in args_str or ".tar" in args_str:
+                    match = re.search(r"'([^']+\.(?:zip|7z|tar|gz|bz2))'", args_str)
+                    if match:
+                        archive_name = match.group(1)
+                        
+                task["archive_name"] = archive_name
+                tasks_with_status[worker].append(task)
+
+    process_task_dict(active_tasks)
+    process_task_dict(reserved_tasks)
+
     response = {
-        "active": all_nodes.active(),
+        "active": tasks_with_status,
         "killedTasks": []
     }
-    return response
+    return jsonify(response)
 
 
 def stop_task(task_list):
@@ -357,16 +435,27 @@ def extract_plugin_info(file_path):
                     description = "No description available."
                     
                 recommended = True
+                importance = None
+                speed = None
                 for item in node.body:
                     if isinstance(item, ast.Assign):
                         for target in item.targets:
-                            if getattr(target, 'id', '') == 'recommended':
+                            target_id = getattr(target, 'id', '')
+                            if target_id == 'recommended':
                                 if isinstance(item.value, ast.Constant):
                                     recommended = item.value.value
+                            elif target_id == 'importance':
+                                if isinstance(item.value, ast.Constant):
+                                    importance = item.value.value
+                            elif target_id == 'speed':
+                                if isinstance(item.value, ast.Constant):
+                                    speed = item.value.value
                 return {
                     "name": plugin_name,
                     "description": description,
                     "recommended": recommended,
+                    "importance": importance,
+                    "speed": speed,
                     "type": plugin_type
                 }
     return None

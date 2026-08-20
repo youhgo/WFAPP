@@ -14,6 +14,8 @@ class NetworkPipeline(BaseArtefactPipeline):
     Parses network configuration artifacts.
     """
     recommended = True
+    importance = "Highly recommended"
+    speed = "Fast"
     DEFAULT_PATTERNS = {"tcpvcon": [r"Tcpvcon(?:_\d+)?\.txt"], "arp_cache": [r"arp_cache(?:_\d+)?\.txt"], "dns_cache": [r"dns_cache(?:_\d+)?\.txt"], "netstat": [r"netstat(?:_\d+)?\.txt"], "routes": [r"routes(?:_\d+)?\.txt"], "hosts": [r"hosts(?:_\d+)?(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "lmhosts": [r"lmhosts(?:_\d+)?\.sam"], "protocol": [r"protocol(?:_\d+)?(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "services": [r"services(?:_\d+)?(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "network": [r"networks(?:_\d+)?(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "bits": [r"BITS_jobs(?:_\d+)?\.txt"], "dns_records": [r"DNS_records(?:_\d+)?\.txt"]}
 
     def __init__(self, context: WappContext):

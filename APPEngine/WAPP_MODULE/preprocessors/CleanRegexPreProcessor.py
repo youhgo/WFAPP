@@ -8,6 +8,8 @@ class CleanRegexPreProcessor(BasePreProcessor):
     Executed automatically in the background (without GUI).
     """
     recommended = True
+    importance = "Highly recommended"
+    speed = "Fast"
     priority = 30
     requires = ['extract']
     default_enabled = True

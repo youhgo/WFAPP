@@ -14,6 +14,8 @@ class HivePipeline(BaseArtefactPipeline):
     Parses Windows registry hives.
     """
     recommended = True
+    importance = "Highly recommended"
+    speed = "Fast"
     DEFAULT_PATTERNS = {"NTUSER": [r"NTUSER(?:_\d+)?\.DAT(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "USRCLASS": [r"UsrClass(?:_\d+)?\.dat(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "AMCACHE": [r"Amcache(?:_\d+)?\.hve(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "SOFTWARE": [r"SOFTWARE(?:_\d+)?(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "SYSTEM": [r"SYSTEM(?:_\d+)?(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "SECURITY": [r"SECURITY(?:_\d+)?(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "SAM": [r"SAM(?:_\d+)?(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"]}
 
     def __init__(self, context: WappContext):
