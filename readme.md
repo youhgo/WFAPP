@@ -54,12 +54,19 @@ Ensure you have the following dependencies installed:
 - Python 3.9+
 - Docker & Docker Compose (If using the Web UI / Wazuh stack)
 
-### 2. Environment Configuration
-Clone the repository and copy the example environment file:
+### 2. Automated Installation (Recommended)
+Clone the repository and run the automated interactive bash script:
 ```bash
 git clone https://github.com/youhgo/WFAPP.git
 cd WFAPP
-cp .env.example .env
+sudo ./install.sh
+```
+The script will check for Docker, set up your `.env` configuration interactively, and launch the platform.
+
+### 3. Manual Configuration
+If you prefer not to use the automated script:
+```bash
+cp .env.exemple .env
 ```
 Edit the `.env` file to configure your paths and desired settings.
 

@@ -32,6 +32,30 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin 
 
 ---
 
+## System Requirements and Resource Recommendations
+
+The resource requirements depend on whether you are running the core parsing engine or the full stack with SIEM ingestion (ELK or Wazuh), and how many parallel workers you execute.
+
+### 1. Minimal Configuration (Core Pipeline only, 1 Worker)
+Use case: Parsing archives and saving CSV or JSONL results directly to the shared directory without SIEM indexing.
+- CPU: 2 vCPUs
+- RAM: 4 GB
+- Disk: HDD or SSD (space depends on the size of the forensic archives, SSD is always preferred for timeline generation).
+
+### 2. Standard Configuration (Core Pipeline with 2-3 Workers)
+Use case: Processing multiple forensic archives in parallel.
+- CPU: 4 vCPUs
+- RAM: 8 GB
+- Disk: SSD recommended for parallel read and write operations.
+
+### 3. Full Stack Configuration (Core Pipeline with SIEM Ingestion)
+Use case: Processing archives and indexing millions of events into Elasticsearch or Wazuh Indexer.
+- CPU: 4 to 8 vCPUs (Elasticsearch indexing is highly CPU intensive).
+- RAM: 16 GB minimum (Elasticsearch and Wazuh Indexer require at least 4-8 GB of RAM allocated exclusively to the JVM heap to operate stably).
+- Disk: High-performance SSD is highly recommended (indexing operations are bottlenecked by disk IOPS).
+
+---
+
 ## Downloading APP
 
 Clone the repository to your local machine using Git:
