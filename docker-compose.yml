@@ -108,9 +108,6 @@ services:
       WAZUH_CHUNKSIZE: ${WAZUH_CHUNKSIZE}
       WAZUH_VERIFYSSL: ${WAZUH_VERIFYSSL}
 
-      SPLUNK_HOST: ${SPLUNK_HOST}
-      SPLUNK_PORT: ${SPLUNK_PORT}
-      SPLUNK_TOKEN: ${SPLUNK_TOKEN}
 
     volumes:
       - ${SHARED_FOLDER_PATH}:/python-docker/shared_files/
@@ -119,9 +116,12 @@ services:
       - redis
     networks:
       - wappNet
+      - shared_sec_net
 
 networks:
   wappNet:
-
+  shared_sec_net:
+    name: shared_sec_net
+    external: true
 volumes:
   shared_files:

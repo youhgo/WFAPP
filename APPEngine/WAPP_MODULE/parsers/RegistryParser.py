@@ -28,6 +28,8 @@ class RegistryParser(BaseParser):
             yield from self._export_amcache_to_jsonl(input_path, hive_name)
         elif category == "hive_yarp":
             yield from self._export_hive_to_jsonl(input_path, hive_name)
+        elif category == "hive_regpy":
+            yield from self._parse_hive_regpy(input_path, hive_name)
 
     def _parse_amcache_regpy(self, file_path: Path) -> Generator[Tuple[str, Dict[str, Any]], None, None]:
         if self.logger:
@@ -64,6 +66,31 @@ class RegistryParser(BaseParser):
         except Exception as e:
             if self.logger:
                 self.logger.error(f"[PARSING][AMCACHE][REGPY]: An unexpected error occurred: {e}", header="ERROR", indentation=2)
+
+    def _parse_hive_regpy(self, file_path: Path, hive_name: str) -> Generator[Tuple[str, Dict[str, Any]], None, None]:
+        if self.logger:
+            self.logger.info(f"[PARSING][HIVE][REGPY] {hive_name}", header="START", indentation=2)
+        try:
+            reg = RegistryHive(str(file_path))
+            parsed_data = run_relevant_plugins(reg, as_json=True)
+            
+            if not parsed_data:
+                if self.logger:
+                    self.logger.warning(f"[PARSING][HIVE][REGPY] Regipy couldn't parse any plugins for {hive_name}", header="FAILED", indentation=2)
+                return
+
+            for plugin_name, entries in parsed_data.items():
+                if isinstance(entries, list):
+                    for entry in entries:
+                        yield f"{plugin_name}_regipy", entry
+                elif isinstance(entries, dict):
+                    yield f"{plugin_name}_regipy", entries
+
+            if self.logger:
+                self.logger.info(f"[PARSING][HIVE][REGPY] {hive_name}", header="FINISHED", indentation=2)
+        except Exception as e:
+            if self.logger:
+                self.logger.error(f"[PARSING][HIVE][REGPY]: An unexpected error occurred: {e}", header="ERROR", indentation=2)
 
     def _recursively_yield_key(self, key, hive_name: str, parent_path="") -> Generator[Tuple[str, Dict[str, Any]], None, None]:
         current_path = parent_path + "\\" + key.name() if parent_path else key.name()
@@ -107,22 +134,50 @@ class RegistryParser(BaseParser):
         except Exception:
             pass
 
+    def _get_recovered_hive(self, hive_file_path: Path, files_to_close: list):
+        f_hive = open(str(hive_file_path), "rb")
+        files_to_close.append(f_hive)
+        hive = Registry.RegistryHive(f_hive)
+
+        def get_log(ext_upper):
+            for ext in [ext_upper, ext_upper.lower()]:
+                path = str(hive_file_path) + ext
+                if os.path.exists(path):
+                    f = open(path, 'rb')
+                    files_to_close.append(f)
+                    return f
+            return None
+
+        log1 = get_log(".LOG1")
+        log2 = get_log(".LOG2")
+        log3 = get_log(".LOG3")
+
+        recovery_result = hive.recover_auto(log1, log2, log3)
+        return hive, recovery_result
+
     def _export_hive_to_jsonl(self, hive_file_path: Path, hive_name: str) -> Generator[Tuple[str, Dict[str, Any]], None, None]:
+        files_to_close = []
         try:
             if self.logger:
                 self.logger.info(f"[PARSING][HIVE][YARP] {hive_name}", header="START", indentation=2)
 
-            with open(str(hive_file_path), "rb") as f_hive:
-                hive = Registry.RegistryHive(f_hive)
-                root_key = hive.root_key()
+            hive, recovery_result = self._get_recovered_hive(hive_file_path, files_to_close)
 
-                hive_info = {
-                    "hive_path": str(hive_file_path),
-                    "last_written": hive.last_written_timestamp().isoformat() if hive.last_written_timestamp() else None,
-                    "last_reorganized": hive.last_reorganized_timestamp().isoformat() if hive.last_reorganized_timestamp() else None,
-                }
-                yield f"registry_{hive_name}", hive_info
-                yield from self._recursively_yield_key(root_key, hive_name)
+            if self.logger:
+                if recovery_result.recovered:
+                    self.logger.info(f"[PARSING][HIVE][YARP] The hive {hive_name} has been recovered", header="SUCCESS", indentation=2)
+                else:
+                    self.logger.warning(f"[PARSING][HIVE][YARP] The hive {hive_name} has NOT been recovered", header="WARNING", indentation=2)
+
+            root_key = hive.root_key()
+
+            hive_info = {
+                "hive_path": str(hive_file_path),
+                "last_written": hive.last_written_timestamp().isoformat() if hive.last_written_timestamp() else None,
+                "last_reorganized": hive.last_reorganized_timestamp().isoformat() if hive.last_reorganized_timestamp() else None,
+            }
+            yield f"registry_{hive_name}", hive_info
+            yield from self._recursively_yield_key(root_key, hive_name)
 
             if self.logger:
                 self.logger.info(f"[PARSING][HIVE][YARP] {hive_name}", header="FINISHED", indentation=2)
@@ -130,22 +185,17 @@ class RegistryParser(BaseParser):
         except Exception as e:
             if self.logger:
                 self.logger.error(f"[PARSING][HIVE][YARP]: An unexpected error occurred: {e}", header="ERROR", indentation=2)
+        finally:
+            for f in files_to_close:
+                try:
+                    f.close()
+                except Exception:
+                    pass
 
     def _export_amcache_to_jsonl(self, hive_file_path: Path, hive_name: str) -> Generator[Tuple[str, Dict[str, Any]], None, None]:
+        files_to_close = []
         try:
-            primary_file = open(str(hive_file_path), 'rb')
-            hive = Registry.RegistryHive(primary_file)
-
-            # Cherche les logs transactionnels dans le même dossier
-            log1_path = str(hive_file_path) + ".LOG1"
-            log2_path = str(hive_file_path) + ".LOG2"
-            log3_path = str(hive_file_path) + ".LOG3"
-
-            log1 = open(log1_path, 'rb') if os.path.exists(log1_path) else None
-            log2 = open(log2_path, 'rb') if os.path.exists(log2_path) else None
-            log3 = open(log3_path, 'rb') if os.path.exists(log3_path) else None
-
-            recovery_result = hive.recover_auto(log1, log2, log3)
+            hive, recovery_result = self._get_recovered_hive(hive_file_path, files_to_close)
 
             if self.logger:
                 if recovery_result.recovered:
@@ -170,3 +220,9 @@ class RegistryParser(BaseParser):
         except Exception as e:
             if self.logger:
                 self.logger.error(f"[PARSING][AMCACHE][YARP]: An unexpected error occurred: {e}", header="ERROR", indentation=2)
+        finally:
+            for f in files_to_close:
+                try:
+                    f.close()
+                except Exception:
+                    pass

@@ -9,14 +9,6 @@ import re
 import subprocess
 from pathlib import Path
 
-try:
-    import py7zr
-
-    PY7ZR_AVAILABLE = True
-except ImportError:
-    PY7ZR_AVAILABLE = False
-
-
 def _clean_long_filename(base_name: str) -> str:
     """
     Cleans overly long filenames during extraction (prevents OS errors OSError 206/207).
@@ -47,6 +39,25 @@ def _clean_long_filename(base_name: str) -> str:
         filename_clean = name[:200] + ext
 
     return filename_clean
+
+
+try:
+    import py7zr
+
+    original_get_sanitized_output_path = py7zr.py7zr.get_sanitized_output_path
+    
+    def safe_get_sanitized_output_path(arcname, path):
+        import os
+        dirname, basename = os.path.split(arcname)
+        clean_basename = _clean_long_filename(basename)
+        clean_arcname = os.path.join(dirname, clean_basename)
+        return original_get_sanitized_output_path(clean_arcname, path)
+
+    py7zr.py7zr.get_sanitized_output_path = safe_get_sanitized_output_path
+
+    PY7ZR_AVAILABLE = True
+except ImportError:
+    PY7ZR_AVAILABLE = False
 
 
 class OrcExtractor:

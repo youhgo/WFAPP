@@ -3,7 +3,7 @@ Flask
 celery
 redis
 py7zr
-regipy
+regipy[full]
 LnkParse3
 xmltodict
 elasticsearch~=8.0

@@ -17,12 +17,17 @@ class HivePipeline(BaseArtefactPipeline):
     importance = "Highly recommended"
     speed = "Fast"
     DEFAULT_PATTERNS = {"NTUSER": [r"NTUSER(?:_\d+)?\.DAT(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "USRCLASS": [r"UsrClass(?:_\d+)?\.dat(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "AMCACHE": [r"Amcache(?:_\d+)?\.hve(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "SOFTWARE": [r"SOFTWARE(?:_\d+)?(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "SYSTEM": [r"SYSTEM(?:_\d+)?(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "SECURITY": [r"SECURITY(?:_\d+)?(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"], "SAM": [r"SAM(?:_\d+)?(?:_\{[a-fA-F0-9\-]+\}(?:\.data)?)?$"]}
+    
+    # List of categories to ignore for regipy (because they are too large/slow to parse with plugins)
+    IGNORED_REGPY_CATEGORIES = [""]
 
     def __init__(self, context: WappContext):
         super().__init__(context)
         self.parser = RegistryParser(self.logger, separator=self.context.separator)
         self.csv_sinks = {}
         self.jsonl_sinks = {}
+        self.hives_output_dir = self.context.result_parsed_dir / "hives"
+        self.hives_output_dir.mkdir(parents=True, exist_ok=True)
 
     def process(self, file_path: Path):
         self.logger.info(f"[PIPELINE][HIVE] Processing {file_path.name}", header="START", indentation=1)
@@ -36,7 +41,7 @@ class HivePipeline(BaseArtefactPipeline):
                 # YARP (JSONL)
                 for artifact_type, record in self.parser.parse(file_path, category="amcache_yarp", hive_name=hv_name):
                     if artifact_type not in self.jsonl_sinks:
-                        jsonl_path = self.context.result_parsed_dir / f"{file_path.name}_yarp.jsonl"
+                        jsonl_path = self.hives_output_dir / f"{file_path.name}_yarp.jsonl"
                         self.jsonl_sinks[artifact_type] = JsonlOutputSink(jsonl_path, context=self.context)
                         self.context.wazuh_importer_file_config["files"].append({"path": str(jsonl_path), "type": "amcache_yarp"})
                     self.jsonl_sinks[artifact_type].write_record(record)
@@ -44,7 +49,7 @@ class HivePipeline(BaseArtefactPipeline):
                 # REGPY (CSV)
                 for artifact_type, record in self.parser.parse(file_path, category="amcache_regpy", hive_name=hv_name):
                     if artifact_type not in self.csv_sinks:
-                        csv_path = self.context.result_parsed_dir / f"{file_path.name}.csv"
+                        csv_path = self.hives_output_dir / f"{file_path.name}.csv"
                         self.csv_sinks[artifact_type] = CsvOutputSink(csv_path, separator=self.context.separator)
                         self.context.wazuh_importer_file_config["files"].append({"path": str(csv_path), "type": "amcache_regpy"})
                     self.csv_sinks[artifact_type].write_record(record)
@@ -52,10 +57,23 @@ class HivePipeline(BaseArtefactPipeline):
                 # Standard Hive (YARP JSONL)
                 for artifact_type, record in self.parser.parse(file_path, category="hive_yarp", hive_name=hv_name):
                     if artifact_type not in self.jsonl_sinks:
-                        jsonl_path = self.context.result_parsed_dir / f"{file_path.name}_yarp.jsonl"
+                        jsonl_path = self.hives_output_dir / f"{file_path.name}_yarp.jsonl"
                         self.jsonl_sinks[artifact_type] = JsonlOutputSink(jsonl_path, context=self.context)
                         self.context.wazuh_importer_file_config["files"].append({"path": str(jsonl_path), "type": artifact_type})
                     self.jsonl_sinks[artifact_type].write_record(record)
+                    
+                # Standard Hive (REGIPY JSONL)
+                skip_regipy = any(self._matches_category(file_path.name, cat) for cat in self.IGNORED_REGPY_CATEGORIES)
+                
+                if skip_regipy:
+                    self.logger.info(f"[PIPELINE][HIVE] Skipping regipy on {file_path.name} (ignored category).", header="SKIP", indentation=2)
+                else:
+                    for artifact_type, record in self.parser.parse(file_path, category="hive_regpy", hive_name=hv_name):
+                        if artifact_type not in self.jsonl_sinks:
+                            jsonl_path = self.hives_output_dir / f"{artifact_type}.jsonl"
+                            self.jsonl_sinks[artifact_type] = JsonlOutputSink(jsonl_path, context=self.context)
+                            self.context.wazuh_importer_file_config["files"].append({"path": str(jsonl_path), "type": artifact_type})
+                        self.jsonl_sinks[artifact_type].write_record(record)
 
             self.logger.info(f"[PIPELINE][HIVE] Success", header="FINISHED", indentation=1)
         except Exception as e:

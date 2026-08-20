@@ -24,6 +24,8 @@ RUN apt-get update && \
     plaso-tools \
     python3.10 \
     python3-pip \
+    python3-dev \
+    build-essential \
     nano \
     git \
     curl \
