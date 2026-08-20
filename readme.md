@@ -137,7 +137,7 @@ The tool also includes a simple Web GUI for common tasks:
 - Download the DFIR-Orc.exe binary.
 - Stop running tasks.
 
-<img src="./ressources/images/Gui_main.png" width="800" alt="APP System Architecture">
+<img src="./ressources/images/mainGui.png" width="800" alt="APP System Architecture">
 
 ---
 
