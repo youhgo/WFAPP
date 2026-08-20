@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./ressources/images/app.logo.jpeg" width="600" height="600" alt="APP System Architecture">
+ <img src="./ressources/images/app.logo.jpeg" width="600" height="600" alt="APP System Architecture">
 </p>
 
 # WFAPP - Windows Forensic Artifacts Parser Pipeline
@@ -113,7 +113,7 @@ powershell.csv
 2021-01-07|03:37:03|600|powershell Set-MpPreference -DisableRealtimeMonitoring $true; Get-MpComputerStatus
 
 new_service_id7045.csv
-2021-01-07|03:32:30|7045|LocalSystem|%COMSPEC% /Q /c echo cd  ^> \\127.0.0.1\C$\__output 2^>^&1 > %TEMP%\execute.bat & %COMSPEC% /Q /c %TEMP%\execute.bat & del %TEMP%\execute.bat|BTOBTO
+2021-01-07|03:32:30|7045|LocalSystem|%COMSPEC% /Q /c echo cd ^> \\127.0.0.1\C$\__output 2^>^&1 > %TEMP%\execute.bat & %COMSPEC% /Q /c %TEMP%\execute.bat & del %TEMP%\execute.bat|BTOBTO
 
 user_logon_id4624.csv
 2021-01-07|03:31:26|4624|-|MSOL_0537fce40030|192.168.88.136|54180|3

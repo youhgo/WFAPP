@@ -22,7 +22,7 @@ To verify that your API key is valid and fetch your user details (including your
 
 ```bash
 curl -X GET https://wapp.localhost/api/me \
-     -H "X-API-Key: YOUR_API_KEY"
+   -H "X-API-Key: YOUR_API_KEY"
 ```
 
 ### Manage Your API Key
@@ -35,9 +35,9 @@ You can revoke your current API key or generate a new one.
 
 ```bash
 curl -X POST https://wapp.localhost/api/me/api_key \
-     -H "Content-Type: application/json" \
-     -H "X-API-Key: YOUR_API_KEY" \
-     -d '{"action": "generate"}'
+   -H "Content-Type: application/json" \
+   -H "X-API-Key: YOUR_API_KEY" \
+   -d '{"action": "generate"}'
 ```
 
 ---
@@ -53,8 +53,8 @@ You can specify the `caseName` (and optionally `machineName`) directly in the UR
 
 ```xml
 <Upload>
-    <UploadMethod>BITS</UploadMethod>
-    <Post>https://wapp.localhost/api/parse/upload_orc_bits?caseName=MyCustomCase</Post>
+  <UploadMethod>BITS</UploadMethod>
+  <Post>https://wapp.localhost/api/parse/upload_orc_bits?caseName=MyCustomCase</Post>
 </Upload>
 ```
 
@@ -70,8 +70,8 @@ If you prefer to manually submit an archive via standard HTTP POST, you can use 
 * **Method:** `POST`
 * **Headers:** `Content-Type: multipart/form-data`, `X-API-Key: YOUR_API_KEY`
 * **Form-data Parameters:**
-  - `file`: The binary archive file.
-  - `json`: A stringified JSON object containing the execution configuration.
+ - `file`: The binary archive file.
+ - `json`: A stringified JSON object containing the execution configuration.
 
 ### Configuration Payload Structure
 The `json` form parameter accepts the following properties:
@@ -84,32 +84,32 @@ The `json` form parameter accepts the following properties:
 Create a temporary JSON configuration file named `config.json`:
 ```json
 {
-  "archiveType": "ORC",
-  "caseName": "Case_Study_01",
-  "machineName": "DESKTOP-5491A",
-  "parser_config": {
-    "pipelines": {
-      "prefetch": { "enabled": true },
-      "hive": { "enabled": true }
-    }
+ "archiveType": "ORC",
+ "caseName": "Case_Study_01",
+ "machineName": "DESKTOP-5491A",
+ "parser_config": {
+  "pipelines": {
+   "prefetch": { "enabled": true },
+   "hive": { "enabled": true }
   }
+ }
 }
 ```
 
 ```bash
 curl -X POST https://wapp.localhost/api/parse/parse_archive \
-     -H "X-API-Key: YOUR_API_KEY" \
-     -F "file=@/path/to/evidence_archive.zip" \
-     -F "json=$(cat config.json)"
+   -H "X-API-Key: YOUR_API_KEY" \
+   -F "file=@/path/to/evidence_archive.zip" \
+   -F "json=$(cat config.json)"
 ```
 
 ### Response (202 Accepted)
 ```json
 {
-  "message": "Your analysis request has been sent to the queue",
-  "taskId": "1d8b8db0-77a8-4223-9566-6b2169528be6",
-  "statusUrl": "https://wapp.localhost/api/get_task_status/1d8b8db0-77a8-4223-9566-6b2169528be6",
-  "runLogUrl": "https://wapp.localhost/api/running_log/1d8b8db0-77a8-4223-9566-6b2169528be6"
+ "message": "Your analysis request has been sent to the queue",
+ "taskId": "1d8b8db0-77a8-4223-9566-6b2169528be6",
+ "statusUrl": "https://wapp.localhost/api/get_task_status/1d8b8db0-77a8-4223-9566-6b2169528be6",
+ "runLogUrl": "https://wapp.localhost/api/running_log/1d8b8db0-77a8-4223-9566-6b2169528be6"
 }
 ```
 
@@ -126,7 +126,7 @@ Retrieve the status of a specific background task.
 
 ```bash
 curl -X GET https://wapp.localhost/api/get_task_status/1d8b8db0-77a8-4223-9566-6b2169528be6 \
-     -H "X-API-Key: YOUR_API_KEY"
+   -H "X-API-Key: YOUR_API_KEY"
 ```
 
 ### Retrieve Live Running Logs
@@ -137,7 +137,7 @@ Get raw running logs of the active parser task.
 
 ```bash
 curl -X GET https://wapp.localhost/api/running_log/1d8b8db0-77a8-4223-9566-6b2169528be6 \
-     -H "X-API-Key: YOUR_API_KEY"
+   -H "X-API-Key: YOUR_API_KEY"
 ```
 
 ---
@@ -152,7 +152,7 @@ Revokes and terminates a Celery task that is currently executing.
 
 ```bash
 curl -X POST https://wapp.localhost/api/stop_task/1d8b8db0-77a8-4223-9566-6b2169528be6 \
-     -H "X-API-Key: YOUR_API_KEY"
+   -H "X-API-Key: YOUR_API_KEY"
 ```
 
 ---
@@ -166,5 +166,5 @@ Retrieve a list of all registered preprocessors, pipelines, and postprocessors.
 
 ```bash
 curl -X GET https://wapp.localhost/api/pipelines \
-     -H "X-API-Key: YOUR_API_KEY"
+   -H "X-API-Key: YOUR_API_KEY"
 ```

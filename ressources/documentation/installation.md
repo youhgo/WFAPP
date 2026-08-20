@@ -1,10 +1,10 @@
-# A.P.P (Artefact Parser Project) Installation Guide ⚙️
+# A.P.P (Artefact Parser Project) Installation Guide 
 
 This guide will walk you through the process of setting up APP using Docker. The installation is designed to be as simple and quick as possible.
 
 ---
 
-## 📋 Prerequisites
+## Prerequisites
 
 You need to have **Docker** and the **Docker Compose** plugin installed on your system.
 
@@ -32,7 +32,7 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin 
 
 ---
 
-## ⬇️ Downloading APP
+## Downloading APP
 
 Clone the repository to your local machine using Git:
 
@@ -43,14 +43,14 @@ cd WFAPP
 
 ---
 
-## 🔧 Initial Configuration
+## Initial Configuration
 
 To share results with other analysts (or simply access them from your host machine), you need to create a shared volume between your machine and the Docker containers.
 
 1. Edit the `.env` file located at the root of the project.
 2. Modify the `WAPP_API_HOST` variable to set the domain name (or localhost) where the application will be accessible.
 3. Modify `SHARED_FOLDER_PATH` to point to the directory on your machine where you want the results to be stored.
-4. *(Optional)* Modify the information for ELK, SPLUNK, or Wazuh if you want to integrate these tools.
+4. *(Optional)* Modify the information for ELK or Wazuh if you want to integrate these tools.
 
 **Example `.env` file:**
 ```env
@@ -66,7 +66,7 @@ SHARED_FOLDER_PATH=/home/user/Documents/shared_results
 
 ---
 
-## ▶️ Build and Run
+## Build and Run
 
 From the APP root directory (where the `docker-compose.yml` file is located), run the following command to build and launch the application:
 
@@ -86,13 +86,13 @@ curl -k https://wapp.localhost/api/ | jq
 If the installation was successful, you will receive a response like this:
 ```json
 {
-  "message": "Welcome to Forensic Artefact Parser Project",
-  "serveurTime": "14/08/2026 14:06:33",
-  "status": "OK"
+ "message": "Welcome to Forensic Artefact Parser Project",
+ "serveurTime": "14/08/2026 14:06:33",
+ "status": "OK"
 }
 ```
 
-### ⚖️ Scalability
+### Scalability
 If you want to process many archives in parallel, you can increase the number of Celery "workers" in charge of parsing:
 
 ```bash

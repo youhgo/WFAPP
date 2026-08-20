@@ -33,17 +33,17 @@ from typing import Generator, Any, Dict, Tuple
 from ..classes.BaseParser import BaseParser
 
 class MyNewParser(BaseParser):
-    def parse(self, input_path: Path) -> Generator[Tuple[str, Dict[str, Any]], None, None]:
-        with open(input_path, 'r', encoding='utf-8') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                record = {
-                    "Date": row.get("timestamp"),
-                    "User": row.get("username"),
-                    "Action": "Custom Action"
-                }
-                # "my_custom_artifact" determines the output filename (my_custom_artifact.csv)
-                yield "my_custom_artifact", record
+  def parse(self, input_path: Path) -> Generator[Tuple[str, Dict[str, Any]], None, None]:
+    with open(input_path, 'r', encoding='utf-8') as f:
+      reader = csv.DictReader(f)
+      for row in reader:
+        record = {
+          "Date": row.get("timestamp"),
+          "User": row.get("username"),
+          "Action": "Custom Action"
+        }
+        # "my_custom_artifact" determines the output filename (my_custom_artifact.csv)
+        yield "my_custom_artifact", record
 ```
 
 ---
@@ -68,36 +68,36 @@ from ..parsers.MyNewParser import MyNewParser
 
 @register_pipeline(name="my_new_artefact")
 class MyNewPipeline(BaseArtefactPipeline):
-    """
-    Parses custom system log archives.
-    This module extracts user activities and normalizes them for SIEM ingestion.
-    """
-    recommended = True
+  """
+  Parses custom system log archives.
+  This module extracts user activities and normalizes them for SIEM ingestion.
+  """
+  recommended = True
 
-    def __init__(self, context: WappContext):
-        super().__init__(context)
-        self.parser = MyNewParser(self.logger, separator=self.context.separator)
-        self.csv_sink = None
+  def __init__(self, context: WappContext):
+    super().__init__(context)
+    self.parser = MyNewParser(self.logger, separator=self.context.separator)
+    self.csv_sink = None
 
-    def process(self, file_path: Path):
-        try:
-            for artifact_type, record in self.parser.parse(file_path):
-                if not self.csv_sink:
-                    csv_path = self.context.result_parsed_dir / f"{artifact_type}.csv"
-                    self.csv_sink = CsvOutputSink(csv_path, separator=self.context.separator)
-                    
-                    self.context.wazuh_importer_file_config["files"].append(
-                        {"path": str(csv_path), "type": artifact_type}
-                    )
-                
-                self.csv_sink.write_record(record)
-                
-        except Exception as e:
-            self.logger.error(f"Error during processing: {e}")
+  def process(self, file_path: Path):
+    try:
+      for artifact_type, record in self.parser.parse(file_path):
+        if not self.csv_sink:
+          csv_path = self.context.result_parsed_dir / f"{artifact_type}.csv"
+          self.csv_sink = CsvOutputSink(csv_path, separator=self.context.separator)
+          
+          self.context.wazuh_importer_file_config["files"].append(
+            {"path": str(csv_path), "type": artifact_type}
+          )
+        
+        self.csv_sink.write_record(record)
+        
+    except Exception as e:
+      self.logger.error(f"Error during processing: {e}")
 
-    def finalize(self):
-        if self.csv_sink:
-            self.csv_sink.close()
+  def finalize(self):
+    if self.csv_sink:
+      self.csv_sink.close()
 ```
 
 ---
@@ -121,12 +121,12 @@ You can define a class-level variable `recommended` set to `True` or `False`. Th
 ```python
 @register_pipeline(name="prefetch")
 class PrefetchPipeline(BaseArtefactPipeline):
-    """
-    Parses Windows Prefetch files (.pf) to identify executed programs.
-    Extracts executable names, execution counters, and timestamps.
-    """
-    recommended = True
-    # Class implementation...
+  """
+  Parses Windows Prefetch files (.pf) to identify executed programs.
+  Extracts executable names, execution counters, and timestamps.
+  """
+  recommended = True
+  # Class implementation...
 ```
 
 If no docstring is provided, the GUI defaults to displaying "No description available."
