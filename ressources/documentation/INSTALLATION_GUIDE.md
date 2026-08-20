@@ -123,3 +123,36 @@ If you want to process many archives in parallel, you can increase the number of
 docker compose up -d --scale wapp_worker=3
 ```
 *(This will launch 3 parallel workers to parse multiple archives simultaneously).*
+
+---
+
+## Offline Installation (Air-Gapped Environment)
+
+If you need to deploy WFAPP on a server with no internet access, you can package the application on an internet-connected machine and transfer it.
+
+### Step 1: Create the Offline Bundle (On Connected Machine)
+
+Run the bundling script to build local images, pull external dependencies, and create a single compressed package:
+
+```bash
+./bundle.sh
+```
+
+This generates a file named `wfapp_offline.tar.gz` in the root directory.
+
+### Step 2: Transfer and Deploy (On Offline Server)
+
+1. Transfer the `wfapp_offline.tar.gz` archive to the target offline server.
+2. Extract the archive:
+   ```bash
+   tar -xzf wfapp_offline.tar.gz
+   ```
+3. Navigate to the extracted directory:
+   ```bash
+   cd wfapp_offline_dist
+   ```
+4. Run the installer script (it will automatically detect `images.tar` and load the local Docker images without using the internet):
+   ```bash
+   sudo ./install.sh
+   ```
+

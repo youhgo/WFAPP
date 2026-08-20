@@ -87,10 +87,18 @@ update_env "WORKER_COUNT" "$WORKER_COUNT"
 
 echo -e "${GREEN}[+] Configuration saved to .env${NC}"
 
-# 3. Build and Run
-echo -e "\n${GREEN}--- Building and Starting Containers ---${NC}"
-echo -e "Running: docker compose up --build -d"
-docker compose up --build -d
+# 3. Load Images and Run
+if [ -f images.tar ]; then
+    echo -e "\n${GREEN}--- Offline Mode Detected (images.tar found) ---${NC}"
+    echo -e "[+] Loading Docker images from images.tar..."
+    docker load -i images.tar
+    echo -e "[+] Starting containers..."
+    docker compose up -d
+else
+    echo -e "\n${GREEN}--- Online Mode: Building and Starting Containers ---${NC}"
+    echo -e "Running: docker compose up --build -d"
+    docker compose up --build -d
+fi
 
 echo -e "\n${GREEN}======================================================${NC}"
 echo -e "${GREEN}      Installation Complete!                         ${NC}"
