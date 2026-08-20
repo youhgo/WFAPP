@@ -14,6 +14,14 @@ WFAPP is a robust, modular, and extremely performant forensic pipeline designed 
 > **Disclaimer:** I am not a professional developer, and this tool is not secure by design. Therefore, it is ABSOLUTELY NOT recommended to expose the API or Web UI to the internet.
 
 ---
+* **Documentation:**
+  - [Installation Guide](ressources/documentation/INSTALLATION_GUIDE.md)
+  - [DFIR-ORC Configuration Guide](ressources/documentation/ORC_CONFIGURATION_GUIDE.md)
+  - [Web GUI Guide](ressources/documentation/GUI_GUIDE.md)
+  - [API Guide](ressources/documentation/API_GUIDE.md)
+  - [Results Architecture Guide](ressources/documentation/RESULTS_GUIDE.md)
+  - [SIEM Configuration Guide](ressources/documentation/SIEM_CONFIGURATION_GUIDE.md)
+  - [Developer & Plugin Guide](ressources/documentation/DEVELOPER_GUIDE.md)
 
 ## Features
 
@@ -23,6 +31,9 @@ WFAPP is a robust, modular, and extremely performant forensic pipeline designed 
 - **Extremely Low Memory Footprint**: Uses a stream-based (`yield`) reading approach. WFAPP can parse files of several Gigabytes (like huge Amcache hives) without loading the entire file into RAM.
 
 ## Supported Artifacts
+
+WFAPP works with DFIR-ORC and Kape for collection. You can find more information about DFIR-ORC [here](https://github.com/dfir-orc).
+see the [Results.md](ressources/documentation/RESULTS_GUIDE.md)
 
 WFAPP parses the following forensic artifacts out-of-the-box:
 - **Event Logs (.evtx)**
@@ -52,28 +63,18 @@ cp .env.example .env
 ```
 Edit the `.env` file to configure your paths and desired settings.
 
-### 3. Usage (CLI)
+### 3. Running WAPP
 
-WFAPP can be executed directly from the command line using the `APPEngine`.
-
-```bash
-cd APPEngine
-python3 main.py -c /path/to/your/config.json -i /path/to/evidences -o /path/to/results
-```
-
-**Arguments:**
-- `-c` : Path to your execution configuration (defining what to parse).
-- `-i` : Input directory containing the raw forensic artifacts (e.g. collected via DFIR-ORC or Kape).
-- `-o` : Output directory where the standardized CSV/JSONL results will be saved.
-
-### 4. Running with the Web UI
 To spin up the entire ecosystem (WFAPP API + Web interface + Wazuh dashboard), use the provided docker-compose stack:
 
 ```bash
 docker-compose up -d
 ```
-You can then access the Web UI at the port specified in your `.env`.
 
+You can then access the Web UI at and the API the port specified in your `.env`.
+
+- see the [API_GUIDE.md](ressources/documentation/API_GUIDE.md)
+- see the [GUI_GUIDE.md](ressources/documentation/GUI_GUIDE.md)
 ---
 
 ## Example Results
@@ -157,6 +158,10 @@ APP leverages the power of these open-source tools:
 
 ## Contributing and Documentation
 
-- For information on writing new parsers, pipelines, or documenting plugins for the Web GUI, see the [DEVELOPER_GUIDE.md](ressources/documentation/DEVELOPER_GUIDE.md).
-- For automating parsing tasks and programmatically interacting with the backend, see the [API_GUIDE.md](ressources/documentation/API_GUIDE.md).
-- For a visual tour of the platform and an explanation of the web interface features, see the [GUI_GUIDE.md](ressources/documentation/GUI_GUIDE.md).
+- [Installation Guide](ressources/documentation/INSTALLATION_GUIDE.md): Instructions for setting up WFAPP with Docker.
+- [DFIR-ORC Configuration Guide](ressources/documentation/ORC_CONFIGURATION_GUIDE.md): Guide to building and configuring DFIR-ORC.
+- [Web GUI Guide](ressources/documentation/GUI_GUIDE.md): Visual tour and usage of the Web UI.
+- [API Guide](ressources/documentation/API_GUIDE.md): Programmatic integration and endpoint reference.
+- [Results Architecture Guide](ressources/documentation/RESULTS_GUIDE.md): Output directory layout and human-readable CSV formats.
+- [SIEM Configuration Guide](ressources/documentation/SIEM_CONFIGURATION_GUIDE.md): Configuring ELK & Wazuh integration.
+- [Developer & Plugin Guide](ressources/documentation/DEVELOPER_GUIDE.md): Writing new parsers, pipelines, and GUI metadata.
