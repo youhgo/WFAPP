@@ -69,6 +69,9 @@ sudo ./install.sh
 The script will check for Docker, set up your `.env` configuration interactively, and launch the platform.
 
 ### 3. Manual Configuration
+
+Complete information about installation and configuration can be found in the [Installation Guide](ressources/documentation/INSTALLATION_GUIDE.md)
+
 If you prefer not to use the automated script:
 ```bash
 cp .env.exemple .env
