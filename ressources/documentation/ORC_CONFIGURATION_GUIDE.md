@@ -3,14 +3,10 @@
 
 This guide provides step-by-step instructions on how to configure the DFIR-ORC collection tool for a streamlined and effective forensic investigation. It focuses on a configuration designed for speed and comprehensive artifact collection into a single archive
 
-### Key Links
 
-* **Documentation:** [Installation Guide](INSTALLATION_GUIDE.md) | [GUI Guide](GUI_GUIDE.md) | [Results Architecture](RESULTS_GUIDE.md) | [Configure SIEM Ingestion](SIEM_CONFIGURATION_GUIDE.md)
-* **APP Repository:** [Available here](https://github.com/youhgo/WFAPP)
----
 
-I've made a ready to go DFIR-ORC Binary available [DFIR-ORC](https://github.com/youhgo/WFAPP/tree/master/api/ressources) collector. 
- if you do not want to bother with thoses steps.
+> I've made a ready to go DFIR-ORC Binary available [DFIR-ORC](https://github.com/youhgo/WFAPP/tree/master/api/ressources) collector. 
+> if you do not want to bother with thoses steps.
 
 ## What is ORC ?
 
