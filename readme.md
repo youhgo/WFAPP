@@ -32,10 +32,12 @@ WFAPP is a robust, modular, and extremely performant forensic pipeline designed 
 
 ## Supported Artifacts
 
-WFAPP works with DFIR-ORC and Kape for collection. You can find more information about DFIR-ORC [here](https://github.com/dfir-orc).
-see the [Results.md](ressources/documentation/RESULTS_GUIDE.md)
+WFAPP works with DFIR-ORC and Kape for collection. 
 
-WFAPP parses the following forensic artifacts out-of-the-box:
+You can find more information about DFIR-ORC [here](https://github.com/dfir-orc).
+
+
+WFAPP parses a lot of forensics artifacts like :
 - **Event Logs (.evtx)**
 - **Windows Registry Hives (SAM, SYSTEM, SOFTWARE, NTUSER, etc.) & Amcache**
 - **Web History (Chrome, Edge)**
@@ -44,6 +46,9 @@ WFAPP parses the following forensic artifacts out-of-the-box:
 - **Process Activity (Autoruns, Sysmon, AppCompatCache, etc.)**
 - **Disk Activity (USN Journal, MFT)**
 - **LNK Files (.lnk)**
+- **And many more**
+
+You can find more information about the results  [here](ressources/documentation/RESULTS_GUIDE.md)
 
 ---
 
