@@ -40,8 +40,12 @@ class ArtefactDispatcher:
 
         # Now that everything is imported, instantiate pipelines authorized by config
         for config_key, pipeline_class in PIPELINE_REGISTRY.items():
-            pipeline_cfg = cfg.get(config_key, {})
-            is_enabled = pipeline_cfg.get("enabled", True)  # PLUG & PLAY: Enabled by default!
+            # Support both flat config (from celery UI) and nested "pipelines" dict (from local JSON)
+            if config_key in self.context.config and not isinstance(self.context.config[config_key], dict):
+                is_enabled = bool(self.context.config[config_key])
+            else:
+                pipeline_cfg = cfg.get(config_key, {})
+                is_enabled = pipeline_cfg.get("enabled", True)  # PLUG & PLAY: Enabled by default!
             
             if not is_enabled:
                 self.context.logger.info(f"[DISPATCHER] Pipeline ignored (disabled via config): {config_key}")
