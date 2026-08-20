@@ -67,7 +67,3 @@ docker compose -f docker-compose_with_docker_siem.yml up --build -d
 
 This will attach the WFAPP workers to the `shared_sec_net` network, allowing them to communicate natively with your SIEM containers using their container names (e.g., `ELK_HOST="elasticsearch"`).
 
-
-
-
-curl -X POST https://wapp.localhost/api/parse/parse_archive -H "X-API-Key: 0d42c9e3-fe8c-4c44-a65c-91c55f958550" -F "file=@/home/hro/Documents/sample_forensic/DFIR-ORC_DomainController_FOREST.htb.local_Full.7z" -F "json=$(cat config.json)"
