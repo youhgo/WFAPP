@@ -85,6 +85,13 @@ update_env "WAPP_API_HOST" "$WAPP_HOST"
 update_env "SHARED_FOLDER_PATH" "$SHARED_PATH"
 update_env "WORKER_COUNT" "$WORKER_COUNT"
 
+# Generate a random SECRET_KEY if it's the default or missing
+if grep -q 'SECRET_KEY="very long random string"' .env || ! grep -q "^SECRET_KEY=" .env; then
+    NEW_SECRET=$(openssl rand -hex 32)
+    update_env "SECRET_KEY" "\"$NEW_SECRET\""
+    echo -e "${GREEN}[+] Generated a new secure SECRET_KEY${NC}"
+fi
+
 echo -e "${GREEN}[+] Configuration saved to .env${NC}"
 
 # 3. Load Images and Run
