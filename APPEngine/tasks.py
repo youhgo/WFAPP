@@ -7,7 +7,26 @@ from WAPP_MODULE.WindowsForensicArtefactParser import WindowsForensicArtefactPar
 from LAPP_MODULE.LinuxForensicArtefactParser import LinuxForensicArtefactParser
 
 SHARED_FOLDER_PATH = "/python-docker/shared_files/"
-DEPOT_FOLDER_PATH = os.path.join(SHARED_FOLDER_PATH, "depot")
+DEPOT_FOLDER_PATH = os.environ.get("API_DEPOT_FOLDER_PATH", os.path.join(SHARED_FOLDER_PATH, "depot"))
+
+raw_bulk_path = os.environ.get("BULK_DEPOT_FOLDER_PATH", "")
+if raw_bulk_path:
+    # If the user specified a full host path like /home/user/.../shared_files/bulk_ingest,
+    # extract the part after shared_files/ so it stays inside the mounted docker volume
+    if "shared_files/" in raw_bulk_path:
+        sub_path = raw_bulk_path.split("shared_files/")[-1]
+        BULK_DEPOT_FOLDER_PATH = os.path.join(SHARED_FOLDER_PATH, sub_path)
+    elif not raw_bulk_path.startswith("/python-docker/"):
+        BULK_DEPOT_FOLDER_PATH = os.path.join(SHARED_FOLDER_PATH, raw_bulk_path.lstrip("/"))
+    else:
+        BULK_DEPOT_FOLDER_PATH = raw_bulk_path
+else:
+    BULK_DEPOT_FOLDER_PATH = os.path.join(SHARED_FOLDER_PATH, "bulk_depot")
+
+# Automatic directory creation inside mounted volume
+os.makedirs(DEPOT_FOLDER_PATH, exist_ok=True)
+os.makedirs(BULK_DEPOT_FOLDER_PATH, exist_ok=True)
+
 WORKING_FOLDER_PATH = os.path.join(SHARED_FOLDER_PATH, "work")
 LOG_FOLDER_PATH = os.path.join(WORKING_FOLDER_PATH, "execution_logs")
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379')
@@ -64,7 +83,8 @@ def parse_orc(main_id, content, file_name):
     """
 
     try:
-        archive_path = os.path.join(DEPOT_FOLDER_PATH, file_name)
+        source_folder = content.get("source_folder", DEPOT_FOLDER_PATH)
+        archive_path = os.path.join(source_folder, file_name)
         case_name = content.get("caseName", "")
         machine_name = content.get("machineName", "No_Name")
         parser_config = content.get('parser_config', None)
@@ -110,8 +130,8 @@ def parse_uac(main_id, content, file_name):
     """
 
     try:
-
-        archive_path = os.path.join(DEPOT_FOLDER_PATH, file_name)
+        source_folder = content.get("source_folder", DEPOT_FOLDER_PATH)
+        archive_path = os.path.join(source_folder, file_name)
         case_name = content.get("caseName", "")
         machine_name = content.get("machineName", "No_Name")
 

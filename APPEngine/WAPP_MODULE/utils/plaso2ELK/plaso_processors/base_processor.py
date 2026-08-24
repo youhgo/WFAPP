@@ -132,3 +132,49 @@ class BaseEventProcessor:
             )
         except Exception:
             return None
+
+    @staticmethod
+    def safe_int(val):
+        """Safely parses an integer and ensures it is within Elasticsearch 'long' limits."""
+        if val is None or val == "":
+            return None
+        try:
+            i = int(val)
+            # Elasticsearch 'long' limits (signed 64-bit)
+            if i > 9223372036854775807 or i < -9223372036854775808:
+                return None
+            return i
+        except (ValueError, TypeError):
+            return None
+
+    @staticmethod
+    def safe_ip(ip_str):
+        """Safely parses an IP address and discards invalid string literals."""
+        if not ip_str:
+            return None
+        ip_str = str(ip_str).strip()
+        if ip_str.upper() in ["-", "LOCAL", "UNKNOWN", "", "NONE", "NULL"]:
+            return None
+        return ip_str
+
+    @staticmethod
+    def safe_port(port_val):
+        """Safely parses a port and ensures it is within 0-65535."""
+        port = BaseEventProcessor.safe_int(port_val)
+        if port is not None and (port < 0 or port > 65535):
+            return None
+        return port
+
+    @staticmethod
+    def safe_bool(val):
+        """Safely parses a boolean."""
+        if val is None:
+            return None
+        if isinstance(val, bool):
+            return val
+        val_str = str(val).strip().lower()
+        if val_str in ["true", "yes", "1", "y", "t", "enable", "enabled"]:
+            return True
+        if val_str in ["false", "no", "0", "n", "f", "disable", "disabled"]:
+            return False
+        return None

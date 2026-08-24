@@ -99,14 +99,6 @@ class EvtxHandler:
             except Exception:
                 return datetime.utcnow().isoformat() + "Z"
 
-    def _clean_ip(self, ip_str: str):
-        if not ip_str:
-            return None
-        ip_str = str(ip_str).strip()
-        if ip_str.upper() in ["-", "LOCAL", "UNKNOWN", ""]:
-            return None
-        return ip_str
-
     def _create_base_document(self, raw_log: dict) -> dict:
         system_data = self._get_system_data(raw_log)
         time_created = system_data.get("TimeCreated", {}).get("SystemTime")
@@ -138,13 +130,9 @@ class EvtxHandler:
     def handle_security_logon(self, raw_log: dict) -> dict:
         doc = self._create_base_document(raw_log)
         data = self._get_event_data(raw_log)
-        try:
-            port = int(data.get("IpPort")) if data.get("IpPort") not in ["-", "0"] else None
-        except (ValueError, TypeError):
-            port = None
         doc.update({"event": {**doc["event"], "action": "logon", "type": "start", "outcome": "success"},
                     "source": {"user": {"name": data.get("SubjectUserName")},
-                               "ip": self._clean_ip(data.get("IpAddress")), "port": port},
+                               "ip": self.safe_ip(data.get("IpAddress")), "port": self.safe_port(data.get("IpPort"))},
                     "user": {"name": data.get("TargetUserName"), "domain": data.get("TargetDomainName")},
                     "winlog": {**doc["winlog"], "logon": {"type": data.get("LogonType")}}})
         return doc
@@ -168,13 +156,9 @@ class EvtxHandler:
         }
         status_code = data.get("Status", "")
         failure_text = failure_reasons.get(status_code, status_code)
-        try:
-            port = int(data.get("IpPort")) if data.get("IpPort") not in ["-", "0"] else None
-        except (ValueError, TypeError):
-            port = None
         doc.update({"event": {**doc["event"], "action": "logon", "type": "start", "outcome": "failure"},
                     "source": {"user": {"name": data.get("SubjectUserName")},
-                               "ip": self._clean_ip(data.get("IpAddress")), "port": port},
+                               "ip": self.safe_ip(data.get("IpAddress")), "port": self.safe_port(data.get("IpPort"))},
                     "user": {"name": data.get("TargetUserName")},
                     "winlog": {**doc["winlog"], "logon": {"type": data.get("LogonType")}},
                     "error": {"code": status_code, "message": failure_text}})
@@ -182,14 +166,19 @@ class EvtxHandler:
 
     def handle_security_process_created(self, raw_log: dict) -> dict:
         doc, data = self._create_base_document(raw_log), self._get_event_data(raw_log)
+        pid_hex = data.get('ProcessId', '0x0')
+        parent_pid_hex = data.get('CreatorProcessId', '0x0')
+        
         try:
-            pid = int(data.get('ProcessId', '0x0'), 16)
+            pid = int(pid_hex, 16) if pid_hex.startswith("0x") else self.safe_int(pid_hex)
         except (ValueError, TypeError):
             pid = 0
+            
         try:
-            parent_pid = int(data.get('CreatorProcessId', '0x0'), 16)
+            parent_pid = int(parent_pid_hex, 16) if parent_pid_hex.startswith("0x") else self.safe_int(parent_pid_hex)
         except (ValueError, TypeError):
             parent_pid = 0
+            
         doc.update({"event": {**doc["event"], "action": "process_started", "type": "start"},
                     "process": {"executable": data.get("NewProcessName"),
                                 "name": os.path.basename(data.get("NewProcessName", "")),
@@ -522,7 +511,7 @@ class EvtxHandler:
         doc.update({
             "event": {**doc["event"], "action": "rdp_login", "outcome": "success"},
             "user": {"name": user_name, "domain": domain},
-            "source": {"ip": self._clean_ip(source_ip)}
+            "source": {"ip": self.safe_ip(source_ip)}
         })
         return doc
 
@@ -535,18 +524,10 @@ class EvtxHandler:
         doc.update({
             "event": {**doc["event"], "action": actions.get(doc["winlog"]["event_id"], "rdp_session_activity")},
             "user": {"name": event_xml_data.get("User")},
-            "source": {"ip": self._clean_ip(event_xml_data.get("Address"))},
+            "source": {"ip": self.safe_ip(event_xml_data.get("Address"))},
             "winlog": {**doc["winlog"], "session_id": event_xml_data.get("SessionID")}
         })
         return doc
-
-    def _safe_int(self, val):
-        if not val:
-            return None
-        try:
-            return int(val)
-        except (ValueError, TypeError):
-            return None
 
     def handle_bits_client(self, raw_log: dict) -> dict:
         doc = self._create_base_document(raw_log)
@@ -562,8 +543,8 @@ class EvtxHandler:
                      "transfer_id": data.get("transferId"), "owner": data.get("owner")},
             "file": {
                 "name": os.path.basename(data.get("url", "").split('?')[0]) if data.get("url") else data.get("name"),
-                "size": self._safe_int(data.get("fileLength")), "mtime": data.get("fileTime")},
-            "network": {"bytes_Transfered": self._safe_int(data.get("bytesTransferred")), "total_bytes": self._safe_int(data.get("bytesTotal"))},
+                "size": self.safe_int(data.get("fileLength")), "mtime": data.get("fileTime")},
+            "network": {"bytes_Transfered": self.safe_int(data.get("bytesTransferred")), "total_bytes": self.safe_int(data.get("bytesTotal"))},
             "url": {"original": data.get("url")}
         })
         return doc

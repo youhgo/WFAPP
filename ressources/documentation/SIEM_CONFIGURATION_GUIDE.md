@@ -67,3 +67,36 @@ docker compose -f docker-compose_with_docker_siem.yml up --build -d
 
 This will attach the WFAPP workers to the `shared_sec_net` network, allowing them to communicate natively with your SIEM containers using their container names (e.g., `ELK_HOST="elasticsearch"`).
 
+---
+
+
+
+## Standalone Timeline Ingestion
+
+If you already have a prepared `timeline.json` (e.g., generated manually or from an older WFAPP run) and want to push it directly to your SIEM without rerunning the entire extraction pipeline, you can use the standalone uploaders.
+
+These scripts are fully autonomous, include robust type/timestamp sanitization, and can be executed directly.
+
+### For Elasticsearch
+
+```bash
+docker exec -it wapp_worker-1 python /python-docker/WAPP_MODULE/utils/plaso2ELK/plaso_2_siem.py \
+  -t /python-docker/shared_files/depot/timeline.json \
+  -c "my_case" \
+  -m "my_machine" \
+  --es-hosts "https://elasticsearch:9200" \
+  --es-user "elastic" \
+  --es-pass "password"
+```
+
+### For Wazuh Indexer
+
+```bash
+docker exec -it wapp_worker-1 python /python-docker/WAPP_MODULE/utils/plaso2ELK/plaso_to_wazuh.py \
+  -t /python-docker/shared_files/depot/timeline.json \
+  -c "my_case" \
+  -m "my_machine" \
+  --es-hosts "https://wazuh.indexer:9200" \
+  --es-user "admin" \
+  --es-pass "SecretPassword"
+```

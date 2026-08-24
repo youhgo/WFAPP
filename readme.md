@@ -157,6 +157,35 @@ The tool also includes a simple Web GUI for common tasks:
 
 ---
 
+## Bulk Ingestion
+
+WFAPP allows you to bypass the Web API and process dozens or hundreds of archives automatically using a dedicated bulk ingestion script that communicates directly with the Celery workers.
+
+### 1. Configuration
+
+In your `.env` file, you can optionally define a custom bulk depot directory using `BULK_DEPOT_FOLDER_PATH`. If not defined, it defaults to `bulk_depot` inside your `SHARED_FOLDER_PATH`.
+
+```env
+BULK_DEPOT_FOLDER_PATH="/path/to/your/custom/bulk_folder" # (Optional)
+```
+*Note: If the directory does not exist, the worker will automatically create it on startup to prevent permission errors.*
+
+### 2. Usage
+
+1. Drop all your archives (`.zip`, `.7z`, etc.) into your bulk depot folder (e.g., `shared_files/bulk_depot/`).
+2. Run the `bulk_ingest.py` script directly from the worker container:
+
+```bash
+docker exec -it wapp_worker-1 python /python-docker/bulk_ingest.py -c "My_Bulk_Case"
+```
+
+You can also pass a custom JSON parsing configuration file using the `-cfg` parameter:
+```bash
+docker exec -it wapp_worker-1 python /python-docker/bulk_ingest.py -c "My_Bulk_Case" -cfg /python-docker/shared_files/bulk_depot/config.json
+```
+
+---
+
 ## External Tools & Resources
 
 APP leverages the power of these open-source tools:
