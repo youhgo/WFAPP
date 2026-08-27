@@ -137,7 +137,7 @@ class OrcExtractor:
             nested_archives.add("Browsers_history.7z")
         if "scripts" in enabled_pipeline_keys:
             nested_archives.add("Scripts_little.7z")
-        if "orc" in enabled_pipeline_keys:
+        if any(k in enabled_pipeline_keys for k in ["orc", "process", "network", "system_info"]):
             nested_archives.add("TextLogs.7z")
             
         return enabled_patterns, nested_archives
@@ -174,7 +174,7 @@ class OrcExtractor:
                     if file.endswith('.zip') or file.endswith('.7z'):
                         # Check if this nested archive should be extracted
                         # Skip if we have selective extraction and this archive is not needed
-                        if self.nested_archives_to_extract is not None and file not in self.nested_archives_to_extract:
+                        if self.nested_archives_to_extract is not None and not any(file.lower() == archive.lower() for archive in self.nested_archives_to_extract):
                             self.logger.info(f"[EXTRACTOR] Skipping nested archive (not needed by active pipelines): {file}", header="INFO", indentation=1)
                             # Remove the unneeded nested archive to save space
                             try:
@@ -302,7 +302,7 @@ class OrcExtractor:
                         continue
                         
                     # Matches nested archives we need
-                    if basename in self.nested_archives_to_extract:
+                    if any(basename.lower() == archive.lower() for archive in self.nested_archives_to_extract):
                         targets.append(name)
                         continue
                         

@@ -693,8 +693,8 @@
                             else if (moduleName.startsWith('ogre') && !input.disabled) input.checked = true;
 
                             if (moduleName === 'extract') {
-                                setVisualState(input, false);
-                                input.checked = false;
+                                setVisualState(input, true);
+                                input.checked = true;
                             }
                         } else {
                             const isOgreRelated = moduleName.startsWith('ogre');
@@ -728,6 +728,9 @@
 
                     const ogreModeContainer = document.getElementById('ogreMode').closest('div');
                     if (ogreModeContainer) ogreModeContainer.style.display = isOgre ? 'block' : 'none';
+
+                    enforcePlasoDependencies();
+                    enforceOgreDependencies();
                 }
 
                 navLinks.forEach(link => {
@@ -956,7 +959,7 @@
             }
 
             // --- NEW LOGIC: Plaso Dependencies ---
-            const enforcePlasoDependencies = () => {
+            function enforcePlasoDependencies() {
                 const plasoCb = document.getElementById('module-plaso');
 
                 const plaso2wazuhCb = document.getElementById('module-plaso2wazuh');
@@ -978,7 +981,7 @@
             };
 
             // --- NEW LOGIC: Ogre Dependencies ---
-            const enforceOgreDependencies = () => {
+            function enforceOgreDependencies() {
                 const ogreCb = document.getElementById('module-ogre_preprocessor');
                 const archiveType = document.getElementById('archiveType').value;
 
@@ -1012,7 +1015,7 @@
             };
 
             // --- NEW LOGIC: Archive Type Dependencies ---
-            const enforceArchiveDependencies = () => {
+            function enforceArchiveDependencies() {
                 const type = document.getElementById('archiveType').value;
                 const allCheckboxes = document.querySelectorAll('input[name="modules"]');
                 const preProcCheckboxes = document.querySelectorAll('#preProcChecklist input[name="modules"]');
@@ -1075,19 +1078,27 @@
             // Pré-traitement Select/Deselect
             document.getElementById('selectAllPreProcBtn').addEventListener('click', function () {
                 if (this.disabled) return;
-                document.querySelectorAll('#preProcChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = true; });
+                document.querySelectorAll('#preProcChecklist input[name="modules"]').forEach(cb => { 
+                    if (!cb.disabled && cb.closest('.flex').style.display !== 'none') cb.checked = true; 
+                });
                 enforcePlasoDependencies();
+                enforceOgreDependencies();
             });
             document.getElementById('deselectAllPreProcBtn').addEventListener('click', function () {
                 if (this.disabled) return;
-                document.querySelectorAll('#preProcChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = false; });
+                document.querySelectorAll('#preProcChecklist input[name="modules"]').forEach(cb => { 
+                    if (!cb.disabled && cb.closest('.flex').style.display !== 'none') cb.checked = false; 
+                });
                 enforcePlasoDependencies();
+                enforceOgreDependencies();
             });
 
             // Analyse & Traitement Select/Deselect
             document.getElementById('selectAllAnalyzeBtn').addEventListener('click', function () {
                 if (this.disabled) return;
-                document.querySelectorAll('#analyzeChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = true; });
+                document.querySelectorAll('#analyzeChecklist input[name="modules"]').forEach(cb => { 
+                    if (!cb.disabled && cb.closest('.flex').style.display !== 'none') cb.checked = true; 
+                });
                 enforcePlasoDependencies();
             });
             document.getElementById('deselectAllAnalyzeBtn').addEventListener('click', function () {
@@ -1099,7 +1110,9 @@
             // Standalone Parsers Select/Deselect
             document.getElementById('selectAllStandaloneBtn').addEventListener('click', function () {
                 if (this.disabled) return;
-                document.querySelectorAll('#standaloneChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = true; });
+                document.querySelectorAll('#standaloneChecklist input[name="modules"]').forEach(cb => { 
+                    if (!cb.disabled && cb.closest('.flex').style.display !== 'none') cb.checked = true; 
+                });
             });
             document.getElementById('deselectAllStandaloneBtn').addEventListener('click', function () {
                 if (this.disabled) return;
@@ -1109,7 +1122,9 @@
             // Plaso & Dérivés Select/Deselect
             document.getElementById('selectAllPlasoBtn').addEventListener('click', function () {
                 if (this.disabled) return;
-                document.querySelectorAll('#plasoChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = true; });
+                document.querySelectorAll('#plasoChecklist input[name="modules"]').forEach(cb => { 
+                    if (!cb.disabled && cb.closest('.flex').style.display !== 'none') cb.checked = true; 
+                });
                 enforcePlasoDependencies();
             });
             document.getElementById('deselectAllPlasoBtn').addEventListener('click', function () {
@@ -1121,7 +1136,9 @@
             // Exportations SIEM Select/Deselect
             document.getElementById('selectAllExportBtn').addEventListener('click', function () {
                 if (this.disabled) return;
-                document.querySelectorAll('#exportChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = true; });
+                document.querySelectorAll('#exportChecklist input[name="modules"]').forEach(cb => { 
+                    if (!cb.disabled && cb.closest('.flex').style.display !== 'none') cb.checked = true; 
+                });
             });
             document.getElementById('deselectAllExportBtn').addEventListener('click', function () {
                 if (this.disabled) return;
@@ -1131,7 +1148,9 @@
             // Post-traitement Select/Deselect
             document.getElementById('selectAllPostProcBtn').addEventListener('click', function () {
                 if (this.disabled) return;
-                document.querySelectorAll('#postProcChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = true; });
+                document.querySelectorAll('#postProcChecklist input[name="modules"]').forEach(cb => { 
+                    if (!cb.disabled && cb.closest('.flex').style.display !== 'none') cb.checked = true; 
+                });
             });
             document.getElementById('deselectAllPostProcBtn').addEventListener('click', function () {
                 if (this.disabled) return;

@@ -50,7 +50,7 @@ class ArtefactDispatcher:
                 else:
                     is_enabled = bool(raw_val)
             else:
-                pipeline_cfg = cfg.get(config_key, {})
+                pipeline_cfg = self.context.config.get(config_key, {})
                 raw_val = pipeline_cfg.get("enabled", True)
                 if isinstance(raw_val, str):
                     is_enabled = str(raw_val).strip().lower() not in ['0', 'false', '']
