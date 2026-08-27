@@ -30,7 +30,10 @@ The primary interface for submitting and configuring forensic archives for analy
 * **Key Features:**
  * **Case Information:** Define the **Case Name** and **Machine Name** which are strictly used to index and group your data in the SIEM (Elasticsearch/Wazuh).
  * **Archive Type:** Select between ORC, KAPE, and UAC. The interface dynamically disables incompatible parsing modules based on your selection.
- * **Module Selection Grid:** Visually toggle specific plugins across 5 phases: Pre-processing, Parsing, Post-processing, Plaso & Derivatives, and SIEM Exports.
+ * **Ogre Mode:** Switch between `Full Parsing` (runs specialized Ogre pipelines for deep artifact analysis) and `Timeline (CSV)` (generates unified CSV timeline).
+ * **Module Selection Grid:** Visually toggle specific plugins across 6 boxes: Pre-processing, Parsing, Post-processing, Plaso & Derivatives, SIEM Exports, and Ogre Config.
+ * **Dynamic Ogre Dependencies:** Deactivating the main Ogre Preprocessor (`module-ogre`) in Box 1 automatically disables and unchecks all dependent Ogre parsers (`ogre_mft`, `ogre_disk`, `ogre_event`, `ogre_generic`, etc.).
+ * **On-The-Fly Ogre YAML Config:** Use the "6. Ogre Config" panel to enable/disable specific plugin mappings (such as `Amcache`, `Autoruns`, `Browser History`) directly in `ogre.yaml` in real time.
  * **Module Help:** Click on "Module Help" to view documentation directly generated from the python backend (including `Recommended` tags).
 
 ---

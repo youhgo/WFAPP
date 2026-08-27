@@ -75,32 +75,34 @@ If you prefer to manually submit an archive via standard HTTP POST, you can use 
 
 ### Configuration Payload Structure
 The `json` form parameter accepts the following properties:
-- `archiveType`: The type of forensic archive, either `"ORC"` or `"UAC"`.
+- `archiveType`: The type of forensic archive (`"ORC"`, `"KAPE"`, or `"UAC"`).
 - `caseName`: The name of the investigation case.
 - `machineName`: The host name of the target machine.
-- `parser_config`: An optional configuration object defining enabled pipelines.
+- `ogreMode`: Execution mode for DFIR-Ogre (`"orc"` for full parsing or `"timeline"` for CSV timeline).
+- `parser_config`: A dictionary mapping module names to `1` (enabled) or `0` (disabled), such as `"ogre_preprocessor"`, `"ogre_mft"`, `"ogre_disk"`, `"ogre_event"`, `"ogre_prefetch"`, `"ogre_srum"`, `"ogre_generic"`, etc.
+
+*Note on Selective Extraction:* When using `"ORC"` archives, `OrcExtractor` automatically analyzes active pipelines in `parser_config` and selectively extracts only the specific files required by enabled pipelines (avoiding decompression of unused nested `.7z` archives like `Event.7z` or `UserHives.7z`).
 
 ### Submission Example (curl)
-Create a temporary JSON configuration file named `config.json`:
-```json
-{
- "archiveType": "ORC",
- "caseName": "Case_Study_01",
- "machineName": "DESKTOP-5491A",
- "parser_config": {
-  "pipelines": {
-   "prefetch": { "enabled": true },
-   "hive": { "enabled": true }
-  }
- }
-}
-```
-
 ```bash
 curl -X POST https://wapp.localhost/api/parse/parse_archive \
    -H "X-API-Key: YOUR_API_KEY" \
-   -F "file=@/path/to/evidence_archive.zip" \
-   -F "json=$(cat config.json)"
+   -F "file=@/path/to/evidence_archive.7z" \
+   -F 'json={
+     "archiveType": "ORC",
+     "caseName": "Case_Study_01",
+     "machineName": "DESKTOP-5491A",
+     "ogreMode": "orc",
+     "parser_config": {
+       "ogre_preprocessor": 1,
+       "ogre_mft": 1,
+       "ogre_disk": 1,
+       "ogre_event": 1,
+       "ogre_prefetch": 1,
+       "ogre_srum": 1,
+       "ogre_generic": 1
+     }
+   }'
 ```
 
 ### Response (202 Accepted)
@@ -168,3 +170,45 @@ Retrieve a list of all registered preprocessors, pipelines, and postprocessors.
 curl -X GET https://wapp.localhost/api/pipelines \
    -H "X-API-Key: YOUR_API_KEY"
 ```
+
+---
+
+## 7. Managing DFIR-Ogre Configuration (YAML)
+
+You can query and update DFIR-Ogre mapping configurations in `ogre.yaml` on-the-fly.
+
+### List All Ogre Mappings
+* **URL:** `/api/ogre_yaml_plugins`
+* **Method:** `GET`
+
+```bash
+curl -X GET https://wapp.localhost/api/ogre_yaml_plugins \
+   -H "X-API-Key: YOUR_API_KEY"
+```
+
+Response:
+```json
+{
+  "status": "OK",
+  "plugins": {
+    "amcache_program_xml": true,
+    "autoruns": true,
+    "browser_history": true,
+    "ntfsinfo": true,
+    "user_assist": true
+  }
+}
+```
+
+### Enable/Disable an Ogre Mapping
+* **URL:** `/api/ogre_yaml_plugins`
+* **Method:** `POST`
+* **Payload:** `{"label": "amcache_program_xml", "enable": false}`
+
+```bash
+curl -X POST https://wapp.localhost/api/ogre_yaml_plugins \
+   -H "Content-Type: application/json" \
+   -H "X-API-Key: YOUR_API_KEY" \
+   -d '{"label": "amcache_program_xml", "enable": false}'
+```
+

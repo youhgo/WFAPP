@@ -11,7 +11,7 @@ class OgrePreProcessor(BasePreProcessor):
     """
     recommended = True
     importance = "Mandatory"
-    speed = "Slow"
+    speed = "Fast"
     priority = -1  # Runs before ExtractPreProcessor (which is 0)
     requires = []
     default_enabled = True
@@ -31,6 +31,48 @@ class OgrePreProcessor(BasePreProcessor):
             # Use the custom configuration file from the config directory
             wapp_module_dir = Path(__file__).parent.parent
             config_path = wapp_module_dir / "config" / "ogre.yaml"
+            
+            custom_yaml_content = getattr(self.context, 'artefact_config', {}).get('custom_ogre_yaml_content')
+            if custom_yaml_content:
+                try:
+                    import re
+                    # Read default config to extract the mandatory output block
+                    with open(config_path, 'r', encoding='utf-8') as f:
+                        default_content = f.read()
+                        
+                    # Extract output block up to mapping:
+                    output_block_match = re.search(r'^output:.*?^(?=mapping:)', default_content, re.MULTILINE | re.DOTALL)
+                    if output_block_match:
+                        output_str = output_block_match.group(0)
+                        
+                        # Remove any existing output block in custom yaml
+                        custom_yaml_content = re.sub(r'^output:.*?^(?=mapping:)', '', custom_yaml_content, flags=re.MULTILINE | re.DOTALL)
+                        
+                        # Strip other mandatory root keys from custom yaml
+                        custom_yaml_content = re.sub(r'^(output_folder|report_folder|temp_folder):.*$\n?', '', custom_yaml_content, flags=re.MULTILINE)
+                        
+                        # Inject default folders and output block before mapping:
+                        folders_str = (
+                            "output_folder: ./ogre\n"
+                            "report_folder: ./ogre/ogre_execution_reports\n"
+                            "temp_folder: ./ogre/tmp_ogre\n\n"
+                        )
+                        
+                        if 'mapping:' in custom_yaml_content:
+                            custom_yaml_content = custom_yaml_content.replace('mapping:', folders_str + output_str + 'mapping:')
+                        else:
+                            # Fallback if mapping: is not found in custom config
+                            custom_yaml_content = folders_str + output_str + custom_yaml_content
+                            
+                        # Save the custom config in the parsed directory so dfir-ogre can use it
+                        custom_config_path = Path(parsed_dir) / 'custom_ogre.yaml'
+                        with open(custom_config_path, 'w', encoding='utf-8') as f:
+                            f.write(custom_yaml_content)
+                            
+                        config_path = custom_config_path
+                        self.logger.info(f"[OGRE] Using custom YAML configuration with enforced output structure.", header="INFO")
+                except Exception as e:
+                    self.logger.error(f"[OGRE] Error processing custom YAML config, falling back to default: {e}")
             
             if not config_path.exists():
                 self.logger.warning(f"[OGRE] Configuration file not found at {config_path}.")

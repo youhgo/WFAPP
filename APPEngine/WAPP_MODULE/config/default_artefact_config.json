@@ -1,0 +1,12 @@
+{
+  "artefacts": {
+    "other": {
+      "event_consumer": [
+        "EventConsumer.txt"
+      ],
+      "ad_computer": [
+        "AD_computers.csv"
+      ]
+    }
+  }
+}

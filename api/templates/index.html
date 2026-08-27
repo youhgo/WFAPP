@@ -163,9 +163,9 @@
                                     <input type="file" id="fileInput" name="file" required class="block w-full text-sm text-white border border-slate-600 rounded-lg cursor-pointer bg-slate-800/40 p-2 sm:p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow">
                                 </div>
                                 <div>
-                                    <label for="jsonConfigInput" class="block text-sm font-medium text-slate-200 mb-1">JSON Config (optional)</label>
+                                    <label for="jsonConfigInput" class="block text-sm font-medium text-slate-200 mb-1">Ogre YAML Config (optional)</label>
                                     <div class="flex items-center space-x-2">
-                                        <input type="file" id="jsonConfigInput" name="jsonConfig" accept=".json" class="block w-full text-sm text-white border border-slate-600 rounded-lg cursor-pointer bg-slate-800/40 p-2 sm:p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow">
+                                        <input type="file" id="jsonConfigInput" name="jsonConfig" accept=".yaml,.yml" class="block w-full text-sm text-white border border-slate-600 rounded-lg cursor-pointer bg-slate-800/40 p-2 sm:p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow">
                                         <button type="button" id="clearJsonFileBtn" class="py-2 sm:py-2.5 px-3 sm:px-4 bg-slate-600 text-slate-200 rounded-lg text-sm font-medium hover:bg-gray-400 transition-colors shrink-0">Clear</button>
                                     </div>
                                 </div>
@@ -205,7 +205,7 @@
                                 </button>
                             </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6 items-stretch">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 sm:gap-6 items-stretch">
 
                                 <!-- Box 1: Pre-processing -->
                                 <div class="bg-slate-800/40 p-3 sm:p-4 rounded-xl border border-slate-700/50 shadow-sm flex flex-col h-full">
@@ -290,6 +290,22 @@
                                     </div>
                                     <!-- Use overflow-y-scroll to ALWAYS show the scrollbar track -->
                                     <div id="exportChecklist" class="space-y-1 sm:space-y-2 overflow-y-scroll custom-scrollbar pr-1 sm:pr-2 h-40"></div>
+                                </div>
+
+                                <!-- Box 6: Ogre YAML Plugins -->
+                                <div id="ogreYamlBox" class="bg-slate-800/40 p-3 sm:p-4 rounded-xl border border-slate-700/50 shadow-sm flex flex-col h-full">
+                                    <div class="flex justify-between items-center mb-2 sm:mb-3 pb-2 border-b border-slate-700/30">
+                                        <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider pr-2">6. Ogre Config</h3>
+                                        <div class="flex items-center space-x-1 bg-slate-900/50 p-1 rounded-md border border-slate-700/50 shrink-0">
+                                            <button type="button" id="selectAllYamlBtn" title="Select All" class="p-1 text-slate-400 hover:text-indigo-400 transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            </button>
+                                            <button type="button" id="deselectAllYamlBtn" title="Deselect All" class="p-1 text-slate-400 hover:text-red-600 transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div id="yamlChecklist" class="space-y-1 sm:space-y-2 overflow-y-scroll custom-scrollbar pr-1 sm:pr-2 h-40"></div>
                                 </div>
 
                             </div>
@@ -433,7 +449,7 @@
                     const moduleName = input.value;
                     const container = input.closest('.flex.items-center');
                     if (isOgre) {
-                        const isOgreRelated = moduleName.startsWith('ogre') || ['wazuh', 'plaso2wazuh', 'elk', 'plaso2elk', 'extract', 'rename_from_orc', 'restore'].includes(moduleName);
+                        const isOgreRelated = moduleName.startsWith('ogre') || ['wazuh', 'elk', 'extract', 'rename_from_orc', 'restore'].includes(moduleName);
                         container.style.display = isOgreRelated ? 'flex' : 'none';
                         if (!isOgreRelated && !input.disabled) input.checked = false;
                         else if (moduleName.startsWith('ogre') && !input.disabled) input.checked = true;
@@ -467,6 +483,9 @@
                         box.closest('.bg-slate-800\\/40').style.display = hasVisible ? 'flex' : 'none';
                     }
                 });
+                
+                const ogreYamlBox = document.getElementById('ogreYamlBox');
+                if (ogreYamlBox) ogreYamlBox.style.display = isOgre ? 'flex' : 'none';
                 
                 const ogreModeContainer = document.getElementById('ogreMode').closest('div');
                 if (ogreModeContainer) ogreModeContainer.style.display = isOgre ? 'block' : 'none';
@@ -654,12 +673,20 @@
             if (plasoCb) {
                 plasoCb.addEventListener('change', enforcePlasoDependencies);
             }
+            
+            // Attach Ogre event if it exists
+            const ogreCb = document.getElementById('module-ogre_preprocessor');
+            if (ogreCb) {
+                ogreCb.addEventListener('change', enforceOgreDependencies);
+            }
         }
         
         fetchAndRenderPipelines().then(() => {
             const activeLink = document.querySelector('.nav-link.bg-indigo-500\\/20');
             if (activeLink) switchContent(activeLink.getAttribute('href'));
         });
+        
+        fetchAndRenderYamlPlugins();
 
         // --- Helper Function for Visual States ---
         function setVisualState(cb, isDisabled, forceUncheck = false) {
@@ -702,6 +729,40 @@
                     if (cb) {
                         const shouldDisable = isUAC || !isPlasoChecked;
                         setVisualState(cb, shouldDisable, true);
+                    }
+                });
+            }
+        };
+
+        // --- NEW LOGIC: Ogre Dependencies ---
+        const enforceOgreDependencies = () => {
+            const ogreCb = document.getElementById('module-ogre_preprocessor');
+            const archiveType = document.getElementById('archiveType').value;
+
+            if (ogreCb) {
+                const isOgreChecked = ogreCb.checked;
+                const isUAC = archiveType === 'UAC';
+                const shouldDisable = isUAC || !isOgreChecked;
+
+                const allCheckboxes = document.querySelectorAll('input[name="modules"]');
+                allCheckboxes.forEach(cb => {
+                    if (cb.value.startsWith('ogre_') && cb !== ogreCb) {
+                        setVisualState(cb, shouldDisable, true);
+                    }
+                });
+
+                const yamlCheckboxes = document.querySelectorAll('.yaml-toggle');
+                yamlCheckboxes.forEach(cb => {
+                    setVisualState(cb, shouldDisable, false);
+                });
+
+                const yamlBtns = [document.getElementById('selectAllYamlBtn'), document.getElementById('deselectAllYamlBtn')];
+                yamlBtns.forEach(btn => {
+                    if (btn) {
+                        const shouldDisable = isUAC || !isOgreChecked;
+                        btn.disabled = shouldDisable;
+                        btn.style.opacity = shouldDisable ? '0.5' : '1';
+                        btn.style.cursor = shouldDisable ? 'not-allowed' : 'pointer';
                     }
                 });
             }
@@ -752,8 +813,9 @@
                 });
             }
 
-            // 3. Always re-evaluate Plaso on top to keep sub-dependencies
+            // 3. Always re-evaluate Plaso and Ogre on top to keep sub-dependencies
             enforcePlasoDependencies();
+            enforceOgreDependencies();
         };
 
 
@@ -807,25 +869,105 @@
         document.getElementById('selectAllExportBtn').addEventListener('click', function() {
             if (this.disabled) return;
             document.querySelectorAll('#exportChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = true; });
-            enforcePlasoDependencies();
         });
         document.getElementById('deselectAllExportBtn').addEventListener('click', function() {
             if (this.disabled) return;
             document.querySelectorAll('#exportChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = false; });
-            enforcePlasoDependencies();
         });
 
         // Post-traitement Select/Deselect
         document.getElementById('selectAllPostProcBtn').addEventListener('click', function() {
             if (this.disabled) return;
             document.querySelectorAll('#postProcChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = true; });
-            enforcePlasoDependencies();
         });
         document.getElementById('deselectAllPostProcBtn').addEventListener('click', function() {
             if (this.disabled) return;
             document.querySelectorAll('#postProcChecklist input[name="modules"]').forEach(cb => { if (!cb.disabled) cb.checked = false; });
-            enforcePlasoDependencies();
         });
+
+        // Ogre Config Select/Deselect
+        document.getElementById('selectAllYamlBtn').addEventListener('click', function() {
+            document.querySelectorAll('.yaml-toggle').forEach(cb => {
+                if (!cb.checked) {
+                    cb.checked = true;
+                    cb.dispatchEvent(new Event('change'));
+                }
+            });
+        });
+        document.getElementById('deselectAllYamlBtn').addEventListener('click', function() {
+            document.querySelectorAll('.yaml-toggle').forEach(cb => {
+                if (cb.checked) {
+                    cb.checked = false;
+                    cb.dispatchEvent(new Event('change'));
+                }
+            });
+        });
+
+        // --- Fetch and Render Ogre YAML Plugins ---
+        async function fetchAndRenderYamlPlugins() {
+            try {
+                const response = await fetch('/api/ogre_yaml_plugins');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === "OK" && data.plugins) {
+                        renderYamlPlugins(data.plugins);
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching YAML plugins:", error);
+            }
+        }
+
+        function renderYamlPlugins(plugins) {
+            const checklist = document.getElementById('yamlChecklist');
+            if (!checklist) return;
+            checklist.innerHTML = '';
+            
+            const sortedLabels = Object.keys(plugins).sort();
+            
+            sortedLabels.forEach(label => {
+                const isChecked = plugins[label];
+                const formattedName = label.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                
+                const switchHtml = `
+                    <div class="flex items-center justify-between p-2 sm:p-2.5 rounded-lg hover:bg-slate-900/50 border border-transparent hover:border-slate-700/30 transition-colors duration-200">
+                        <label for="yaml-${label}" class="text-xs sm:text-sm font-medium text-slate-200 cursor-pointer flex-1 select-none hover:text-indigo-300 transition-colors truncate pr-2" title="${label}">
+                            ${formattedName}
+                        </label>
+                        <label class="switch shrink-0">
+                            <input type="checkbox" id="yaml-${label}" class="yaml-toggle" data-label="${label}" ${isChecked ? 'checked' : ''}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                `;
+                checklist.insertAdjacentHTML('beforeend', switchHtml);
+            });
+            
+            document.querySelectorAll('.yaml-toggle').forEach(cb => {
+                cb.addEventListener('change', async (e) => {
+                    const label = e.target.getAttribute('data-label');
+                    const enable = e.target.checked;
+                    
+                    try {
+                        const response = await fetch('/api/ogre_yaml_plugins', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ label, enable })
+                        });
+                        if (!response.ok) {
+                            console.error("Failed to update YAML plugin state");
+                            e.target.checked = !enable; // revert
+                        }
+                    } catch (error) {
+                        console.error("Error updating YAML plugin state:", error);
+                        e.target.checked = !enable; // revert
+                    }
+                });
+            });
+            
+            // Re-evaluate dependencies now that yaml toggles are in the DOM
+            enforceOgreDependencies();
+        }
 
         function displayStatus(message, type) {
             statusMessage.textContent = message;
@@ -847,7 +989,7 @@
         clearJsonFileBtn.addEventListener('click', (event) => {
             event.preventDefault();
             jsonConfigInput.value = '';
-            displayStatus('JSON config file cleared.', 'info');
+            displayStatus('YAML config file cleared.', 'info');
         });
 
         uploadForm.addEventListener('submit', async function(event) {
@@ -880,12 +1022,12 @@
                 const reader = new FileReader();
                 reader.onload = async (e) => {
                     try {
-                        const customConfig = JSON.parse(e.target.result);
-                        const finalJsonData = { ...jsonData, artefact_config: customConfig };
+                        const customConfigContent = e.target.result;
+                        const finalJsonData = { ...jsonData, artefact_config: { custom_ogre_yaml_content: customConfigContent } };
                         formData.append('json', JSON.stringify(finalJsonData));
                         await sendUploadRequest(formData);
                     } catch (error) {
-                        displayStatus(`Error parsing JSON file: ${error.message}`, 'error');
+                        displayStatus(`Error reading YAML file: ${error.message}`, 'error');
                         submitButton.disabled = false;
                         buttonText.classList.remove('hidden');
                         loadingIndicator.classList.add('hidden');

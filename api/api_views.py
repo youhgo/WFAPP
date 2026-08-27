@@ -2,6 +2,8 @@ import sys
 from datetime import datetime
 import os
 import uuid
+import re
+import fcntl
 
 from flask import Blueprint, Response, jsonify, render_template, request, send_from_directory, abort
 from flask_login import login_user, logout_user, login_required, current_user
@@ -493,3 +495,84 @@ def get_pipelines():
             
     return jsonify({"status": "OK", "pipelines": pipelines})
 
+
+@wapp_api.route('/api/ogre_yaml_plugins', methods=['GET'])
+@login_required
+def get_ogre_yaml_plugins():
+    yaml_path = "/python-docker/WAPP_MODULE/config/ogre.yaml"
+    if not os.path.exists(yaml_path):
+        yaml_path = os.path.join(os.path.dirname(__file__), "..", "APPEngine", "WAPP_MODULE", "config", "ogre.yaml")
+        
+    plugins = {}
+    if os.path.exists(yaml_path):
+        with open(yaml_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+            
+        blocks = re.split(r'\n(?=\s*(?:#\s*)?-\s*(?:original_file_pattern|archive_file_pattern):)', '\n' + content)
+        for block in blocks:
+            if not block.strip(): continue
+            m_label = re.search(r'mapping_label:\s*(\w+)', block)
+            if m_label:
+                label = m_label.group(1)
+                is_enabled = not block.strip().startswith('#')
+                if label not in plugins:
+                    plugins[label] = is_enabled
+                else:
+                    plugins[label] = plugins[label] or is_enabled
+                    
+    return jsonify({"status": "OK", "plugins": plugins})
+
+
+@wapp_api.route('/api/ogre_yaml_plugins', methods=['POST'])
+@login_required
+def set_ogre_yaml_plugins():
+    data = request.get_json()
+    label = data.get('label')
+    enable = data.get('enable')
+    
+    yaml_path = "/python-docker/WAPP_MODULE/config/ogre.yaml"
+    if not os.path.exists(yaml_path):
+        yaml_path = os.path.join(os.path.dirname(__file__), "..", "APPEngine", "WAPP_MODULE", "config", "ogre.yaml")
+        
+    if not os.path.exists(yaml_path):
+        return jsonify({"status": "ERROR", "message": "ogre.yaml not found"}), 404
+        
+    with open(yaml_path, 'r+', encoding='utf-8') as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        content = f.read()
+        
+        lines = content.split('\n')
+        new_lines = []
+        current_block = []
+        
+        def process_block(block):
+            if not block: return block
+            has_label = any(re.search(rf'mapping_label:\s*{label}\b', line) for line in block)
+            if has_label:
+                if enable:
+                    return [re.sub(r'^# ?', '', line) for line in block]
+                else:
+                    return [f"# {line}" if not line.startswith('#') else line for line in block]
+            return block
+            
+        for line in lines:
+            is_block_start = re.match(r'^\s*(#\s*)?-\s*(original_file_pattern|archive_file_pattern):', line)
+            if is_block_start:
+                if current_block:
+                    new_lines.extend(process_block(current_block))
+                current_block = [line]
+            else:
+                if current_block:
+                    current_block.append(line)
+                else:
+                    new_lines.append(line)
+                    
+        if current_block:
+            new_lines.extend(process_block(current_block))
+            
+        f.seek(0)
+        f.write('\n'.join(new_lines))
+        f.truncate()
+        fcntl.flock(f, fcntl.LOCK_UN)
+        
+    return jsonify({"status": "OK"})

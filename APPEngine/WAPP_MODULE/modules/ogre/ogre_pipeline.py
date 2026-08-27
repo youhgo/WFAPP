@@ -7,7 +7,7 @@ from ...classes.Registry import register_pipeline
 from ...classes.BaseParser import CsvOutputSink
 from ...parsers.ogre.OgreParser import OgreParser
 
-@register_pipeline(name="ogre")
+@register_pipeline(name="ogre_generic")
 class OgrePipeline(BaseArtefactPipeline):
     """
     Parses DFIR-Ogre JSONL output files.
