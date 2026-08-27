@@ -116,7 +116,7 @@ class ScriptPipeline(BaseArtefactPipeline):
 
     def __init__(self, context: WappContext):
         super().__init__(context)
-        self.out_script_dir = self.context.parsed_dir / "script"
+        self.out_script_dir = self.context.parsed_dir / "scripts"
         self.out_dir = self.context.result_parsed_dir
         self.out_script_dir.mkdir(parents=True, exist_ok=True)
 

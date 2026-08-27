@@ -17,7 +17,7 @@ class PowerShellPipeline(BaseArtefactPipeline):
 
     def __init__(self, context: WappContext):
         super().__init__(context)
-        self.out_powershell_script_dir = self.context.parsed_dir / "script" / "powershell"
+        self.out_powershell_script_dir = self.context.parsed_dir / "scripts" / "powershell"
         self.out_powershell_script_dir.mkdir(parents=True, exist_ok=True)
 
         self.out_powershell_dir = self.context.parsed_dir / "powershell"

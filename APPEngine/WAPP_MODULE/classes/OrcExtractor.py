@@ -188,8 +188,16 @@ class OrcExtractor:
 
                         self.logger.info(f"[EXTRACTOR] Extraction of nested archive: {file}", header="INFO",
                                          indentation=1)
+                                         
+                        original_password = self.password
+                        if file.lower() == "scripts_little.7z":
+                            self.password = "avproof"
 
-                        if self._extract_archive(nested_ext, nested_archive_path, root):
+                        extracted = self._extract_archive(nested_ext, nested_archive_path, root)
+                        
+                        self.password = original_password
+
+                        if extracted:
                             try:
                                 os.remove(nested_archive_path)  # Cleanup after successful extraction
                             except OSError:
