@@ -27,25 +27,35 @@ class ArtefactDispatcher:
         self.context.logger.info("[DISPATCHER] Dynamic loading of modules in progress...", header="INFO")
 
         # Import all modules to trigger @register_pipeline decorators
-        for file_path in modules_dir.glob("*.py"):
+        for file_path in modules_dir.rglob("*.py"):
             module_name = file_path.stem
 
             if module_name in ["__init__", "dispatcher", "legacy_pipeline"]:
                 continue
 
             try:
-                importlib.import_module(f"..modules.{module_name}", package=__package__)
+                # Get the path relative to WAPP_MODULE and format for import
+                rel_path = file_path.relative_to(modules_dir.parent).with_suffix('')
+                import_str = ".." + ".".join(rel_path.parts)
+                importlib.import_module(import_str, package=__package__)
             except Exception as e:
                 self.context.logger.error(f"Critical error importing module {module_name}: {e}", header="ERROR", indentation=1)
 
         # Now that everything is imported, instantiate pipelines authorized by config
         for config_key, pipeline_class in PIPELINE_REGISTRY.items():
-            # Support both flat config (from celery UI) and nested "pipelines" dict (from local JSON)
             if config_key in self.context.config and not isinstance(self.context.config[config_key], dict):
-                is_enabled = bool(self.context.config[config_key])
+                raw_val = self.context.config[config_key]
+                if isinstance(raw_val, str):
+                    is_enabled = str(raw_val).strip().lower() not in ['0', 'false', '']
+                else:
+                    is_enabled = bool(raw_val)
             else:
                 pipeline_cfg = cfg.get(config_key, {})
-                is_enabled = pipeline_cfg.get("enabled", True)  # PLUG & PLAY: Enabled by default!
+                raw_val = pipeline_cfg.get("enabled", True)
+                if isinstance(raw_val, str):
+                    is_enabled = str(raw_val).strip().lower() not in ['0', 'false', '']
+                else:
+                    is_enabled = bool(raw_val)
             
             if not is_enabled:
                 self.context.logger.info(f"[DISPATCHER] Pipeline ignored (disabled via config): {config_key}")
@@ -63,18 +73,24 @@ class ArtefactDispatcher:
         processed_files = []
         unprocessed_files = []
 
-        for file_path in extracted_dir.rglob("*"):
-            if file_path.is_file():
-                is_processed = False
-                for pipeline in self.pipelines:
-                    if pipeline.can_process(file_path):
-                        pipeline.process(file_path)
-                        is_processed = True
-                        
-                if is_processed:
-                    processed_files.append(str(file_path))
-                else:
-                    unprocessed_files.append(str(file_path))
+        directories_to_scan = [extracted_dir]
+        ogre_dir = self.context.parsed_dir / "ogre"
+        if ogre_dir.exists():
+            directories_to_scan.append(ogre_dir)
+
+        for directory in directories_to_scan:
+            for file_path in directory.rglob("*"):
+                if file_path.is_file():
+                    is_processed = False
+                    for pipeline in self.pipelines:
+                        if pipeline.can_process(file_path):
+                            pipeline.process(file_path)
+                            is_processed = True
+                            
+                    if is_processed:
+                        processed_files.append(str(file_path))
+                    else:
+                        unprocessed_files.append(str(file_path))
 
         self.context.logger.info("[DISPATCHER] Routing completed. Starting finalizations...", header="INFO")
 

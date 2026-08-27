@@ -120,7 +120,8 @@
                     <span class="text-2xl font-extrabold truncate">WFAPP Portal</span>
                 </a>
                 <nav id="nav-menu" class="space-y-1">
-                    <a href="#upload-content" class="nav-link block py-3 px-4 rounded-lg transition duration-200 bg-indigo-500/20 text-indigo-300 font-medium">File Uploader</a>
+                    <a href="#upload-content-ogre" class="nav-link block py-3 px-4 rounded-lg transition duration-200 bg-indigo-500/20 text-indigo-300 font-medium">Ogre Uploader</a>
+                    <a href="#upload-content-legacy" class="nav-link block py-3 px-4 rounded-lg transition duration-200 hover:bg-slate-700/50 hover:text-white font-medium">Legacy Uploader</a>
                     <a href="#logs-content" class="nav-link block py-3 px-4 rounded-lg transition duration-200 hover:bg-slate-700/50 hover:text-white font-medium">Log Viewer</a>
                     <a href="#running-tasks-content" class="nav-link block py-3 px-4 rounded-lg transition duration-200 hover:bg-slate-700/50 hover:text-white font-medium">Running Tasks</a>
                     <a href="#download-content" class="nav-link block py-3 px-4 rounded-lg transition duration-200 hover:bg-slate-700/50 hover:text-white font-medium">Download DFIR-ORC</a>
@@ -143,7 +144,7 @@
                 <!-- Content sections -->
                 <div id="upload-content" class="content-section">
                     <div class="mb-6">
-                        <h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">File Uploader</h2>
+                        <h2 id="uploaderTitle" class="text-2xl sm:text-3xl font-bold text-white mb-2">Ogre Uploader</h2>
                         <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
                             Select the forensic archive you wish to analyze and provide the case details.<br>
                             <span class="inline-block mt-1">The index for Elastic ingestion will be <code class="bg-slate-900/30 px-1.5 py-0.5 rounded text-slate-200">caseName_machineName</code>.</span>
@@ -182,6 +183,13 @@
                                         <option value="ORC">ORC</option>
                                         <option value="KAPE">KAPE</option>
                                         <option value="UAC">UAC</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="ogreMode" class="block text-sm font-medium text-slate-200 mb-1">Ogre Mode</label>
+                                    <select id="ogreMode" name="ogreMode" class="shadow-sm block w-full rounded-lg border-slate-600 border p-2 sm:p-2.5 bg-slate-800/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow">
+                                        <option value="orc">ORC (Full Parsing)</option>
+                                        <option value="timeline">Timeline (CSV)</option>
                                     </select>
                                 </div>
                             </div>
@@ -411,18 +419,69 @@
         }
 
         const switchContent = (targetId) => {
+            const originalTarget = targetId;
             const target = targetId.startsWith('#') ? targetId : '#' + targetId;
+            let displayTarget = target;
+            
+            if (target === '#upload-content-legacy' || target === '#upload-content-ogre') {
+                displayTarget = '#upload-content';
+                const isOgre = target === '#upload-content-ogre';
+                document.getElementById('uploaderTitle').textContent = isOgre ? 'Ogre Uploader' : 'Legacy Uploader';
+                
+                const allModuleDivs = document.querySelectorAll('input[name="modules"]');
+                allModuleDivs.forEach(input => {
+                    const moduleName = input.value;
+                    const container = input.closest('.flex.items-center');
+                    if (isOgre) {
+                        const isOgreRelated = moduleName.startsWith('ogre') || ['wazuh', 'plaso2wazuh', 'elk', 'plaso2elk', 'extract', 'rename_from_orc', 'restore'].includes(moduleName);
+                        container.style.display = isOgreRelated ? 'flex' : 'none';
+                        if (!isOgreRelated && !input.disabled) input.checked = false;
+                        else if (moduleName.startsWith('ogre') && !input.disabled) input.checked = true;
+
+                        if (moduleName === 'extract') {
+                            setVisualState(input, false);
+                            input.checked = false;
+                        }
+                    } else {
+                        const isOgreRelated = moduleName.startsWith('ogre');
+                        container.style.display = isOgreRelated ? 'none' : 'flex';
+                        if (isOgreRelated && !input.disabled) input.checked = false;
+
+                        if (moduleName === 'extract') {
+                            setVisualState(input, true);
+                            input.checked = true;
+                        }
+                    }
+                });
+                
+                const boxes = [
+                    document.getElementById('preProcChecklist'),
+                    document.getElementById('analyzeChecklist'),
+                    document.getElementById('postProcChecklist'),
+                    document.getElementById('plasoChecklist'),
+                    document.getElementById('exportChecklist')
+                ];
+                boxes.forEach(box => {
+                    if (box && box.children.length > 0) {
+                        const hasVisible = Array.from(box.children).some(child => child.style.display !== 'none');
+                        box.closest('.bg-slate-800\\/40').style.display = hasVisible ? 'flex' : 'none';
+                    }
+                });
+                
+                const ogreModeContainer = document.getElementById('ogreMode').closest('div');
+                if (ogreModeContainer) ogreModeContainer.style.display = isOgre ? 'block' : 'none';
+            }
 
             navLinks.forEach(link => {
                 link.classList.remove('bg-indigo-500/20', 'text-indigo-300');
-                if (link.getAttribute('href') === target) {
+                if (link.getAttribute('href') === originalTarget) {
                     link.classList.add('bg-indigo-500/20', 'text-indigo-300');
                 }
             });
 
             contentSections.forEach(section => {
                 section.classList.remove('active');
-                if ('#' + section.id === target) {
+                if ('#' + section.id === displayTarget) {
                     section.classList.add('active');
                 }
             });
@@ -443,13 +502,11 @@
         });
 
         // Set default view
-        switchContent('#upload-content');
+        switchContent('#upload-content-ogre');
 
         // --- Dynamic Module Selection Logic ---
-        const preProcModules = ["extract", "restore", "rename_from_orc", "legacy"];
         const exportModules = ["wazuh", "plaso2wazuh", "elk", "plaso2elk"];
         const plasoModules = ["plaso", "mpp", "mactime"];
-        const postProcModules = ["clean_duplicates", "create_timeline"];
 
         const preProcChecklist = document.getElementById('preProcChecklist');
         const analyzeChecklist = document.getElementById('analyzeChecklist');
@@ -509,13 +566,13 @@
                     </div>
                 `;
 
-                if (preProcModules.includes(moduleName)) {
-                    preProcChecklist.insertAdjacentHTML('beforeend', switchHtml);
-                } else if (exportModules.includes(moduleName)) {
+                if (exportModules.includes(moduleName)) {
                     exportChecklist.insertAdjacentHTML('beforeend', switchHtml);
                 } else if (plasoModules.includes(moduleName)) {
                     plasoChecklist.insertAdjacentHTML('beforeend', switchHtml);
-                } else if (postProcModules.includes(moduleName)) {
+                } else if (pluginObj.type === 'preprocessor') {
+                    preProcChecklist.insertAdjacentHTML('beforeend', switchHtml);
+                } else if (pluginObj.type === 'postprocessor') {
                     postProcChecklist.insertAdjacentHTML('beforeend', switchHtml);
                 } else {
                     analyzeChecklist.insertAdjacentHTML('beforeend', switchHtml);
@@ -599,10 +656,13 @@
             }
         }
         
-        fetchAndRenderPipelines();
+        fetchAndRenderPipelines().then(() => {
+            const activeLink = document.querySelector('.nav-link.bg-indigo-500\\/20');
+            if (activeLink) switchContent(activeLink.getAttribute('href'));
+        });
 
         // --- Helper Function for Visual States ---
-        const setVisualState = (cb, isDisabled, forceUncheck = false) => {
+        function setVisualState(cb, isDisabled, forceUncheck = false) {
             if (!cb) return;
             cb.disabled = isDisabled;
             if (forceUncheck && isDisabled) cb.checked = false;
@@ -618,7 +678,12 @@
                 slider.style.cursor = 'pointer';
                 label.style.opacity = '1';
             }
-        };
+        }
+
+        function isOgreActive() {
+            const activeLink = document.querySelector('.nav-link.bg-indigo-500\\/20');
+            return activeLink && activeLink.getAttribute('href') === '#upload-content-ogre';
+        }
 
         // --- NEW LOGIC: Plaso Dependencies ---
         const enforcePlasoDependencies = () => {
@@ -654,8 +719,12 @@
             // 1. Reset all states to enabled (except mandatory extract)
             allCheckboxes.forEach(cb => {
                 if (cb.value === 'extract') {
-                    setVisualState(cb, true, false); // Always disabled
-                    cb.checked = true; // Always checked for ORC
+                    if (isOgreActive()) {
+                        setVisualState(cb, false);
+                    } else {
+                        setVisualState(cb, true, false); // Always disabled in Legacy
+                        cb.checked = true; // Always checked for ORC
+                    }
                 } else {
                     setVisualState(cb, false);
                 }
@@ -797,11 +866,13 @@
 
             const parserConfig = {};
             document.querySelectorAll('input[name="modules"]').forEach(c => { parserConfig[c.value] = c.checked ? 1 : 0; });
+            parserConfig["ogreMode"] = document.getElementById('ogreMode').value;
 
             const jsonData = {
                 caseName: document.getElementById('caseName').value,
                 machineName: document.getElementById('machineName').value,
                 archiveType: document.getElementById('archiveType').value,
+                ogreMode: document.getElementById('ogreMode').value,
                 parser_config: parserConfig,
             };
 

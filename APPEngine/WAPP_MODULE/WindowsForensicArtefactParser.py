@@ -21,7 +21,6 @@ from .classes.PreProcessorDispatcher import PreProcessorDispatcher
 from .classes.PostProcessorDispatcher import PostProcessorDispatcher
 
 # Imports des parsers et outils externes
-from .parsers import MaximumPlasoParserJson
 from .utils.plaso2ELK import plaso_2_siem, plaso_to_wazuh
 
 
@@ -63,6 +62,7 @@ class WindowsForensicArtefactParser:
         # Initialisation du contexte global
         self.ctx = WappContext(path_to_archive, output_directory, case_name, machine_name, separator, main_id,
                                artefact_config, main_config)
+        self.ctx.is_orc = is_orc
         self.logger = self.ctx.logger
 
         # Fichiers Plaso (post-processing)

@@ -1,0 +1,290 @@
+#!/usr/bin/python3
+import json
+from pathlib import Path
+from typing import Generator, Dict, Any, Tuple
+
+from ...classes.BaseParser import BaseParser
+
+class EventParser(BaseParser):
+    """
+    Classe pour parser des fichiers journaux d'événements (EVTX) au format JSON
+    vers un format brut lisible, en "yieldant" chaque événement.
+    """
+
+    # En-têtes CSV centralisés (optionnels, peuvent servir d'indication pour le Sink)
+    csv_headers = {
+        "4624": ["Date", "Time", "event_code", "subject_user_name", "target_user_name", "ip_address", "ip_port", "logon_type"],
+        "4625": ["Date", "Time", "event_code", "logon_type", "subject_user_name", "target_user_name", "ip_address", "ip_port", "failure_reason"],
+        "4672": ["Date", "Time", "event_code", "logon_type", "subject_user_name", "target_user_name", "ip_address", "ip_port"],
+        "4648": ["Date", "Time", "event_code", "logon_type", "subject_user_name", "target_user_name", "ip_address", "ip_port"],
+        "4688": ["Date", "Time", "event_code", "subject_user_name", "target_user_name", "parent_process_name", "new_process_name", "command_line"],
+        "tscheduler": ["Date", "Time", "event_code", "name", "task_name", "instance_id", "action_name", "result_code", "user_name", "user_context"],
+        "remote_rdp": ["Date", "Time", "event_code", "user_name", "ip_addr"],
+        "local_rdp": ["Date", "Time", "event_code", "user_name", "ip_addr", "session_id", "source", "target_session", "reason_n", "reason"],
+        "bits": ["Date", "Time", "event_code", "id", "job_id", "job_title", "job_owner", "user", "bytes_total", "bytes_transferred", "file_count", "file_length", "file_Time", "name", "url", "process_path"],
+        "7045": ["Date", "Time", "event_code", "account_name", "img_path", "service_name", "start_type"],
+        "script_powershell": ["Date", "Time", "event_code", "path_to_script", "script_block_text"],
+        "powershell": ["Date", "Time", "event_code", "cmd"],
+        "wmi": ["Date", "Time", "event_code", "operation_name", "user", "namespace", "consumer", "cause", "query"],
+        "wmi_failure": ["Date", "Time", "event_code", "operation_name", "user", "namespace", "consumer", "cause", "operation"],
+        "windefender": ["Date", "Time", "Event", "ThreatName", "Severity", "User", "ProcessName", "Path", "Action"],
+        "user_modification": ["Date", "Time", "event_code", "info", "TargetUserName", "SubjectUserName", "TargetDomainName", "TargetSid", "SamAccountName", "PasswordLastSet"],
+    }
+
+    def format_system_time(self, evt_timestamp):
+        if not isinstance(evt_timestamp, str):
+            return "-", "-"
+        try:
+            parts = evt_timestamp.split("T")
+            if len(parts) == 2:
+                ts_date = parts[0]
+                ts_time = parts[1].split(".")[0]
+                return ts_date, ts_time
+        except Exception:
+            pass
+        return evt_timestamp, "-"
+
+    def parse(self, input_path: Path) -> Generator[Tuple[str, Dict[str, Any]], None, None]:
+        """
+        Lit un fichier EVTX JSON ligne par ligne et yield un tuple:
+        (artifact_type, dictionnaire_de_donnees)
+        """
+        with open(input_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                try:
+                    event = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+
+                system_info = event.get("Event", {}).get("System", {})
+                event_code = system_info.get("EventID")
+                if isinstance(event_code, dict):
+                    event_code = event_code.get("Value")
+
+                if not event_code:
+                    continue
+
+                event_code_str = str(event_code)
+
+                # Répartition vers la fonction de parsing correcte
+                if event_code_str == "4624":
+                    yield self.parse_logon(event, event_code_str)
+                elif event_code_str == "4625":
+                    yield self.parse_failed_logon(event, event_code_str)
+                elif event_code_str == "4672":
+                    yield self.parse_spe_logon(event, event_code_str)
+                elif event_code_str == "4648":
+                    yield self.parse_exp_logon(event, event_code_str)
+                elif event_code_str == "4688":
+                    yield self.parse_new_proc(event, event_code_str)
+                elif event_code_str in ["4720", "4722", "4723", "4724", "4725", "4726", "4738"]:
+                    yield self.parse_user_modification(event, event_code_str)
+                elif event_code_str in ["106", "107", "140", "141", "200", "201"]:
+                    yield self.parse_task_scheduler(event, event_code_str)
+                elif event_code_str == "1149":
+                    yield self.parse_rdp_remote(event, event_code_str)
+                elif event_code_str in ["21", "24", "25", "39", "40"]:
+                    yield self.parse_rdp_local(event, event_code_str)
+                elif event_code_str in ["3", "4", "59", "60", "61"]:
+                    yield self.parse_bits(event, event_code_str)
+                elif event_code_str == "7045":
+                    yield self.parse_service(event, event_code_str)
+                elif event_code_str == "4104":
+                    yield self.parse_powershell_script(event, event_code_str)
+                elif event_code_str in ["400", "600"]:
+                    yield self.parse_powershell_cmd(event, event_code_str)
+                elif event_code_str in ["5860", "5861"]:
+                    yield self.parse_wmi(event, event_code_str)
+                elif event_code_str == "5858":
+                    yield self.parse_wmi_failure(event, event_code_str)
+                elif event_code_str == "1116":
+                    yield self.parse_windef_detection(event, event_code_str)
+                elif event_code_str in ["1117", "1118", "1119"]:
+                    yield self.parse_windef_action(event, event_code_str)
+
+    # --- PARSERS D'ÉVÉNEMENTS SPÉCIALISÉS (Retournent (key, data)) ---
+
+    def _get_event_base_data(self, event, event_code):
+        ts_date, ts_time = self.format_system_time(
+            event.get("Event", {}).get("System", {}).get("TimeCreated", {}).get("SystemTime"))
+        return {"Date": ts_date, "Time": ts_time, "event_code": event_code}
+
+    def parse_logon(self, event, code):
+        data_dict = self._get_event_base_data(event, code)
+        data = event.get("Event", {}).get("EventData", {})
+        data_dict.update({
+            "subject_user_name": data.get("SubjectUserName"), "target_user_name": data.get("TargetUserName"),
+            "ip_address": data.get("IpAddress"), "ip_port": data.get("IpPort"), "logon_type": data.get("LogonType")
+        })
+        return code, data_dict
+
+    def parse_failed_logon(self, event, code):
+        data_dict = self._get_event_base_data(event, code)
+        data = event.get("Event", {}).get("EventData", {})
+        data_dict.update({
+            "subject_user_name": data.get("SubjectUserName"), "target_user_name": data.get("TargetUserName"),
+            "ip_address": data.get("IpAddress"), "ip_port": data.get("IpPort"), "logon_type": data.get("LogonType"),
+            "failure_reason": data.get("Status")
+        })
+        return code, data_dict
+
+    def parse_spe_logon(self, event, code):
+        data_dict = self._get_event_base_data(event, code)
+        data = event.get("Event", {}).get("EventData", {})
+        data_dict.update({
+            "subject_user_name": data.get("SubjectUserName"), "target_user_name": data.get("TargetUserName"),
+            "ip_address": data.get("IpAddress", "-"), "ip_port": data.get("IpPort", "-"),
+            "logon_type": data.get("LogonType")
+        })
+        return code, data_dict
+
+    def parse_exp_logon(self, event, code):
+        data_dict = self._get_event_base_data(event, code)
+        data = event.get("Event", {}).get("EventData", {})
+        data_dict.update({
+            "subject_user_name": data.get("SubjectUserName"), "target_user_name": data.get("TargetUserName"),
+            "ip_address": data.get("IpAddress"), "ip_port": data.get("IpPort", "-"),
+            "logon_type": data.get("LogonType", "-")
+        })
+        return code, data_dict
+
+    def parse_new_proc(self, event, code):
+        data_dict = self._get_event_base_data(event, code)
+        data = event.get("Event", {}).get("EventData", {})
+        data_dict.update({
+            "subject_user_name": data.get("SubjectUserName"), "target_user_name": data.get("TargetUserName"),
+            "parent_process_name": data.get("ParentProcessName"), "new_process_name": data.get("NewProcessName"),
+            "command_line": data.get("CommandLine")
+        })
+        return code, data_dict
+
+    def parse_user_modification(self, event, code):
+        data_dict = self._get_event_base_data(event, code)
+        data = event.get("Event", {}).get("EventData", {})
+        info_map = {
+            "4720": "User Account Created", "4722": "User Account Enabled", "4723": "Password Change Attempt",
+            "4724": "Password Reset Attempt", "4725": "User Account Disabled", "4726": "User Account Deleted",
+            "4738": "User Account Changed"
+        }
+        data_dict.update({
+            "info": info_map.get(code, "Unknown User Modification"), "TargetUserName": data.get("TargetUserName"),
+            "SubjectUserName": data.get("SubjectUserName"), "TargetDomainName": data.get("TargetDomainName"),
+            "TargetSid": data.get("TargetSid"), "SamAccountName": data.get("SamAccountName"),
+            "PasswordLastSet": data.get("PasswordLastSet"),
+        })
+        return "user_modification", data_dict
+
+    def parse_task_scheduler(self, event, code):
+        data_dict = self._get_event_base_data(event, code)
+        data = event.get("Event", {}).get("EventData", {})
+        data_dict.update({
+            "name": data.get("Name"), "task_name": data.get("TaskName"), "instance_id": data.get("InstanceId"),
+            "action_name": data.get("ActionName"), "result_code": data.get("ResultCode"),
+            "user_name": data.get("UserName"), "user_context": data.get("UserContext")
+        })
+        return "tscheduler", data_dict
+
+    def parse_rdp_remote(self, event, code):
+        data_dict = self._get_event_base_data(event, code)
+        data = event.get("Event", {}).get("UserData", {}).get("EventXML", {})
+        data_dict.update({"user_name": data.get("Param1"), "ip_addr": data.get("Param3")})
+        return "remote_rdp", data_dict
+
+    def parse_rdp_local(self, event, code):
+        data_dict = self._get_event_base_data(event, code)
+        data = event.get("Event", {}).get("UserData", {}).get("EventXML", {})
+        reason_map = {"21": "AuthSuccess", "24": "UserDisconnected", "25": "UserReconnected",
+                      "39": "UserHasBeenDisconnected", "40": "UserHasBeenDisconnected"}
+        data_dict.update({
+            "user_name": data.get("User"), "ip_addr": data.get("Address"), "session_id": data.get("SessionID"),
+            "source": data.get("Source"), "target_session": data.get("TargetSession"),
+            "reason_n": data.get("Reason"), "reason": reason_map.get(code, "-")
+        })
+        return "local_rdp", data_dict
+
+    def parse_service(self, event, code):
+        data_dict = self._get_event_base_data(event, code)
+        data = event.get("Event", {}).get("EventData", {})
+        data_dict.update({
+            "account_name": data.get("AccountName"), "img_path": data.get("ImagePath"),
+            "service_name": data.get("ServiceName"), "start_type": data.get("StartType")
+        })
+        return code, data_dict
+
+    def parse_powershell_script(self, event, code):
+        data_dict = self._get_event_base_data(event, code)
+        data = event.get("Event", {}).get("EventData", {})
+        data_dict.update({"path_to_script": data.get("Path"), "script_block_text": data.get("ScriptBlockText")})
+        return "script_powershell", data_dict
+
+    def parse_powershell_cmd(self, event, code):
+        data_dict = self._get_event_base_data(event, code)
+        cmd = "-"
+        evt_data = event.get("Event", {}).get("EventData", {}).get("Data")
+        if isinstance(evt_data, list):
+            for line in evt_data:
+                if "HostApplication=" in line:
+                    for part in line.split("\n"):
+                        if "HostApplication" in part:
+                            cmd = part.split("HostApplication=")[1].strip()
+                            break
+        data_dict["cmd"] = cmd
+        return "powershell", data_dict
+
+    def parse_wmi(self, event, code):
+        data_dict = self._get_event_base_data(event, code)
+        user_data = event.get("Event", {}).get("UserData", {})
+        if user_data:
+            op_name = next(iter(user_data), None)
+            op_dict = user_data.get(op_name, {})
+            data_dict.update({
+                "operation_name": op_name, "user": op_dict.get("User"), "namespace": op_dict.get("NamespaceName"),
+                "consumer": op_dict.get("CONSUMER"), "cause": op_dict.get("PossibleCause", "").replace("\n", " "),
+                "query": op_dict.get("Query", "").replace("\n", " ")
+            })
+        return "wmi", data_dict
+
+    def parse_wmi_failure(self, event, code):
+        data_dict = self._get_event_base_data(event, code)
+        user_data = event.get("Event", {}).get("UserData", {})
+        if user_data:
+            op_name = next(iter(user_data), None)
+            op_dict = user_data.get(op_name, {})
+            data_dict.update({
+                "operation_name": op_name, "user": op_dict.get("User"), "namespace": op_dict.get("NamespaceName"),
+                "consumer": op_dict.get("CONSUMER"), "cause": op_dict.get("PossibleCause", "").replace("\n", " "),
+                "operation": op_dict.get("Operation", "").replace("\n", " ")
+            })
+        return "wmi_failure", data_dict
+
+    def parse_bits(self, event, code):
+        data_dict = self._get_event_base_data(event, code)
+        data = event.get("Event", {}).get("EventData", {})
+        data_dict.update({
+            "id": data.get("Id"), "job_id": data.get("jobId"), "job_title": data.get("jobTitle"),
+            "job_owner": data.get("jobOwner"), "user": data.get("User"), "bytes_total": data.get("bytesTotal"),
+            "bytes_transferred": data.get("bytesTransferred"), "file_count": data.get("fileCount"),
+            "file_length": data.get("fileLength"), "file_Time": data.get("fileTime"), "name": data.get("name"),
+            "url": data.get("url"), "process_path": data.get("processPath")
+        })
+        return "bits", data_dict
+
+    def parse_windef_detection(self, event, code):
+        data_dict = self._get_event_base_data(event, f"{code} - Detection")
+        data = event.get("Event", {}).get("EventData", {})
+        data_dict.update({
+            "ThreatName": data.get("Threat Name"), "Severity": data.get("Severity Name"),
+            "User": data.get("Detection User"), "ProcessName": data.get("Process Name"),
+            "Path": data.get("Path"), "Action": data.get("Action Name")
+        })
+        return "windefender", data_dict
+
+    def parse_windef_action(self, event, code):
+        data_dict = self._get_event_base_data(event, f"{code} - Action")
+        data = event.get("Event", {}).get("EventData", {})
+        data_dict.update({
+            "ThreatName": data.get("Threat Name"), "Severity": data.get("Severity Name"),
+            "User": data.get("Detection User"), "ProcessName": data.get("Process Name"),
+            "Path": data.get("Path"), "Action": data.get("Action Name")
+        })
+        return "windefender", data_dict

@@ -26,22 +26,28 @@ class PreProcessorDispatcher:
 
         # Import all modules to trigger @register_preprocessor decorators
         if modules_dir.exists():
-            for file_path in modules_dir.glob("*.py"):
+            for file_path in modules_dir.rglob("*.py"):
                 module_name = file_path.stem
 
                 if module_name == "__init__":
                     continue
 
                 try:
-                    # Relative import from current package
-                    importlib.import_module(f"..preprocessors.{module_name}", package=__package__)
+                    # Get the path relative to WAPP_MODULE and format for import
+                    rel_path = file_path.relative_to(modules_dir.parent).with_suffix('')
+                    import_str = ".." + ".".join(rel_path.parts)
+                    importlib.import_module(import_str, package=__package__)
                 except Exception as e:
                     self.context.logger.error(f"Critical error importing module {module_name}: {e}", header="ERROR", indentation=1)
 
         # Instantiate pre-processors authorized by config
         for config_key, processor_class in PREPROCESSOR_REGISTRY.items():
             default_state = getattr(processor_class, 'default_enabled', False)
-            is_enabled = bool(cfg.get(config_key, default_state))
+            raw_val = cfg.get(config_key, default_state)
+            if isinstance(raw_val, str):
+                is_enabled = str(raw_val).strip().lower() not in ['0', 'false', '']
+            else:
+                is_enabled = bool(raw_val)
             
             if not is_enabled:
                 self.context.logger.info(f"[DISPATCHER] Pre-processor ignored (disabled): {config_key}")

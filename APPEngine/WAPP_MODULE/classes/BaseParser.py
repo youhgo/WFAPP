@@ -55,7 +55,45 @@ class CsvOutputSink:
         if self.file:
             self.file.close()
             self.file = None
-
+            self._sort_csv()
+            
+    def _sort_csv(self):
+        """Trie le fichier CSV généré en se basant sur les colonnes de date/heure."""
+        if not self.output_path.exists():
+            return
+            
+        try:
+            with open(self.output_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f, delimiter=self.separator)
+                fieldnames = reader.fieldnames
+                if not fieldnames:
+                    return
+                rows = list(reader)
+                
+            # Identifier les colonnes de date pour le tri (DATE, TIME, timestamp, etc.)
+            # On cherche d'abord DATE puis TIME, ou les colonnes classiques
+            sort_cols = []
+            upper_fields = {f.upper(): f for f in fieldnames if f}
+            
+            if "DATE" in upper_fields:
+                sort_cols.append(upper_fields["DATE"])
+            if "TIME" in upper_fields:
+                sort_cols.append(upper_fields["TIME"])
+            if not sort_cols and "TIMESTAMP" in upper_fields:
+                sort_cols.append(upper_fields["TIMESTAMP"])
+                
+            if sort_cols:
+                def get_sort_key(row):
+                    return tuple(row.get(c, "") for c in sort_cols)
+                rows.sort(key=get_sort_key)
+                
+                with open(self.output_path, 'w', newline='', encoding='utf-8') as f:
+                    writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=self.separator)
+                    writer.writeheader()
+                    writer.writerows(rows)
+        except Exception as e:
+            # En cas d'erreur de tri, on laisse le fichier tel quel
+            pass
 
 class JsonlOutputSink:
     """
@@ -64,8 +102,6 @@ class JsonlOutputSink:
     def __init__(self, output_path: Path, context=None, ingest_to_siem=True):
         self.output_path = output_path
         self.file = None
-        if context and ingest_to_siem:
-            context.siem_ingestion_files.append(str(self.output_path))
 
     def write_record(self, record: Dict[str, Any]):
         if not self.file:
@@ -111,8 +147,6 @@ class DualOutputSink:
         self.separator = separator
         self.csv_file = None
         self.jsonl_file = None
-        if context and ingest_to_siem:
-            context.siem_ingestion_files.append(str(self.jsonl_path))
         self.writer = None
         self.headers_written = False
 
@@ -136,6 +170,41 @@ class DualOutputSink:
         if self.csv_file:
             self.csv_file.close()
             self.csv_file = None
+            self._sort_csv()
         if self.jsonl_file:
             self.jsonl_file.close()
             self.jsonl_file = None
+
+    def _sort_csv(self):
+        if not self.csv_path.exists():
+            return
+            
+        try:
+            with open(self.csv_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f, delimiter=self.separator)
+                fieldnames = reader.fieldnames
+                if not fieldnames:
+                    return
+                rows = list(reader)
+                
+            sort_cols = []
+            upper_fields = {f.upper(): f for f in fieldnames if f}
+            
+            if "DATE" in upper_fields:
+                sort_cols.append(upper_fields["DATE"])
+            if "TIME" in upper_fields:
+                sort_cols.append(upper_fields["TIME"])
+            if not sort_cols and "TIMESTAMP" in upper_fields:
+                sort_cols.append(upper_fields["TIMESTAMP"])
+                
+            if sort_cols:
+                def get_sort_key(row):
+                    return tuple(row.get(c, "") for c in sort_cols)
+                rows.sort(key=get_sort_key)
+                
+                with open(self.csv_path, 'w', newline='', encoding='utf-8') as f:
+                    writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=self.separator)
+                    writer.writeheader()
+                    writer.writerows(rows)
+        except Exception as e:
+            pass

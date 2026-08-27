@@ -20,7 +20,7 @@ os.makedirs(WORKING_FOLDER_PATH, exist_ok=True)
 os.makedirs(LOG_FOLDER_PATH, exist_ok=True)
 
 # Allowed extensions (additional security)
-ALLOWED_EXTENSIONS = {'.zip', '.7z', '.tar', '.gz'}
+ALLOWED_EXTENSIONS = {'.zip', '.7z', '.tar', '.gz', '.json'}
 
 @parse_api.route('/upload_orc_bits', methods=['POST', 'BITS_POST'])
 def upload_orc_bits():

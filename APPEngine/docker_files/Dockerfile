@@ -47,11 +47,20 @@ RUN pip3 install ./yarp-1.0.33.tar.gz
 COPY docker_files/install_analyzemft.sh install_analyzemft.sh
 RUN ./install_analyzemft.sh
 
+# Installation native de DFIR-OGRE depuis Git via uv (gère les dépendances imbriquées complexes)
+RUN pip3 install uv && \
+    git clone --branch 2.0.0-beta2 https://github.com/ANSSI-FR/dfir-ogre.git /opt/dfir-ogre && \
+    cd /opt/dfir-ogre && \
+    uv pip install --system . && \
+    git clone https://github.com/ANSSI-FR/dfir-ogre-plugin-windows.git /opt/dfir-ogre-plugin-windows && \
+    sed -i 's|plugin_folder: dfir-ogre-plugin-windows/configuration/|plugin_folder: /opt/dfir-ogre-plugin-windows/configuration/|g' /opt/dfir-ogre/configuration/ogre.yaml
+
 # --- Configure and Set Entrypoint ---
 COPY docker_files/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["entrypoint.sh"]
 
 COPY . .
+
 RUN useradd -m -u 1000 appuser && chown -R appuser /python-docker
 USER appuser

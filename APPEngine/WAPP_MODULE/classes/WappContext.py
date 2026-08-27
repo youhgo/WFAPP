@@ -55,10 +55,10 @@ class WappContext:
         self.main_config = self.config
         self.artefact_config = self._load_config(artefact_config, "/python-docker/WAPP_MODULE/config/default_artefact_config.json", {}, "[ARTEFACT_CONFIG]")
 
-        # Wazuh & SystemInfo
-        self.wazuh_importer_file_config = {"files": []}
-        self.siem_ingestion_files = []
+        # SystemInfo & SIEM
         self.system_info = {}
+        self.siem_ingestion_files = []
+        self.wazuh_importer_file_config = {"files": []}
 
     def _init_directories(self):
         dirs_to_create = [

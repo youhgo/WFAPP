@@ -437,6 +437,7 @@ def extract_plugin_info(file_path):
                 recommended = True
                 importance = None
                 speed = None
+                hidden = False
                 for item in node.body:
                     if isinstance(item, ast.Assign):
                         for target in item.targets:
@@ -450,6 +451,13 @@ def extract_plugin_info(file_path):
                             elif target_id == 'speed':
                                 if isinstance(item.value, ast.Constant):
                                     speed = item.value.value
+                            elif target_id == 'hidden':
+                                if isinstance(item.value, ast.Constant):
+                                    hidden = item.value.value
+                
+                if hidden:
+                    return None
+                    
                 return {
                     "name": plugin_name,
                     "description": description,
@@ -473,12 +481,13 @@ def get_pipelines():
     for d in dirs:
         try:
             if os.path.exists(d):
-                for file_name in os.listdir(d):
-                    if file_name.endswith('.py') and not file_name.startswith('__'):
-                        file_path = os.path.join(d, file_name)
-                        info = extract_plugin_info(file_path)
-                        if info:
-                            pipelines.append(info)
+                for root, _, files in os.walk(d):
+                    for file_name in files:
+                        if file_name.endswith('.py') and not file_name.startswith('__'):
+                            file_path = os.path.join(root, file_name)
+                            info = extract_plugin_info(file_path)
+                            if info:
+                                pipelines.append(info)
         except Exception as e:
             print(f"Error scanning directory {d}: {e}", file=sys.stderr)
             
