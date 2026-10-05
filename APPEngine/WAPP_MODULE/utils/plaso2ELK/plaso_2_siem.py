@@ -137,17 +137,22 @@ class PlasoPipeline:
         actions_generator = self._process_timeline_file()
 
         # Mettre en place les templates ES pour les nouvelles catégories (Priorité 400)
-        self.uploader.setup_templates(
-            priority=400,
-            evtx=f"{self.index_prefix}_evtx*",
-            hive=f"{self.index_prefix}_hive*",
-            process=f"{self.index_prefix}_process*",
-            files=f"{self.index_prefix}_files*",
-            browser_artefacts=f"{self.index_prefix}_browser_artefacts*",
-            others=f"{self.index_prefix}_others*"
-        )
+        # self.uploader.setup_templates(...)  # (Désactivé : géré par Vector/ELK directement désormais)
 
-        self.uploader.bulk_upload(actions_generator, self.chunk_size)
+        # Envoi vers Vector (dump dans un fichier JSONL)
+        siem_dir = os.path.join(os.path.dirname(os.path.dirname(self.timeline_path)), "siemIngestion")
+        os.makedirs(siem_dir, exist_ok=True)
+        vector_export_path = os.path.join(siem_dir, "vector_export_elk.jsonl")
+        
+        count = 0
+        with open(vector_export_path, 'a', encoding='utf-8') as f:
+            for action in actions_generator:
+                doc = action["_source"]
+                doc["_target_index"] = action["_index"]
+                f.write(json.dumps(doc) + "\n")
+                count += 1
+                
+        print(f"[*] Succès : {count} documents écrits dans {vector_export_path} pour Vector.")
 
     def _process_timeline_file(self):
         print(f"[*] Début de la lecture du fichier timeline : {self.timeline_path}")

@@ -68,7 +68,9 @@ class ArtefactDispatcher:
                 self.context.logger.error(f"Error instantiating pipeline {pipeline_class.__name__}: {e}", header="ERROR", indentation=1)
 
     def run_discovery(self, extracted_dir: Path) -> None:
-        self.context.logger.info("[DISPATCHER] Starting routing (Single Pass)", header="START")
+        self.context.logger.info("[DISPATCHER] Starting routing (Parallel Pass)", header="START")
+        
+        import concurrent.futures
 
         processed_files = []
         unprocessed_files = []
@@ -78,13 +80,16 @@ class ArtefactDispatcher:
         if ogre_dir.exists():
             directories_to_scan.append(ogre_dir)
 
+        # 1. Discovery Phase (Map files to pipelines)
+        pipeline_tasks = {pipeline: [] for pipeline in self.pipelines}
+        
         for directory in directories_to_scan:
             for file_path in directory.rglob("*"):
                 if file_path.is_file():
                     is_processed = False
                     for pipeline in self.pipelines:
                         if pipeline.can_process(file_path):
-                            pipeline.process(file_path)
+                            pipeline_tasks[pipeline].append(file_path)
                             is_processed = True
                             
                     if is_processed:
@@ -92,7 +97,23 @@ class ArtefactDispatcher:
                     else:
                         unprocessed_files.append(str(file_path))
 
-        self.context.logger.info("[DISPATCHER] Routing completed. Starting finalizations...", header="INFO")
+        # 2. Parallel Processing Phase
+        def process_pipeline(pipeline, files):
+            for f in files:
+                pipeline.process(f)
+
+        active_pipelines = {p: files for p, files in pipeline_tasks.items() if files}
+        
+        if active_pipelines:
+            self.context.logger.info(f"[DISPATCHER] Running {len(active_pipelines)} pipelines in parallel...", header="INFO")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=min(8, len(active_pipelines))) as executor:
+                futures = [
+                    executor.submit(process_pipeline, pipeline, files) 
+                    for pipeline, files in active_pipelines.items()
+                ]
+                concurrent.futures.wait(futures)
+
+        self.context.logger.info("[DISPATCHER] Processing completed. Starting finalizations...", header="INFO")
 
         # Write log files to orcLogs directory
         orc_logs_dir = self.context.parsed_dir / "orcLogs"

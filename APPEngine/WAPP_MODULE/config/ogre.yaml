@@ -1,11 +1,13 @@
 plugin_prefixes:
   - dfir_ogre_plugin
 
-output_folder: ./ogre
-report_folder: ./ogre/ogre_execution_reports
-temp_folder: ./ogre/tmp_ogre
+case: undefined_case
+output_folder: ./ogre_results
+report_folder: ./ogre_exec_logs
+temp_folder: ./ogre_tmp
 inner_archive_password: avproof
 plugin_folder: /opt/dfir-ogre-plugin-windows/configuration # configuration folder that contains XML plugins
+
 
 # Optionnal log configuration
 # log_file_name: dfir-ogre.log
@@ -25,7 +27,7 @@ output:
     with_timeline: true
     timeline_include_undated: false
     include_empty_field: false
-    output_folder: $output_folder/parsed/$mapping_label
+    output_folder: $output_folder/$case/$mapping_label
     base_file_name: $file_name
 
   raw_data:

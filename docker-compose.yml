@@ -54,10 +54,6 @@ services:
       - "traefik.http.routers.wapp-api.rule=Host(`${WAPP_API_HOST}`) && PathPrefix(`/api`)"
       - "traefik.http.routers.wapp-api.tls=true"
       - "traefik.http.routers.wapp-api.service=wapp-api"
-      # Router for the GUI
-      - "traefik.http.routers.wapp-gui.rule=Host(`${WAPP_API_HOST}`)"
-      - "traefik.http.routers.wapp-gui.tls=true"
-      - "traefik.http.routers.wapp-gui.service=wapp-api"
       - "traefik.http.services.wapp-api.loadbalancer.server.port=8880"
     volumes:
       - ${SHARED_FOLDER_PATH}:/python-docker/shared_files/
@@ -66,6 +62,23 @@ services:
     environment:
       - FLASK_APP=wapp_server:create_app
       - FLASK_ENV=development
+
+  wapp_frontend:
+    container_name: "wapp_frontend"
+    image: wapp-frontend
+    build:
+      context: frontend/
+      dockerfile: Dockerfile
+    networks:
+      - wappNet
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wapp-gui.rule=Host(`${WAPP_API_HOST}`)"
+      - "traefik.http.routers.wapp-gui.tls=true"
+      - "traefik.http.routers.wapp-gui.service=wapp-frontend"
+      - "traefik.http.services.wapp-frontend.loadbalancer.server.port=80"
+    depends_on:
+      - reverse_proxy
 
   wapp_worker:
     deploy:
@@ -119,6 +132,19 @@ services:
     networks:
       - wappNet
       - shared_sec_net
+
+  wapp_vector:
+    image: timberio/vector:latest-alpine
+    container_name: wapp_vector
+    restart: always
+    volumes:
+      - ./dependencies/vector/vector.toml:/etc/vector/vector.toml:ro
+      - ${SHARED_FOLDER_PATH}:/python-docker/shared_files/
+    networks:
+      - wappNet
+      - shared_sec_net
+    env_file:
+      - .env
 
 networks:
   wappNet:

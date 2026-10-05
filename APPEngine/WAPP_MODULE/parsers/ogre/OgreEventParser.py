@@ -11,6 +11,14 @@ class OgreEventParser(BaseParser):
     to match the legacy EventParser CSV output.
     """
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        mapping_path = Path(__file__).parent.parent.parent / "config" / "ogre_events_mapping.json"
+        self.mapping_config = {}
+        if mapping_path.exists():
+            with open(mapping_path, 'r', encoding='utf-8') as f:
+                self.mapping_config = json.load(f)
+
     def format_system_time(self, evt_timestamp):
         if not isinstance(evt_timestamp, str):
             return "-", "-"
@@ -40,28 +48,12 @@ class OgreEventParser(BaseParser):
 
                 event_code_str = str(event_code)
 
-                if event_code_str == "4624":
-                    yield self.parse_logon(event, event_code_str)
-                elif event_code_str == "4625":
-                    yield self.parse_failed_logon(event, event_code_str)
-                elif event_code_str == "4672":
-                    yield self.parse_spe_logon(event, event_code_str)
-                elif event_code_str == "4648":
-                    yield self.parse_exp_logon(event, event_code_str)
-                elif event_code_str == "4688":
-                    yield self.parse_new_proc(event, event_code_str)
-                elif event_code_str in ["4720", "4722", "4723", "4724", "4725", "4726", "4738"]:
-                    yield self.parse_user_modification(event, event_code_str)
+                if event_code_str in self.mapping_config:
+                    yield self.parse_mapped_event(event, event_code_str)
                 elif event_code_str in ["106", "107", "140", "141", "200", "201"]:
                     yield self.parse_task_scheduler(event, event_code_str)
-                elif event_code_str == "1149":
-                    yield self.parse_rdp_remote(event, event_code_str)
-                elif event_code_str in ["21", "24", "25", "39", "40"]:
-                    yield self.parse_rdp_local(event, event_code_str)
                 elif event_code_str in ["3", "4", "59", "60", "61"]:
                     yield self.parse_bits(event, event_code_str)
-                elif event_code_str == "7045":
-                    yield self.parse_service(event, event_code_str)
                 elif event_code_str == "4104":
                     yield self.parse_powershell_script(event, event_code_str)
                 elif event_code_str in ["400", "600"]:
@@ -70,10 +62,6 @@ class OgreEventParser(BaseParser):
                     yield self.parse_wmi(event, event_code_str)
                 elif event_code_str == "5858":
                     yield self.parse_wmi_failure(event, event_code_str)
-                elif event_code_str == "1116":
-                    yield self.parse_windef_detection(event, event_code_str)
-                elif event_code_str in ["1117", "1118", "1119"]:
-                    yield self.parse_windef_action(event, event_code_str)
                 elif event_code_str == "1122":
                     yield self.parse_windef_1122(event, event_code_str)
                 else:
@@ -88,70 +76,29 @@ class OgreEventParser(BaseParser):
         ts_date, ts_time = self.format_system_time(time_str)
         return {"Date": ts_date, "Time": ts_time, "event_code": event_code}
 
-    def parse_logon(self, event, code):
+    def parse_mapped_event(self, event, code):
         data_dict = self._get_event_base_data(event, code)
-        data = event.get("data", {}).get("event_data", {})
-        data_dict.update({
-            "subject_user_name": data.get("subject_user_name"), "target_user_name": data.get("target_user_name"),
-            "ip_address": data.get("ip_address"), "ip_port": data.get("ip_port"), "logon_type": data.get("logon_type")
-        })
-        return code, data_dict
+        config = self.mapping_config[code]
+        
+        if config.get("source") == "event_data":
+            data = event.get("data", {}).get("event_data", {})
+        elif config.get("source") == "user_data_event_xml":
+            data = event.get("data", {}).get("user_data", {}).get("event_xml", {})
+        else:
+            data = {}
 
-    def parse_failed_logon(self, event, code):
-        data_dict = self._get_event_base_data(event, code)
-        data = event.get("data", {}).get("event_data", {})
-        data_dict.update({
-            "subject_user_name": data.get("subject_user_name"), "target_user_name": data.get("target_user_name"),
-            "ip_address": data.get("ip_address"), "ip_port": data.get("ip_port"), "logon_type": data.get("logon_type"),
-            "failure_reason": data.get("status")
-        })
-        return code, data_dict
+        if "constants" in config:
+            data_dict.update(config["constants"])
 
-    def parse_spe_logon(self, event, code):
-        data_dict = self._get_event_base_data(event, code)
-        data = event.get("data", {}).get("event_data", {})
-        data_dict.update({
-            "subject_user_name": data.get("subject_user_name"), "target_user_name": data.get("target_user_name"),
-            "ip_address": data.get("ip_address", "-"), "ip_port": data.get("ip_port", "-"),
-            "logon_type": data.get("logon_type")
-        })
-        return code, data_dict
+        for dest_key, src_key in config.get("mapping", {}).items():
+            if isinstance(src_key, list):
+                val = data.get(src_key[0], src_key[1])
+            else:
+                val = data.get(src_key)
+            data_dict[dest_key] = val
 
-    def parse_exp_logon(self, event, code):
-        data_dict = self._get_event_base_data(event, code)
-        data = event.get("data", {}).get("event_data", {})
-        data_dict.update({
-            "subject_user_name": data.get("subject_user_name"), "target_user_name": data.get("target_user_name"),
-            "ip_address": data.get("ip_address"), "ip_port": data.get("ip_port", "-"),
-            "logon_type": data.get("logon_type", "-")
-        })
-        return code, data_dict
-
-    def parse_new_proc(self, event, code):
-        data_dict = self._get_event_base_data(event, code)
-        data = event.get("data", {}).get("event_data", {})
-        data_dict.update({
-            "subject_user_name": data.get("subject_user_name"), "target_user_name": data.get("target_user_name"),
-            "parent_process_name": data.get("parent_process_name"), "new_process_name": data.get("new_process_name"),
-            "command_line": data.get("command_line")
-        })
-        return code, data_dict
-
-    def parse_user_modification(self, event, code):
-        data_dict = self._get_event_base_data(event, code)
-        data = event.get("data", {}).get("event_data", {})
-        info_map = {
-            "4720": "User Account Created", "4722": "User Account Enabled", "4723": "Password Change Attempt",
-            "4724": "Password Reset Attempt", "4725": "User Account Disabled", "4726": "User Account Deleted",
-            "4738": "User Account Changed"
-        }
-        data_dict.update({
-            "info": info_map.get(code, "Unknown User Modification"), "TargetUserName": data.get("target_user_name"),
-            "SubjectUserName": data.get("subject_user_name"), "TargetDomainName": data.get("target_domain_name"),
-            "TargetSid": data.get("target_sid"), "SamAccountName": data.get("sam_account_name"),
-            "PasswordLastSet": data.get("password_last_set"),
-        })
-        return "user_modification", data_dict
+        label = config.get("label", code)
+        return label, data_dict
 
     def parse_task_scheduler(self, event, code):
         data_dict = self._get_event_base_data(event, code)
@@ -172,24 +119,6 @@ class OgreEventParser(BaseParser):
         })
         return "tscheduler", data_dict
 
-    def parse_rdp_remote(self, event, code):
-        data_dict = self._get_event_base_data(event, code)
-        # Ogre parsing of UserData/EventXML
-        data = event.get("data", {}).get("user_data", {}).get("event_xml", {})
-        data_dict.update({"user_name": data.get("param1"), "ip_addr": data.get("param3")})
-        return "remote_rdp", data_dict
-
-    def parse_rdp_local(self, event, code):
-        data_dict = self._get_event_base_data(event, code)
-        data = event.get("data", {}).get("user_data", {}).get("event_xml", {})
-        reason_map = {"21": "AuthSuccess", "24": "UserDisconnected", "25": "UserReconnected",
-                      "39": "UserHasBeenDisconnected", "40": "UserHasBeenDisconnected"}
-        data_dict.update({
-            "user_name": data.get("user"), "ip_addr": data.get("address"), "session_id": data.get("session_id"),
-            "source": data.get("source"), "target_session": data.get("target_session"),
-            "reason_n": data.get("reason"), "reason": reason_map.get(code, "UnknownReason")
-        })
-        return "local_rdp", data_dict
 
     def parse_bits(self, event, code):
         data_dict = self._get_event_base_data(event, code)
@@ -239,15 +168,6 @@ class OgreEventParser(BaseParser):
             "error_code": get_val("error_code", "errorCode", "ErrorCode")
         })
         return "bits", data_dict
-
-    def parse_service(self, event, code):
-        data_dict = self._get_event_base_data(event, code)
-        data = event.get("data", {}).get("event_data", {})
-        data_dict.update({
-            "account_name": data.get("account_name"), "img_path": data.get("image_path"),
-            "service_name": data.get("service_name"), "start_type": data.get("start_type")
-        })
-        return "7045", data_dict
 
     def parse_powershell_script(self, event, code):
         data_dict = self._get_event_base_data(event, code)
@@ -326,26 +246,6 @@ class OgreEventParser(BaseParser):
             "component": data.get("component")
         })
         return "wmi_failure", data_dict
-
-    def parse_windef_detection(self, event, code):
-        data_dict = self._get_event_base_data(event, code)
-        data = event.get("data", {}).get("event_data", {})
-        data_dict.update({
-            "ThreatName": data.get("threat_name"), "Severity": data.get("severity_id"),
-            "User": data.get("user"), "ProcessName": data.get("process_name"),
-            "Path": data.get("path")
-        })
-        return f"windefender_{code}", data_dict
-
-    def parse_windef_action(self, event, code):
-        data_dict = self._get_event_base_data(event, code)
-        data = event.get("data", {}).get("event_data", {})
-        data_dict.update({
-            "ThreatName": data.get("threat_name"), "Severity": data.get("severity_id"),
-            "User": data.get("user"), "ProcessName": data.get("process_name"),
-            "Path": data.get("path"), "Action": data.get("action_id")
-        })
-        return f"windefender_{code}", data_dict
 
     def parse_windef_1122(self, event, code):
         base_data = self._get_event_base_data(event, code)

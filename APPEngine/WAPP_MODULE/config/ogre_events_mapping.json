@@ -1,0 +1,290 @@
+{
+  "4624": {
+    "label": "4624",
+    "source": "event_data",
+    "mapping": {
+      "subject_user_name": "subject_user_name",
+      "target_user_name": "target_user_name",
+      "ip_address": "ip_address",
+      "ip_port": "ip_port",
+      "logon_type": "logon_type"
+    }
+  },
+  "4625": {
+    "label": "4625",
+    "source": "event_data",
+    "mapping": {
+      "subject_user_name": "subject_user_name",
+      "target_user_name": "target_user_name",
+      "ip_address": "ip_address",
+      "ip_port": "ip_port",
+      "logon_type": "logon_type",
+      "failure_reason": "status"
+    }
+  },
+  "4672": {
+    "label": "4672",
+    "source": "event_data",
+    "mapping": {
+      "subject_user_name": "subject_user_name",
+      "target_user_name": "target_user_name",
+      "ip_address": ["ip_address", "-"],
+      "ip_port": ["ip_port", "-"],
+      "logon_type": "logon_type"
+    }
+  },
+  "4648": {
+    "label": "4648",
+    "source": "event_data",
+    "mapping": {
+      "subject_user_name": "subject_user_name",
+      "target_user_name": "target_user_name",
+      "ip_address": "ip_address",
+      "ip_port": ["ip_port", "-"],
+      "logon_type": ["logon_type", "-"]
+    }
+  },
+  "4688": {
+    "label": "4688",
+    "source": "event_data",
+    "mapping": {
+      "subject_user_name": "subject_user_name",
+      "target_user_name": "target_user_name",
+      "parent_process_name": "parent_process_name",
+      "new_process_name": "new_process_name",
+      "command_line": "command_line"
+    }
+  },
+  "4720": {
+    "label": "user_modification",
+    "source": "event_data",
+    "constants": {"info": "User Account Created"},
+    "mapping": {
+      "TargetUserName": "target_user_name",
+      "SubjectUserName": "subject_user_name",
+      "TargetDomainName": "target_domain_name",
+      "TargetSid": "target_sid",
+      "SamAccountName": "sam_account_name",
+      "PasswordLastSet": "password_last_set"
+    }
+  },
+  "4722": {
+    "label": "user_modification",
+    "source": "event_data",
+    "constants": {"info": "User Account Enabled"},
+    "mapping": {
+      "TargetUserName": "target_user_name",
+      "SubjectUserName": "subject_user_name",
+      "TargetDomainName": "target_domain_name",
+      "TargetSid": "target_sid",
+      "SamAccountName": "sam_account_name",
+      "PasswordLastSet": "password_last_set"
+    }
+  },
+  "4723": {
+    "label": "user_modification",
+    "source": "event_data",
+    "constants": {"info": "Password Change Attempt"},
+    "mapping": {
+      "TargetUserName": "target_user_name",
+      "SubjectUserName": "subject_user_name",
+      "TargetDomainName": "target_domain_name",
+      "TargetSid": "target_sid",
+      "SamAccountName": "sam_account_name",
+      "PasswordLastSet": "password_last_set"
+    }
+  },
+  "4724": {
+    "label": "user_modification",
+    "source": "event_data",
+    "constants": {"info": "Password Reset Attempt"},
+    "mapping": {
+      "TargetUserName": "target_user_name",
+      "SubjectUserName": "subject_user_name",
+      "TargetDomainName": "target_domain_name",
+      "TargetSid": "target_sid",
+      "SamAccountName": "sam_account_name",
+      "PasswordLastSet": "password_last_set"
+    }
+  },
+  "4725": {
+    "label": "user_modification",
+    "source": "event_data",
+    "constants": {"info": "User Account Disabled"},
+    "mapping": {
+      "TargetUserName": "target_user_name",
+      "SubjectUserName": "subject_user_name",
+      "TargetDomainName": "target_domain_name",
+      "TargetSid": "target_sid",
+      "SamAccountName": "sam_account_name",
+      "PasswordLastSet": "password_last_set"
+    }
+  },
+  "4726": {
+    "label": "user_modification",
+    "source": "event_data",
+    "constants": {"info": "User Account Deleted"},
+    "mapping": {
+      "TargetUserName": "target_user_name",
+      "SubjectUserName": "subject_user_name",
+      "TargetDomainName": "target_domain_name",
+      "TargetSid": "target_sid",
+      "SamAccountName": "sam_account_name",
+      "PasswordLastSet": "password_last_set"
+    }
+  },
+  "4738": {
+    "label": "user_modification",
+    "source": "event_data",
+    "constants": {"info": "User Account Changed"},
+    "mapping": {
+      "TargetUserName": "target_user_name",
+      "SubjectUserName": "subject_user_name",
+      "TargetDomainName": "target_domain_name",
+      "TargetSid": "target_sid",
+      "SamAccountName": "sam_account_name",
+      "PasswordLastSet": "password_last_set"
+    }
+  },
+  "1149": {
+    "label": "remote_rdp",
+    "source": "user_data_event_xml",
+    "mapping": {
+      "user_name": "param1",
+      "ip_addr": "param3"
+    }
+  },
+  "21": {
+    "label": "local_rdp",
+    "source": "user_data_event_xml",
+    "constants": {"reason": "AuthSuccess"},
+    "mapping": {
+      "user_name": "user",
+      "ip_addr": "address",
+      "session_id": "session_id",
+      "source": "source",
+      "target_session": "target_session",
+      "reason_n": "reason"
+    }
+  },
+  "24": {
+    "label": "local_rdp",
+    "source": "user_data_event_xml",
+    "constants": {"reason": "UserDisconnected"},
+    "mapping": {
+      "user_name": "user",
+      "ip_addr": "address",
+      "session_id": "session_id",
+      "source": "source",
+      "target_session": "target_session",
+      "reason_n": "reason"
+    }
+  },
+  "25": {
+    "label": "local_rdp",
+    "source": "user_data_event_xml",
+    "constants": {"reason": "UserReconnected"},
+    "mapping": {
+      "user_name": "user",
+      "ip_addr": "address",
+      "session_id": "session_id",
+      "source": "source",
+      "target_session": "target_session",
+      "reason_n": "reason"
+    }
+  },
+  "39": {
+    "label": "local_rdp",
+    "source": "user_data_event_xml",
+    "constants": {"reason": "UserHasBeenDisconnected"},
+    "mapping": {
+      "user_name": "user",
+      "ip_addr": "address",
+      "session_id": "session_id",
+      "source": "source",
+      "target_session": "target_session",
+      "reason_n": "reason"
+    }
+  },
+  "40": {
+    "label": "local_rdp",
+    "source": "user_data_event_xml",
+    "constants": {"reason": "UserHasBeenDisconnected"},
+    "mapping": {
+      "user_name": "user",
+      "ip_addr": "address",
+      "session_id": "session_id",
+      "source": "source",
+      "target_session": "target_session",
+      "reason_n": "reason"
+    }
+  },
+  "7045": {
+    "label": "7045",
+    "source": "event_data",
+    "mapping": {
+      "account_name": "account_name",
+      "img_path": "image_path",
+      "service_name": "service_name",
+      "start_type": "start_type"
+    }
+  },
+  "4104": {
+    "label": "script_powershell",
+    "source": "event_data",
+    "mapping": {
+      "path_to_script": "path",
+      "script_block_text": "script_block_text",
+      "script_block_id": "script_block_id",
+      "message_number": "message_number",
+      "message_total": "message_total"
+    }
+  },
+  "1116": {
+    "label": "windefender_1116",
+    "source": "event_data",
+    "mapping": {
+      "ThreatName": "threat_name",
+      "Severity": "severity_id",
+      "User": "user",
+      "ProcessName": "process_name",
+      "Path": "path"
+    }
+  },
+  "1117": {
+    "label": "windefender_1117",
+    "source": "event_data",
+    "mapping": {
+      "ThreatName": "threat_name",
+      "Severity": "severity_id",
+      "User": "user",
+      "ProcessName": "process_name",
+      "Path": "path",
+      "Action": "action_id"
+    }
+  },
+  "1118": {
+    "label": "windefender_1118",
+    "source": "event_data",
+    "mapping": {
+      "ThreatName": "threat_name",
+      "Severity": "severity_id",
+      "User": "user",
+      "ProcessName": "process_name",
+      "Path": "path",
+      "Action": "action_id"
+    }
+  },
+  "1119": {
+    "label": "windefender_1119",
+    "source": "event_data",
+    "mapping": {
+      "ThreatName": "threat_name",
+      "Severity": "severity_id",
+      "User": "user",
+      "ProcessName": "process_name",
+      "Path": "path",
+      "Action": "action_id"
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import os
+import json
 import traceback
 from ...classes.BaseElasticPostProcessor import BaseElasticPostProcessor
 from ...classes.Registry import register_postprocessor
@@ -30,12 +31,6 @@ class WazuhPostProcessor(BaseElasticPostProcessor):
 
             self.logger.info("[WAPP][WAZUH] Sending WAPP data to Wazuh natively", header="START", indentation=1)
 
-            uploader = WazuhUploader(
-                es_hosts=[es_host], es_user=es_user, es_pass=es_pass, verify_ssl=verify_ssl,
-                es_timeout=es_timeout, thread_count=thread_count, mode=mode,
-                case_name=self.context.case_name, machine_name=self.context.machine_name
-            )
-
             case_name_sanitized = self._sanitize_for_index(self.context.case_name)
             machine_name_sanitized = self._sanitize_for_index(self.context.machine_name)
             index_prefix = "wapp"
@@ -47,13 +42,20 @@ class WazuhPostProcessor(BaseElasticPostProcessor):
                 for cls in cls_list:
                     processor_instances[cls] = cls(case_name=self.context.case_name, machine_name=self.context.machine_name)
 
-            template_patterns = {name: f"*_{machine_name_sanitized}_{name}" for name in target_indices.keys()}
-            uploader.setup_templates(**template_patterns)
-
-            dlq_path = str(self.context.parsed_dir / "orcLogs" / "failed_uploads_wazuh.json")
             actions_generator = self._find_and_process_files(processor_instances, target_indices)
-            uploader.bulk_upload(actions_generator, chunk_size, dlq_path=dlq_path)
-
-            self.logger.info("[WAPP][WAZUH] Success", header="FINISHED", indentation=1)
+            
+            vector_export_path = self.context.siem_ingestion_dir / "vector_export_wazuh.jsonl"
+            os.makedirs(os.path.dirname(vector_export_path), exist_ok=True)
+            
+            # Dump to JSONL for Vector to pick up
+            count = 0
+            with open(vector_export_path, 'a', encoding='utf-8') as f:
+                for action in actions_generator:
+                    doc = action["_source"]
+                    doc["_target_index"] = action["_index"]
+                    f.write(json.dumps(doc) + "\n")
+                    count += 1
+            
+            self.logger.info(f"[WAPP][WAZUH] Success: Wrote {count} documents to {vector_export_path} for Vector ingestion", header="FINISHED", indentation=1)
         except Exception as e:
             self.logger.error(f"[WAPP][WAZUH] aborting, ERROR: {traceback.format_exc()}", header="ERROR", indentation=1)

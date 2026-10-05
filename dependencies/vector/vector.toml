@@ -1,0 +1,44 @@
+[sources.elk_files]
+type = "file"
+include = [ "/python-docker/shared_files/**/siemIngestion/vector_export_elk.jsonl" ]
+read_from = "beginning"
+
+[sources.wazuh_files]
+type = "file"
+include = [ "/python-docker/shared_files/**/siemIngestion/vector_export_wazuh.jsonl" ]
+read_from = "beginning"
+
+[transforms.parse_elk]
+type = "remap"
+inputs = ["elk_files"]
+source = '''
+  . = parse_json!(.message)
+'''
+
+[transforms.parse_wazuh]
+type = "remap"
+inputs = ["wazuh_files"]
+source = '''
+  . = parse_json!(.message)
+'''
+
+[sinks.elasticsearch_out]
+type = "elasticsearch"
+inputs = ["parse_elk"]
+endpoints = ["http://${ELK_HOST}:${ELK_PORT}"]
+auth.strategy = "basic"
+auth.user = "${ELK_USER}"
+auth.password = "${ELK_PASSWD}"
+index = "{{ _target_index }}"
+bulk.index = "index"
+
+[sinks.wazuh_out]
+type = "elasticsearch"
+inputs = ["parse_wazuh"]
+endpoints = ["https://${WAZUH_HOST}:${WAZUH_PORT}"]
+auth.strategy = "basic"
+auth.user = "${WAZUH_USER}"
+auth.password = "${WAZUH_PASSWD}"
+tls.verify_certificate = false
+index = "{{ _target_index }}"
+bulk.index = "index"

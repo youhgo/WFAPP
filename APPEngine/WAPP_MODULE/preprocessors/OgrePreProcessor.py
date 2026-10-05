@@ -103,7 +103,14 @@ class OgrePreProcessor(BasePreProcessor):
             process.wait()
             
             if process.returncode != 0:
-                self.logger.error(f"[OGRE] Execution failed with code {process.returncode}", header="ERROR")
+                ogre_dir = Path(parsed_dir) / "ogre"
+                generated_files = list(ogre_dir.rglob("*.jsonl")) if ogre_dir.exists() else []
+                
+                if generated_files:
+                    self.logger.warning(f"[OGRE] Execution failed with code {process.returncode}, but {len(generated_files)} JSONL files were generated. Continuing in Best-Effort mode.", header="WARNING")
+                else:
+                    self.logger.error(f"[OGRE] Execution failed with code {process.returncode} and NO JSONL files were generated. Aborting.", header="ERROR")
+                    raise RuntimeError(f"DFIR-Ogre failed with code {process.returncode} (No artifacts generated)")
             else:
                 self.logger.info("[OGRE] Execution completed successfully.", header="INFO")
                 

@@ -111,9 +111,7 @@ def upload_orc_bits():
 
 
 
-@parse_api.route('/parse_archive', methods=['POST'])
-@login_required
-def parse_archive():
+def _process_upload(is_ogre_mode):
     try:
         # 1. Validate file presence
         if 'file' not in request.files:
@@ -149,6 +147,23 @@ def parse_archive():
         except json.JSONDecodeError:
             return jsonify({"error": "The 'json' field contains an invalid format"}), 400
 
+        # SERVER-SIDE VALIDATION & SANITIZATION
+        if is_ogre_mode:
+            content["archiveType"] = "ORC"
+            if "parser_config" in content:
+                allowed_ogre = ["wazuh", "elk", "extract", "rename_from_orc", "restore", "process", "network", "system_info", "scripts", "mactime"]
+                for k in list(content["parser_config"].keys()):
+                    if not k.startswith("ogre_") and k not in allowed_ogre:
+                        content["parser_config"][k] = False
+        else:
+            # Legacy Mode doesn't strictly force "Windows" if user sends "Linux", but it forces NO ORC
+            if content.get("archiveType") == "ORC":
+                content["archiveType"] = "Windows"
+            if "parser_config" in content:
+                for k in list(content["parser_config"].keys()):
+                    if k.startswith("ogre_"):
+                        content["parser_config"][k] = False
+
         # 4. Send to Celery
         task = celery.send_task("tasks.parse_archive", args=[content, file_name], queue="parse")
 
@@ -166,6 +181,15 @@ def parse_archive():
         return jsonify(response), 202
 
     except Exception as e:
-        # We log the technical error for the admin, but return a generic 500 error to the client
-        sys.stderr.write(f"\n[CRITICAL ERROR] parse_archive: {traceback.format_exc()}\n")
+        sys.stderr.write(f"\n[CRITICAL ERROR] process_upload: {traceback.format_exc()}\n")
         return jsonify({"error": "An internal error occurred while processing the request"}), 500
+
+@parse_api.route('/parse_ogre', methods=['POST'])
+@login_required
+def parse_ogre():
+    return _process_upload(is_ogre_mode=True)
+
+@parse_api.route('/parse_legacy', methods=['POST'])
+@login_required
+def parse_legacy():
+    return _process_upload(is_ogre_mode=False)
