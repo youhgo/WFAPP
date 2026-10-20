@@ -17,7 +17,7 @@ class EvtxPipeline(BaseArtefactPipeline):
     recommended = True
     importance = "Highly recommended"
     speed = "Fast"
-    DEFAULT_PATTERNS = {"evtx": [".*.evtx"]}
+    DEFAULT_PATTERNS = {"evtx": [r".*\.evtx$"]}
 
     def __init__(self, context: WappContext):
         super().__init__(context)

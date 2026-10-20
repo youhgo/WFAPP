@@ -15,12 +15,17 @@ class OgreEvtxPipeline(BaseArtefactPipeline):
     recommended = True
     importance = "Highly recommended"
     speed = "Fast"
-    DEFAULT_PATTERNS = {"ogre_evtx": [r".*\.windows_events\.jsonl$"]}
+    DEFAULT_PATTERNS = {"ogre_evtx": [r".*windows_events.*\.jsonl$"]}
 
     def __init__(self, context: WappContext):
         super().__init__(context)
         self.parser = OgreEventParser(separator=self.context.separator)
         self.sinks: Dict[str, CsvOutputSink] = {}
+
+    def can_process(self, file_path: Path) -> bool:
+        if "windows_events" in file_path.parts and file_path.name.endswith(".jsonl"):
+            return True
+        return super().can_process(file_path)
 
     def process(self, file_path: Path):
         self.logger.info(f"[PIPELINE][OGRE_EVTX] Processing {file_path.name}", header="START", indentation=1)

@@ -53,9 +53,9 @@ class OgrePreProcessor(BasePreProcessor):
                         
                         # Inject default folders and output block before mapping:
                         folders_str = (
-                            "output_folder: ./ogre\n"
-                            "report_folder: ./ogre/ogre_execution_reports\n"
-                            "temp_folder: ./ogre/tmp_ogre\n\n"
+                            "output_folder: ./ogre_results\n"
+                            "report_folder: ./ogre_exec_logs\n"
+                            "temp_folder: ./ogre_tmp\n\n"
                         )
                         
                         if 'mapping:' in custom_yaml_content:
@@ -103,8 +103,11 @@ class OgrePreProcessor(BasePreProcessor):
             process.wait()
             
             if process.returncode != 0:
-                ogre_dir = Path(parsed_dir) / "ogre"
-                generated_files = list(ogre_dir.rglob("*.jsonl")) if ogre_dir.exists() else []
+                ogre_dirs = [Path(parsed_dir) / "ogre_results", Path(parsed_dir) / "ogre"]
+                generated_files = []
+                for od in ogre_dirs:
+                    if od.exists():
+                        generated_files.extend(list(od.rglob("*.jsonl")))
                 
                 if generated_files:
                     self.logger.warning(f"[OGRE] Execution failed with code {process.returncode}, but {len(generated_files)} JSONL files were generated. Continuing in Best-Effort mode.", header="WARNING")

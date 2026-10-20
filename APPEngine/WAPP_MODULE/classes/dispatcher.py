@@ -76,9 +76,10 @@ class ArtefactDispatcher:
         unprocessed_files = []
 
         directories_to_scan = [extracted_dir]
-        ogre_dir = self.context.parsed_dir / "ogre"
-        if ogre_dir.exists():
-            directories_to_scan.append(ogre_dir)
+        for ogre_folder_name in ["ogre", "ogre_results"]:
+            cand = self.context.parsed_dir / ogre_folder_name
+            if cand.exists() and cand not in directories_to_scan:
+                directories_to_scan.append(cand)
 
         # 1. Discovery Phase (Map files to pipelines)
         pipeline_tasks = {pipeline: [] for pipeline in self.pipelines}

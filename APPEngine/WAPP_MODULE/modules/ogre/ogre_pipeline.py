@@ -48,6 +48,8 @@ class OgrePipeline(BaseArtefactPipeline):
         ]
         if any(name.endswith(s) for s in suffixes):
             return False
+        if "windows_events" in file_path.parts:
+            return False
             
         reg_suffixes = [".reg_keys.jsonl", ".reg_autoruns.jsonl", ".x509_cert.jsonl", ".clsid.jsonl", 
                         ".scheduled_tasks.jsonl", ".shim_db.jsonl", ".user_profile.jsonl", 

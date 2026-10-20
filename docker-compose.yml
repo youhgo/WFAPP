@@ -137,7 +137,11 @@ services:
     image: timberio/vector:latest-alpine
     container_name: wapp_vector
     restart: always
+    command: ["--config", "/etc/vector/vector.yaml", "--dangerously-allow-env-var-interpolation"]
+    environment:
+      - VECTOR_DANGEROUSLY_ALLOW_ENV_VAR_INTERPOLATION=true
     volumes:
+      - ./dependencies/vector/vector.yaml:/etc/vector/vector.yaml:ro
       - ./dependencies/vector/vector.toml:/etc/vector/vector.toml:ro
       - ${SHARED_FOLDER_PATH}:/python-docker/shared_files/
     networks:
