@@ -49,9 +49,11 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import { checkAuth } from '../auth'
 
 const router = useRouter()
+const route = useRoute()
 const username = ref('')
 const password = ref('')
 const errorMsg = ref('')
@@ -74,7 +76,9 @@ const handleLogin = async () => {
     const data = await response.json()
     
     if (response.ok) {
-      router.push('/')
+      await checkAuth(true)
+      const target = route.query.redirect || '/'
+      router.push(target)
     } else {
       errorMsg.value = data.message || 'Invalid credentials'
     }

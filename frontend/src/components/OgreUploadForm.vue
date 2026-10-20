@@ -521,6 +521,8 @@ const handleUpload = async () => {
           yamlStatus.value = 'none'
           statusMsg.value = ''
         }, 3000)
+      } else if (xhr.status === 401) {
+        window.location.href = '/login_page'
       } else {
         statusMsg.value = `Server Error: ${xhr.responseText}`
         statusType.value = 'error'

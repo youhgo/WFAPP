@@ -647,6 +647,11 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Check auth status
+            fetch('/api/me').then(res => {
+                if (res.status === 401) window.location.href = '/login_page';
+            }).catch(() => {});
+
             const sidebar = document.getElementById('sidebar');
             const mobileMenuButton = document.getElementById('mobile-menu-button');
             const mobileOverlay = document.getElementById('mobile-overlay');

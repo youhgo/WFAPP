@@ -11,6 +11,7 @@
         </div>
         <div class="nav-links">
           <router-link to="/" class="nav-link">Dashboard</router-link>
+          <span v-if="user" class="user-badge text-sm text-muted">👤 {{ user.username }}</span>
           <button @click="logout" class="btn btn-secondary btn-sm">Logout</button>
         </div>
       </div>
@@ -30,6 +31,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { user, setLoggedOut } from './auth'
 
 const route = useRoute()
 const router = useRouter()
@@ -38,12 +40,12 @@ const isLoginPage = computed(() => route.path === '/login_page')
 
 const logout = async () => {
   try {
-    const res = await fetch('/api/logout', { method: 'POST' })
-    if (res.ok) {
-      router.push('/login_page')
-    }
+    await fetch('/api/logout', { method: 'POST' })
   } catch (e) {
     console.error('Logout failed', e)
+  } finally {
+    setLoggedOut()
+    router.push('/login_page')
   }
 }
 </script>

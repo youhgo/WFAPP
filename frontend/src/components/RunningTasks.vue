@@ -79,7 +79,10 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
+import { setLoggedOut } from '../auth'
 
+const router = useRouter()
 const tasks = ref([])
 const isLoading = ref(true)
 const logPollIntervals = ref({})
@@ -98,6 +101,11 @@ const fetchTasks = async () => {
   isLoading.value = true
   try {
     const response = await fetch('/api/get_running_tasks')
+    if (response.status === 401) {
+      setLoggedOut()
+      router.push('/login_page')
+      return
+    }
     const data = await response.json()
     
     if (response.ok && data.active && Object.keys(data.active).length > 0) {

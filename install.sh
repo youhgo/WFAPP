@@ -92,6 +92,21 @@ if grep -q 'SECRET_KEY="very long random string"' .env || ! grep -q "^SECRET_KEY
     echo -e "${GREEN}[+] Generated a new secure SECRET_KEY${NC}"
 fi
 
+# GUI Admin credentials setup
+read -p "Enter GUI Admin Username (Default: admin): " ADMIN_USER_INPUT
+ADMIN_USER=${ADMIN_USER_INPUT:-admin}
+
+read -p "Enter GUI Admin Password (leave blank to auto-generate): " ADMIN_PASS_INPUT
+if [ -z "$ADMIN_PASS_INPUT" ]; then
+    ADMIN_PASS=$(openssl rand -base64 12 | tr -dc 'a-zA-Z0-9' | head -c 16)
+    echo -e "${GREEN}[+] Auto-generated secure admin password${NC}"
+else
+    ADMIN_PASS="$ADMIN_PASS_INPUT"
+fi
+
+update_env "WAPP_ADMIN_USER" "\"$ADMIN_USER\""
+update_env "WAPP_ADMIN_PASSWORD" "\"$ADMIN_PASS\""
+
 echo -e "${GREEN}[+] Configuration saved to .env${NC}"
 
 # 3. Load Images and Run
@@ -111,6 +126,9 @@ echo -e "\n${GREEN}======================================================${NC}"
 echo -e "${GREEN}      Installation Complete!                         ${NC}"
 echo -e "${GREEN}======================================================${NC}"
 echo -e "You can access the Web GUI at: ${YELLOW}https://${WAPP_HOST}${NC}"
+echo -e "GUI Admin Credentials:"
+echo -e "  Username: ${YELLOW}${ADMIN_USER}${NC}"
+echo -e "  Password: ${YELLOW}${ADMIN_PASS}${NC}"
 echo -e "API Endpoint: ${YELLOW}https://${WAPP_HOST}/api/${NC}"
 echo -e "Your results will be saved in: ${YELLOW}${SHARED_PATH}${NC}"
 echo ""

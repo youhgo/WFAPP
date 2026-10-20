@@ -1,2 +1,5 @@
 images.tar
 .env
+api/db/*.db
+*.db
+!api/db/.gitkeep
