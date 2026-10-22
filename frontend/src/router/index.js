@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/Login.vue'
 import Dashboard from '../views/Dashboard.vue'
+import UserManagement from '../views/UserManagement.vue'
+import OrcDownloads from '../views/OrcDownloads.vue'
 
 import { checkAuth } from '../auth'
 
@@ -14,6 +16,18 @@ const routes = [
     path: '/',
     name: 'Dashboard',
     component: Dashboard,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/downloads',
+    name: 'OrcDownloads',
+    component: OrcDownloads,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/users',
+    name: 'UserManagement',
+    component: UserManagement,
     meta: { requiresAuth: true }
   },
   {

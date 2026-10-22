@@ -1,0 +1,80 @@
+data_dir: "/var/lib/vector"
+
+sources:
+  elk_files:
+    type: file
+    include:
+      - "/python-docker/shared_files/**/siemIngestion/vector_export_elk.jsonl"
+    read_from: beginning
+
+  wazuh_files:
+    type: file
+    include:
+      - "/python-docker/shared_files/**/siemIngestion/vector_export_wazuh.jsonl"
+    read_from: beginning
+
+transforms:
+  parse_elk:
+    type: remap
+    inputs:
+      - elk_files
+    source: |
+      if is_string(.message) {
+        parsed, err = parse_json(.message)
+        if err == null {
+          . = parsed
+        } else {
+          abort
+        }
+      } else {
+        abort
+      }
+
+  parse_wazuh:
+    type: remap
+    inputs:
+      - wazuh_files
+    source: |
+      if is_string(.message) {
+        parsed, err = parse_json(.message)
+        if err == null {
+          . = parsed
+        } else {
+          abort
+        }
+      } else {
+        abort
+      }
+
+sinks:
+  elasticsearch_out:
+    type: elasticsearch
+    inputs:
+      - parse_elk
+    endpoints:
+      - "http://${ELK_HOST:-localhost}:${ELK_PORT:-9200}"
+    auth:
+      strategy: basic
+      user: "${ELK_USER:-elastic}"
+      password: "${ELK_PASSWD:-changeme}"
+    bulk:
+      index: "{{ _target_index }}"
+      action: index
+    dangerously_allow_unconfined_template_resolution: true
+
+  wazuh_out:
+    type: elasticsearch
+    inputs:
+      - parse_wazuh
+    endpoints:
+      - "${WAZUH_HOST:-https://wazuh.indexer}:${WAZUH_PORT:-9200}"
+    auth:
+      strategy: basic
+      user: "${WAZUH_USER:-admin}"
+      password: "${WAZUH_PASSWD:-SecretPassword}"
+    tls:
+      verify_certificate: false
+    bulk:
+      index: "{{ _target_index }}"
+      action: index
+    dangerously_allow_unconfined_template_resolution: true

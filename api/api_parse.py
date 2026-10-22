@@ -151,7 +151,11 @@ def _process_upload(is_ogre_mode):
         if is_ogre_mode:
             content["archiveType"] = "ORC"
             if "parser_config" in content:
-                allowed_ogre = ["wazuh", "elk", "extract", "rename_from_orc", "restore", "process", "network", "system_info", "scripts", "mactime"]
+                allowed_ogre = [
+                    "wazuh", "elk", "extract", "rename_from_orc", "restore",
+                    "process", "network", "system_info", "scripts", "mactime",
+                    "clean_duplicates", "create_timeline", "ogre_timeline"
+                ]
                 for k in list(content["parser_config"].keys()):
                     if not k.startswith("ogre_") and k not in allowed_ogre:
                         content["parser_config"][k] = False

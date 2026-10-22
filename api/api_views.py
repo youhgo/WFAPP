@@ -366,6 +366,53 @@ def download_dfir_orc_wmemory():
         print(f"Error during download: {e}", file=sys.stderr)
         abort(500, description="Internal Server Error during download.")
 
+@wapp_api.route('/api/binaries/info', methods=['GET'])
+@login_required
+def get_binaries_info():
+    binaries = [
+        {
+            "id": "classic",
+            "name": "DFIR-ORC Classic",
+            "filename": "DFIR-Orc.exe",
+            "profile": "Standard / Recommandé",
+            "description": "Profil complet de collecte standard DFIR-ORC (registres, MFT, journaux EVTX, autoruns, navigateurs).",
+            "download_url": "/api/download/dfir-orc-full",
+            "subfolder": "config_classic"
+        },
+        {
+            "id": "offline",
+            "name": "DFIR-ORC Mode Hors-Ligne",
+            "filename": "DFIR-Orc_offline.exe",
+            "profile": "Air-Gapped / Isolé",
+            "description": "Profil optimisé pour les postes hors réseau. L'archive résultante est stockée localement sur le support cible.",
+            "download_url": "/api/download/dfir-orc-offlinemode",
+            "subfolder": "config_offline"
+        },
+        {
+            "id": "wmem",
+            "name": "DFIR-ORC WMemory",
+            "filename": "DFIR-Orc_wmem.exe",
+            "profile": "Acquisition Mémoire RAM",
+            "description": "Configuration intégrant l'acquisition complète de la mémoire vive (RAM) à chaud ainsi que les artefacts système vitaux.",
+            "download_url": "/api/download/dfir-orc-wmem",
+            "subfolder": "config_wmemory"
+        }
+    ]
+    for b in binaries:
+        full_path = os.path.join(RESOURCES_FOLDER_PATH, b["subfolder"], b["filename"])
+        if os.path.exists(full_path):
+            stat = os.stat(full_path)
+            b["exists"] = True
+            b["size_bytes"] = stat.st_size
+            b["size_mb"] = round(stat.st_size / (1024 * 1024), 2)
+            b["modified"] = datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            b["exists"] = False
+            b["size_bytes"] = 0
+            b["size_mb"] = 0
+            b["modified"] = None
+    return jsonify(binaries)
+
 
 @wapp_api.route('/api/debug/list_resources')
 @login_required

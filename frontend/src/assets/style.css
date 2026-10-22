@@ -206,3 +206,193 @@ h1, h2, h3, h4 {
   background-color: var(--accent-color);
   transition: width 0.3s ease;
 }
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.badge-indigo {
+  background-color: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.badge-emerald {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-purple {
+  background-color: rgba(168, 85, 247, 0.15);
+  color: #d8b4fe;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.badge-amber {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.badge-rose {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.badge-slate {
+  background-color: rgba(51, 65, 85, 0.5);
+  color: #cbd5e1;
+  border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+/* Blur Key Utilities */
+.blur-key {
+  filter: blur(5px);
+  transition: filter 0.25s ease, background-color 0.25s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.blur-key:hover,
+.blur-key.revealed {
+  filter: blur(0px);
+  user-select: auto;
+}
+
+/* Modals */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background-color: rgba(2, 6, 23, 0.8);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+.modal-dialog {
+  width: 100%;
+  max-width: 580px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+.modal-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  background: rgba(10, 15, 30, 0.4);
+}
+
+/* Clean Toast Alerts */
+.toast-alert {
+  padding: 0.85rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  transition: var(--transition);
+}
+
+.toast-success {
+  background: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.toast-error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.toast-info {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+/* Tables */
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.custom-table th {
+  padding: 0.85rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.custom-table td {
+  padding: 1rem;
+  font-size: 0.9rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  vertical-align: middle;
+}
+
+.custom-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.custom-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* Code Snippet Box */
+.code-box {
+  background: #020617;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85rem;
+  color: #38bdf8;
+  position: relative;
+  overflow-x: auto;
+}
+

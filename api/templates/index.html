@@ -245,15 +245,6 @@
                                         <option value="UAC">UAC</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label for="ogreMode" class="block text-sm font-medium text-slate-200 mb-1">Ogre
-                                        Mode</label>
-                                    <select id="ogreMode" name="ogreMode"
-                                        class="shadow-sm block w-full rounded-lg border-slate-600 border p-2 sm:p-2.5 bg-slate-800/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow">
-                                        <option value="orc">ORC (Full Parsing)</option>
-                                        <option value="timeline">Timeline (CSV)</option>
-                                    </select>
-                                </div>
                             </div>
                         </div>
 
@@ -731,9 +722,6 @@
 
                     const ogreYamlBox = document.getElementById('ogreYamlBox');
                     if (ogreYamlBox) ogreYamlBox.style.display = isOgre ? 'flex' : 'none';
-
-                    const ogreModeContainer = document.getElementById('ogreMode').closest('div');
-                    if (ogreModeContainer) ogreModeContainer.style.display = isOgre ? 'block' : 'none';
 
                     enforcePlasoDependencies();
                     enforceOgreDependencies();
@@ -1286,13 +1274,11 @@
 
                 const parserConfig = {};
                 document.querySelectorAll('input[name="modules"]').forEach(c => { parserConfig[c.value] = c.checked ? 1 : 0; });
-                parserConfig["ogreMode"] = document.getElementById('ogreMode').value;
 
                 const jsonData = {
                     caseName: document.getElementById('caseName').value,
                     machineName: document.getElementById('machineName').value,
                     archiveType: document.getElementById('archiveType').value,
-                    ogreMode: document.getElementById('ogreMode').value,
                     parser_config: parserConfig,
                 };
 

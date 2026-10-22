@@ -1,5 +1,11 @@
 images.tar
+images.tar.gz
+wfapp_offline.tar.gz
+wfapp_offline.tar.gz.*
+wfapp_offline_dist/
 .env
 api/db/*.db
 *.db
 !api/db/.gitkeep
+__pycache__/
+*.py[cod]

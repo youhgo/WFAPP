@@ -132,27 +132,47 @@ If you need to deploy WFAPP on a server with no internet access, you can package
 
 ### Step 1: Create the Offline Bundle (On Connected Machine)
 
-Run the bundling script to build local images, pull external dependencies, and create a single compressed package:
+Run the bundling script to build local images, pull external dependencies, and create a single compressed, integrity-verified package:
 
 ```bash
 ./bundle.sh
 ```
 
-This generates a file named `wfapp_offline.tar.gz` in the root directory.
+**Advanced Bundling Options:**
+- Fast bundling reusing existing local images: `./bundle.sh --skip-build --skip-pull`
+- Split archive for FAT32 USB keys (e.g., 2 GB chunks): `./bundle.sh --split 2000M`
+- Custom output directory: `./bundle.sh --output-dir /media/usb`
+
+This generates `wfapp_offline.tar.gz` and its cryptographic hash `wfapp_offline.tar.gz.sha256`.
 
 ### Step 2: Transfer and Deploy (On Offline Server)
 
-1. Transfer the `wfapp_offline.tar.gz` archive to the target offline server.
-2. Extract the archive:
+1. Transfer `wfapp_offline.tar.gz` (and `.sha256`) to the target offline server.
+2. Verify integrity:
+   ```bash
+   sha256sum -c wfapp_offline.tar.gz.sha256
+   ```
+3. Extract the archive:
    ```bash
    tar -xzf wfapp_offline.tar.gz
    ```
-3. Navigate to the extracted directory:
+4. Navigate to the extracted directory:
    ```bash
    cd wfapp_offline_dist
    ```
-4. Run the installer script (it will automatically detect `images.tar` and load the local Docker images without using the internet):
+5. Run the installer script (it automatically loads `images.tar.gz`, initializes Docker networks, configures file permissions, and starts containers without requiring internet):
    ```bash
    sudo ./install.sh
    ```
+
+### Step 3: Offline Stack Management
+
+A dedicated control CLI `wfapp.sh` is included in the package:
+```bash
+./wfapp.sh status     # Check containers status
+./wfapp.sh verify     # Run complete system health check
+./wfapp.sh logs       # View live logs
+./wfapp.sh restart    # Restart services
+./wfapp.sh create-admin # Add or reset GUI admin accounts
+```
 

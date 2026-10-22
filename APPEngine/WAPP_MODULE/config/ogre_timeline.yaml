@@ -1,10 +1,10 @@
 plugin_prefixes:
   - dfir_ogre_plugin
 
-output_folder: /tmp/ogre_data/
-temp_folder: /tmp/ogre_tmp/
+output_folder: /tmp/ogre_timeline_data/
+temp_folder: /tmp/ogre_timeline_tmp/
 inner_archive_password: avproof
-plugin_folder: dfir-ogre-plugin-windows/configuration/ # configuration folder that contains XML plugins
+plugin_folder: /opt/dfir-ogre-plugin-windows/configuration # configuration folder that contains XML plugins
 
 # Optionnal log configuration
 # log_file_name: dfir-ogre.log

@@ -28,16 +28,6 @@
         
       </div>
 
-      <div class="form-row" v-if="false">
-        <div class="form-group flex-1">
-          <label class="text-sm font-bold text-muted uppercase tracking-wider">Ogre Mode</label>
-          <select v-model="ogreMode" class="input-field mt-1 w-full rounded-lg">
-            <option value="orc">ORC (Full Parsing)</option>
-            <option value="timeline">Timeline (CSV)</option>
-          </select>
-        </div>
-      </div>
-
       <!-- Module Configuration Grid -->
       <div class="module-config-section mt-4">
         <div class="d-flex align-center justify-between mb-4">
@@ -260,7 +250,6 @@ const emit = defineEmits(['upload-success'])
 const caseName = ref('')
 const machineName = ref('')
 const archiveType = ref('Windows')
-const ogreMode = ref('orc')
 
 const selectedFile = ref(null)
 const yamlFile = ref(null)
@@ -490,13 +479,11 @@ const handleUpload = async () => {
       parserConfig[key] = 0
     }
   }
-  parserConfig['ogreMode'] = ogreMode.value
   
   const jsonData = {
     caseName: caseName.value,
     machineName: machineName.value,
     archiveType: archiveType.value,
-    ogreMode: ogreMode.value,
     parser_config: parserConfig,
     artefact_config: yamlContent.value ? { custom_ogre_yaml_content: yamlContent.value } : {}
   }

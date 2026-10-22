@@ -159,31 +159,48 @@ The tool also includes a simple Web GUI for common tasks:
 
 ---
 
-## Bulk Ingestion
+## Bulk Ingestion (Hot-Folder)
 
-WFAPP allows you to bypass the Web API and process dozens or hundreds of archives automatically using a dedicated bulk ingestion script that communicates directly with the Celery workers.
+WFAPP includes an automated **Hot-Folder Watcher** designed for mass DFIR incident response. It completely bypasses the Web API and Traefik reverse-proxy, processing dozens or hundreds of forensic archives concurrently without risk of HTTP timeouts or buffer congestion.
 
 ### 1. Configuration
 
-In your `.env` file, you can optionally define a custom bulk depot directory using `BULK_DEPOT_FOLDER_PATH`. If not defined, it defaults to `bulk_depot` inside your `SHARED_FOLDER_PATH`.
+In your `.env` file, the bulk ingestion path is configured via `BULK_DEPOT_FOLDER_PATH`:
 
 ```env
-BULK_DEPOT_FOLDER_PATH="/path/to/your/custom/bulk_folder" # (Optional)
-```
-*Note: If the directory does not exist, the worker will automatically create it on startup to prevent permission errors.*
-
-### 2. Usage
-
-1. Drop all your archives (`.zip`, `.7z`, etc.) into your bulk depot folder (e.g., `shared_files/bulk_depot/`).
-2. Run the `bulk_ingest.py` script directly from the worker container:
-
-```bash
-docker exec -it wapp_worker-1 python /python-docker/bulk_ingest.py -c "My_Bulk_Case"
+BULK_DEPOT_FOLDER_PATH="/home/user/Documents/shared/bulk_ingest"
+BULK_WATCHER_ENABLED=true
+BULK_SCAN_INTERVAL=15
+BULK_STABILITY_TIME=5
+BULK_DEFAULT_CASE="Auto_Bulk"
 ```
 
-You can also pass a custom JSON parsing configuration file using the `-cfg` parameter:
+### 2. How It Works (Fully Automated)
+
+The background service `wapp_watcher` continuously monitors the directory:
+
+1. **Subfolder Case Organization**:
+   - `bulk_ingest/INCIDENT_2026_01/host1.7z` -> Automatically assigned to Case `INCIDENT_2026_01`.
+   - `bulk_ingest/host2.zip` -> Assigned to default case (`Auto_Bulk`).
+2. **Transfer Stability Verification**:
+   - The watcher monitors file size and modification time. Archives are only ingested once transfer (SCP, rsync, SMB share) is 100% complete.
+3. **Task Dispatch & Archiving**:
+   - The archive is moved to `<case_folder>/_processed/<archive>` to prevent duplicate processing.
+   - A Celery task is enqueued directly to Redis for the workers.
+
+### 3. Manual Ingestion via CLI (`wfapp.sh`)
+
+You can also trigger an immediate manual batch scan without waiting for the watcher:
+
 ```bash
-docker exec -it wapp_worker-1 python /python-docker/bulk_ingest.py -c "My_Bulk_Case" -cfg /python-docker/shared_files/bulk_depot/config.json
+# Ingest all files inside the bulk directory
+./wfapp.sh ingest
+
+# Force a specific case name for all archives
+./wfapp.sh ingest -c "My_Custom_Case"
+
+# Simulate ingestion without moving files or queuing tasks
+./wfapp.sh ingest --dry-run
 ```
 
 ---

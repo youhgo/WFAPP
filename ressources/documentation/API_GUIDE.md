@@ -78,8 +78,7 @@ The `json` form parameter accepts the following properties:
 - `archiveType`: The type of forensic archive (`"ORC"`, `"KAPE"`, or `"UAC"`).
 - `caseName`: The name of the investigation case.
 - `machineName`: The host name of the target machine.
-- `ogreMode`: Execution mode for DFIR-Ogre (`"orc"` for full parsing or `"timeline"` for CSV timeline).
-- `parser_config`: A dictionary mapping module names to `1` (enabled) or `0` (disabled), such as `"ogre_preprocessor"`, `"ogre_mft"`, `"ogre_disk"`, `"ogre_event"`, `"ogre_prefetch"`, `"ogre_srum"`, `"ogre_generic"`, etc.
+- `parser_config`: A dictionary mapping module names to `1` (enabled) or `0` (disabled), such as `"ogre_preprocessor"`, `"ogre_timeline"`, `"ogre_mft"`, `"ogre_disk"`, `"ogre_event"`, `"ogre_prefetch"`, `"ogre_srum"`, `"ogre_generic"`, etc.
 
 *Note on Selective Extraction:* When using `"ORC"` archives, `OrcExtractor` automatically analyzes active pipelines in `parser_config` and selectively extracts only the specific files required by enabled pipelines (avoiding decompression of unused nested `.7z` archives like `Event.7z` or `UserHives.7z`).
 
@@ -92,9 +91,9 @@ curl -X POST https://wapp.localhost/api/parse/parse_archive \
      "archiveType": "ORC",
      "caseName": "Case_Study_01",
      "machineName": "DESKTOP-5491A",
-     "ogreMode": "orc",
      "parser_config": {
        "ogre_preprocessor": 1,
+       "ogre_timeline": 1,
        "ogre_mft": 1,
        "ogre_disk": 1,
        "ogre_event": 1,
