@@ -19,7 +19,8 @@ class ExtractPreProcessor(BasePreProcessor):
     def run(self) -> None:
         extraction_successful = False
         try:
-            extractor = OrcExtractor(self.logger, "avproof", self.context)
+            password = getattr(self.context, 'artefact_config', {}).get('archive_password') or "avproof"
+            extractor = OrcExtractor(self.logger, password, self.context)
             self.logger.info("[EXTRACTING] archives", header="START")
 
             archive_path = str(self.context.path_to_archive)
