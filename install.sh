@@ -90,10 +90,17 @@ else
     echo -e "${GREEN}[+] .env file already exists. We will update core parameters.${NC}"
 fi
 
+# Determine effective user, group & home directory for container volumes
+TARGET_USER="${SUDO_USER:-$USER}"
+TARGET_UID=$(id -u "$TARGET_USER" 2>/dev/null || echo 1000)
+TARGET_GID=$(id -g "$TARGET_USER" 2>/dev/null || echo 1000)
+TARGET_HOME=$(getent passwd "$TARGET_USER" 2>/dev/null | cut -d: -f6)
+TARGET_HOME="${TARGET_HOME:-$HOME}"
+
 read -p "Enter WAPP API HOST (Default: wapp.localhost): " WAPP_HOST_INPUT
 WAPP_HOST=${WAPP_HOST_INPUT:-wapp.localhost}
 
-DEFAULT_SHARED_PATH="$HOME/Documents/shared_results"
+DEFAULT_SHARED_PATH="${TARGET_HOME}/Documents/shared_results"
 read -p "Enter Shared Folder Path for Results (Default: $DEFAULT_SHARED_PATH): " SHARED_PATH_INPUT
 SHARED_PATH=${SHARED_PATH_INPUT:-$DEFAULT_SHARED_PATH}
 
@@ -102,11 +109,6 @@ WORKER_COUNT=${WORKER_COUNT_INPUT:-1}
 
 # Create required directories with safe permissions
 mkdir -p "$SHARED_PATH" "$SHARED_PATH/redis_db" "$SHARED_PATH/bulk_ingest" api/db
-
-# Determine effective user & group for container volumes
-TARGET_USER="${SUDO_USER:-$USER}"
-TARGET_UID=$(id -u "$TARGET_USER" 2>/dev/null || echo 1000)
-TARGET_GID=$(id -g "$TARGET_USER" 2>/dev/null || echo 1000)
 
 # Function to update or append variables in .env
 update_env() {
@@ -121,7 +123,7 @@ update_env() {
 
 update_env "WAPP_API_HOST" "$WAPP_HOST"
 update_env "SHARED_FOLDER_PATH" "$SHARED_PATH"
-update_env "BULK_DEPOT_FOLDER_PATH" "\"${SHARED_PATH}/bulk_ingest\""
+update_env "BULK_DEPOT_FOLDER_PATH" "\"/python-docker/shared_files/bulk_ingest\""
 update_env "BULK_WATCHER_ENABLED" "true"
 update_env "BULK_SCAN_INTERVAL" "15"
 update_env "BULK_STABILITY_TIME" "5"

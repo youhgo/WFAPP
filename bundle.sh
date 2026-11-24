@@ -164,7 +164,7 @@ if [ "$SKIP_PULL" = true ]; then
     echo -e "\n${YELLOW}[2/6] Skipping image pull (--skip-pull specified).${NC}"
 else
     echo -e "\n${GREEN}[2/6] Pulling external Docker images...${NC}"
-    $COMPOSE_CMD pull
+    $COMPOSE_CMD pull reverse_proxy redis wapp_vector
 fi
 
 # -------------------------------------------------------------
