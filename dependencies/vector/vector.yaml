@@ -1,11 +1,11 @@
 data_dir: "/var/lib/vector"
 
 sources:
-  elk_files:
-    type: file
-    include:
-      - "/python-docker/shared_files/**/siemIngestion/vector_export_elk.jsonl"
-    read_from: beginning
+  # elk_files:
+  #   type: file
+  #   include:
+  #     - "/python-docker/shared_files/**/siemIngestion/vector_export_elk.jsonl"
+  #   read_from: beginning
 
   wazuh_files:
     type: file
@@ -13,22 +13,28 @@ sources:
       - "/python-docker/shared_files/**/siemIngestion/vector_export_wazuh.jsonl"
     read_from: beginning
 
+  ogre_timeline_files:
+    type: file
+    include:
+      - "/python-docker/shared_files/**/parsed/timeline/*.timeline.csv"
+    read_from: beginning
+
 transforms:
-  parse_elk:
-    type: remap
-    inputs:
-      - elk_files
-    source: |
-      if is_string(.message) {
-        parsed, err = parse_json(.message)
-        if err == null {
-          . = parsed
-        } else {
-          abort
-        }
-      } else {
-        abort
-      }
+  # parse_elk:
+  #   type: remap
+  #   inputs:
+  #     - elk_files
+  #   source: |
+  #     if is_string(.message) {
+  #       parsed, err = parse_json(.message)
+  #       if err == null {
+  #         . = parsed
+  #       } else {
+  #         abort
+  #       }
+  #     } else {
+  #       abort
+  #     }
 
   parse_wazuh:
     type: remap
@@ -46,26 +52,100 @@ transforms:
         abort
       }
 
-sinks:
-  elasticsearch_out:
-    type: elasticsearch
+  parse_ogre_timeline:
+    type: remap
     inputs:
-      - parse_elk
-    endpoints:
-      - "http://${ELK_HOST:-localhost}:${ELK_PORT:-9200}"
-    auth:
-      strategy: basic
-      user: "${ELK_USER:-elastic}"
-      password: "${ELK_PASSWD:-changeme}"
-    bulk:
-      index: "{{ _target_index }}"
-      action: index
-    dangerously_allow_unconfined_template_resolution: true
+      - ogre_timeline_files
+    source: |
+      raw_msg = string!(.message)
+      # Skip CSV header line
+      if starts_with(raw_msg, "\"timestamp\",\"timestamp_meaning\"") || starts_with(raw_msg, "timestamp,timestamp_meaning") {
+        abort
+      }
+
+      row, csv_err = parse_csv(raw_msg)
+      if csv_err != null || length(row) < 5 {
+        abort
+      }
+
+      file_path = string!(.file)
+      path_match, path_err = parse_regex(file_path, r'/(?P<case_name>[^/]+)/(?P<machine_folder>[^/]+)/parsed/timeline/[^/]+\.timeline\.csv$')
+
+      case_raw = "unknown"
+      machine_raw = "unknown"
+      if path_err == null {
+        case_raw = string!(path_match.case_name)
+        machine_raw = replace(string!(path_match.machine_folder), r'_\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$', "")
+      }
+
+      case_sanitized = replace(downcase(case_raw), r'[^a-z0-9_-]', "_")
+      machine_sanitized = replace(downcase(machine_raw), r'[^a-z0-9_-]', "_")
+      target_index = "wapp_" + case_sanitized + "_" + machine_sanitized + "_timeline"
+
+      ts = string(row[0]) ?? ""
+      ts_meaning = string(row[1]) ?? ""
+      data_type = string(row[2]) ?? ""
+      related_user = string(row[3]) ?? ""
+      description = string(row[4]) ?? ""
+      additional_description = ""
+      if length(row) > 5 {
+        additional_description = string(row[5]) ?? ""
+      }
+
+      doc = {
+        "event": {
+          "kind": "event",
+          "category": "timeline",
+          "dataset": data_type
+        },
+        "timestamp_meaning": ts_meaning,
+        "data_type": data_type,
+        "related_user": related_user,
+        "description": description,
+        "additional_description": additional_description,
+        "wapp_info": {
+          "case_name": case_raw,
+          "machine_name": machine_raw
+        },
+        "_target_index": target_index
+      }
+
+      if ts != "" {
+        doc."@timestamp" = ts
+      }
+
+      . = doc
+
+sinks:
+  # elasticsearch_out:
+  #   type: elasticsearch
+  #   inputs:
+  #     - parse_elk
+  #     - parse_ogre_timeline
+  #   endpoints:
+  #     - "http://${ELK_HOST:-localhost}:${ELK_PORT:-9200}"
+  #   auth:
+  #     strategy: basic
+  #     user: "${ELK_USER:-elastic}"
+  #     password: "${ELK_PASSWD:-changeme}"
+  #   bulk:
+  #     index: "{{ _target_index }}"
+  #     action: index
+  #   dangerously_allow_unconfined_template_resolution: true
+
+  console_out:
+    type: console
+    inputs:
+      - parse_wazuh
+      - parse_ogre_timeline
+    encoding:
+      codec: json
 
   wazuh_out:
     type: elasticsearch
     inputs:
       - parse_wazuh
+      - parse_ogre_timeline
     endpoints:
       - "${WAZUH_HOST:-https://wazuh.indexer}:${WAZUH_PORT:-9200}"
     auth:

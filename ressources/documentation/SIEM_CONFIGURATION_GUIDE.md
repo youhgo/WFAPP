@@ -71,6 +71,34 @@ This will attach the WFAPP workers to the `shared_sec_net` network, allowing the
 
 
 
+## Vector SIEM Ingestion Pipeline (`wapp_vector`)
+
+WFAPP uses **[Vector](https://vector.dev/)** (container `wapp_vector`, configured in `dependencies/vector/vector.yaml`) to stream parsed forensic artefacts and timelines to your SIEM in the background with automatic batching, retries, and checkpointing.
+
+### 1. Watched Sources & Index Naming
+
+- **Parsed Artefacts (`siemIngestion`)**:
+  - Watched path: `/python-docker/shared_files/**/siemIngestion/vector_export_wazuh.jsonl`
+  - Generated when the **`wazuh`** post-processor (`WazuhPostProcessor`) is enabled for an analysis.
+  - Target index: read dynamically from `_target_index` (`wapp_<casename>_<machinename>_<category>`).
+- **DFIR-Ogre Chronological Timeline**:
+  - Watched path: `/python-docker/shared_files/**/parsed/timeline/*.timeline.csv`
+  - Generated when the **`ogre_timeline`** post-processor (`OgreTimelinePostProcessor`) is enabled.
+  - Parsed natively in VRL (`parse_ogre_timeline`), skipping the CSV header and extracting `case_name` and `machine_name` from the file path.
+  - Target index: `wapp_<casename>_<machinename>_timeline`.
+
+### 2. Sinks & Enabling ELK
+
+- **`wazuh_out`** is active by default and sends events to `${WAZUH_HOST}:${WAZUH_PORT}`.
+- **`console_out`** outputs parsed events as JSON to stdout for debugging (`docker compose logs -f wapp_vector`). For large timelines in production, you can comment out `console_out` in `dependencies/vector/vector.yaml`.
+- **Elasticsearch / ELK**: `elk_files`, `parse_elk`, and `elasticsearch_out` are present in `dependencies/vector/vector.yaml` (commented out by default). Uncomment them and restart Vector if you want to ingest into Elasticsearch:
+
+```bash
+docker compose restart wapp_vector
+```
+
+---
+
 ## Standalone Timeline Ingestion
 
 If you already have a prepared `timeline.json` (e.g., generated manually or from an older WFAPP run) and want to push it directly to your SIEM without rerunning the entire extraction pipeline, you can use the standalone uploaders.

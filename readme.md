@@ -28,7 +28,7 @@ WFAPP is a robust, modular, and extremely performant forensic pipeline designed 
 - **Automated Pipeline**: Orchestrates forensic processing workflows with minimal configuration.
 - **DFIR-Ogre Integration**: Deep integration with DFIR-Ogre featuring selective archive extraction (only extracting files required by active pipelines without decompressing unused archives).
 - **Dynamic Ogre YAML Configuration**: Tune DFIR-Ogre mapping plugins on-the-fly directly via the Web GUI or REST API (`ogre.yaml`).
-- **Wazuh/SIEM Ready**: Automatically standardizes parsed output for easy ingestion by Wazuh or other SIEM solutions.
+- **Wazuh/SIEM Ready (via Vector)**: Automatically standardizes parsed output (`siemIngestion/vector_export_wazuh.jsonl`) and DFIR-Ogre timelines (`*.timeline.csv`) for high-throughput, resilient streaming ingestion via **Vector** (`wapp_vector`).
 - **Plug & Play Architecture**: Easily extendable. The community can drop a new parser and a new pipeline in the specific directories and the main Dispatcher will automatically load them.
 - **Extremely Low Memory Footprint**: Uses a stream-based (`yield`) reading approach. WFAPP can parse files of several Gigabytes (like huge Amcache hives) without loading the entire file into RAM.
 
